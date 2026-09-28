@@ -46,6 +46,9 @@ async function initDb() {
       priority TEXT,
       reasons JSONB,
       next_action TEXT,
+      next_action_at TIMESTAMPTZ,
+      last_contact_at TIMESTAMPTZ,
+      contact_count INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -61,6 +64,17 @@ async function initDb() {
     CREATE UNIQUE INDEX IF NOT EXISTS uq_jml_prospects_email ON jml_prospects(LOWER(email)) WHERE email IS NOT NULL AND email <> '';
     ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS contact_consent BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS consent_at TIMESTAMPTZ;
+    ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS next_action_at TIMESTAMPTZ;
+    ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS last_contact_at TIMESTAMPTZ;
+    ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS contact_count INTEGER NOT NULL DEFAULT 0;
+    CREATE TABLE IF NOT EXISTS jml_activities (
+      id TEXT PRIMARY KEY,
+      prospect_id TEXT NOT NULL REFERENCES jml_prospects(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_jml_activities_prospect ON jml_activities(prospect_id,created_at DESC);
     CREATE TABLE IF NOT EXISTS jml_leads (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -189,6 +203,49 @@ app.put("/api/prospects/:id", async (req,res)=>{
     const p=normalizeProspect(req.body||{},old);const out={...old,...p,updatedAt:now()};memory.prospects.set(p.id,out);
     res.json({ok:true,persisted:false,prospect:out});
   }catch{res.status(500).json({ok:false,error:"Modification indisponible."})}
+});
+
+app.get("/api/prospects/:id/activities", async (req,res)=>{
+  try{
+    if(!pool)return res.json({ok:true,activities:[]});
+    const q=await db("SELECT id,type,note,created_at FROM jml_activities WHERE prospect_id=$1 ORDER BY created_at DESC LIMIT 100",[req.params.id]);
+    res.json({ok:true,activities:q.rows});
+  }catch{res.status(500).json({ok:false,error:"Historique indisponible."})}
+});
+
+app.post("/api/prospects/:id/activity", async (req,res)=>{
+  const type=clean(req.body?.type,40);
+  const note=clean(req.body?.note,1000);
+  const allowed=["Appel","SMS","Email","RDV","Visite","Note"];
+  if(!allowed.includes(type))return res.status(400).json({ok:false,error:"Type d'action invalide."});
+  try{
+    if(pool){
+      const exists=await db("SELECT id FROM jml_prospects WHERE id=$1",[req.params.id]);
+      if(!exists.rowCount)return res.status(404).json({ok:false,error:"Prospect introuvable."});
+      const id=newId(), t=now();
+      await db("INSERT INTO jml_activities (id,prospect_id,type,note,created_at) VALUES ($1,$2,$3,$4,$5)",[id,req.params.id,type,note||null,t]);
+      if(["Appel","SMS","Email","RDV","Visite"].includes(type)){
+        await db("UPDATE jml_prospects SET last_contact_at=$2,contact_count=contact_count+1,updated_at=NOW() WHERE id=$1",[req.params.id,t]);
+      }else{
+        await db("UPDATE jml_prospects SET updated_at=NOW() WHERE id=$1",[req.params.id]);
+      }
+      return res.status(201).json({ok:true,activity:{id,type,note,created_at:t}});
+    }
+    res.status(501).json({ok:false,error:"Historique disponible avec PostgreSQL."});
+  }catch{res.status(500).json({ok:false,error:"Enregistrement de l'action indisponible."})}
+});
+
+app.put("/api/prospects/:id/follow-up", async (req,res)=>{
+  const nextAction=clean(req.body?.nextAction,500);
+  const raw=req.body?.nextActionAt;
+  const nextActionAt=raw?new Date(raw):null;
+  if(nextActionAt && Number.isNaN(nextActionAt.getTime()))return res.status(400).json({ok:false,error:"Date de relance invalide."});
+  try{
+    if(!pool)return res.status(501).json({ok:false,error:"Suivi disponible avec PostgreSQL."});
+    const q=await db("UPDATE jml_prospects SET next_action=$2,next_action_at=$3,updated_at=NOW() WHERE id=$1 RETURNING *",[req.params.id,nextAction||null,nextActionAt]);
+    if(!q.rowCount)return res.status(404).json({ok:false,error:"Prospect introuvable."});
+    res.json({ok:true,prospect:rowToProspect(q.rows[0])});
+  }catch{res.status(500).json({ok:false,error:"Programmation de la relance indisponible."})}
 });
 
 app.delete("/api/prospects/:id", async (req,res)=>{
