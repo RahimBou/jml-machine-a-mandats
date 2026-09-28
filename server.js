@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const VERSION = "0.4.0";
+const VERSION = "0.4.1";
 
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
