@@ -75,6 +75,15 @@ window.jmlNav=function(id){
   window.scrollTo(0,0);
 };
 </script>
+<script>
+window.__JML_FRONTEND_ERROR=null;
+window.addEventListener("error",function(e){
+  window.__JML_FRONTEND_ERROR=(e.message||"Erreur JavaScript")+" · "+(e.filename||"")+" :"+(e.lineno||"");
+});
+window.addEventListener("unhandledrejection",function(e){
+  window.__JML_FRONTEND_ERROR="Promise: "+(e.reason&&e.reason.message?e.reason.message:String(e.reason||"Erreur inconnue"));
+});
+</script>
 <script src="/app.js?v=1.2.3" defer></script>
 <script defer>
 window.addEventListener("load",function(){
@@ -97,7 +106,7 @@ window.addEventListener("load",function(){
       var table=document.getElementById("prospectTable");
       if(table&&p.length)table.innerHTML=p.map(function(x){return "<tr><td><strong>"+String(x.name||"").replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})+"</strong></td><td>"+String(x.city||"")+"</td><td>"+String(x.horizon||"")+"</td><td>"+String(x.source||"")+"</td><td>"+String(x.status||"")+"</td><td>"+(x.score!=null?String(x.score):"—")+"</td><td>Serveur</td></tr>"}).join("");
     }catch(e){
-      var s=document.getElementById("storageStatus");if(s)s.textContent="Erreur de récupération serveur : "+e.message;
+      var s=document.getElementById("storageStatus");if(s)s.textContent="Erreur de récupération serveur : "+(window.__JML_FRONTEND_ERROR||e.message);
     }
   },1200);
 });
