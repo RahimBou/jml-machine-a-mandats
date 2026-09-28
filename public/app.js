@@ -5,7 +5,7 @@ const $=(s,r=document)=>r.querySelector(s);const $$=(s,r=document)=>[...r.queryS
 const views={dashboard:["Tableau de bord","Piloter l'acquisition, la qualification et le suivi des propriétaires."],prospects:["Prospects","Centraliser et suivre les propriétaires potentiellement vendeurs."],publication:["JML Publication","Préparer les contenus qui attirent les propriétaires locaux."],leadmagnet:["Lead Magnet","Capturer des demandes avec consentement explicite."],relances:["Relances","Préparer les prochaines actions sans envoi automatique."],kpi:["KPI","Mesurer le flux de prospects et les conversions."]};
 function toast(message,error=false){const el=$("#toast");el.textContent=message;el.className="toast show"+(error?" error":"");clearTimeout(toast.t);toast.t=setTimeout(()=>el.className="toast",3500)}
 async function api(url,options={}){const r=await fetch(url,{cache:"no-store",credentials:"same-origin",headers:{"Content-Type":"application/json",...(options.headers||{})},...options});let data={};try{data=await r.json()}catch{}if(!r.ok){const err=new Error(data.error||"Erreur serveur");err.status=r.status;err.code=data.code||"JML-HTTP";err.data=data;throw err}return data}
-function showView(id){if(!views[id])return;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+id).classList.add("active");$$(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===id));$("#pageTitle").textContent=views[id][0];$("#pageSubtitle").textContent=views[id][1];if(id==="dashboard")renderDashboard();if(id==="prospects"){renderProspects();renderPipeline()}if(id==="relances")renderRelances();if(id==="leadmagnet")renderLeads();if(id==="publication")load();if(id==="kpi")renderDashboard();window.scrollTo({top:0,behavior:"smooth"})}
+function showView(id){if(!views[id])return;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+id).classList.add("active");$$(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===id));$("#pageTitle").textContent=views[id][0];$("#pageSubtitle").textContent=views[id][1];if(id==="dashboard")renderDashboard();if(id==="prospects"){renderProspects();renderPipeline()}if(id==="relances")renderRelances();if(id==="leadmagnet")renderLeads();if(id==="publication")load();if(id==="kpi"){renderDashboard();renderKpi();}window.scrollTo({top:0,behavior:"smooth"})}
 window.jmlShowView=showView;
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
 function horizon(h){return({"0-3":"0–3 mois","3-6":"3–6 mois","6-12":"6–12 mois","12+":"Plus de 12 mois",unknown:"À déterminer"})[h]||h}
@@ -22,13 +22,26 @@ function renderDashboard(){
   $("#kProspects").textContent=p.length;
   $("#kRdv").textContent=rdv.length;
   $("#kMandats").textContent=mandats.length;
-  $("#kRate").textContent=p.length?Math.round(rdv.length/p.length*100)+"%":"0%";
+  $("#kRate").textContent=p.length?Math.round(rdv.length/p.length*100)+"%":"0%";$("#kHot").textContent=hot.length;$("#kMandatRate").textContent=p.length?Math.round(mandats.length/p.length*100)+"%":"0%";
   const top=[...p].filter(x=>x.score!=null).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);
   $("#priorityList").innerHTML=top.length?top.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+esc(x.city)+' · '+horizon(x.horizon)+'</span></div><span class="badge '+priorityClass(x.priority)+'">'+esc(x.priority)+' · '+x.score+'/100</span></div>').join(""):"Aucun prospect analysé pour le moment.";
   const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
   const urgent=p.filter(x=>x.status!=="Mandat"&&x.status!=="Pas de projet"&&x.nextActionAt&&new Date(x.nextActionAt)<tomorrow).sort((a,b)=>new Date(a.nextActionAt)-new Date(b.nextActionAt)).slice(0,5);
   const box=$("#dashboardRelances");
   if(box)box.innerHTML=urgent.length?urgent.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+(new Date(x.nextActionAt)<today?"🔴 En retard":"🟠 Aujourd'hui")+' · '+new Date(x.nextActionAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+'</span></div><button class="secondary" data-action="details" data-id="'+esc(x.id)+'">Ouvrir</button></div>').join(""):"Aucune relance urgente.";
+}
+function renderKpi(){
+  const p=state.prospects;
+  const statuses=["À qualifier","Contacté","À relancer","RDV pris","Estimation","Mandat","Pas de projet"];
+  const counts=Object.fromEntries(statuses.map(s=>[s,0]));
+  p.forEach(x=>{if(counts[x.status]!=null)counts[x.status]++});
+  const pipeline=$("#kpiPipeline");
+  if(pipeline)pipeline.innerHTML=statuses.map(s=>'<div class="idea"><span>'+esc(s)+'</span><strong>'+counts[s]+'</strong></div>').join("");
+  const withContact=p.filter(x=>x.phone||x.email).length;
+  const qualified=p.filter(x=>x.score!=null).length;
+  const withNext=p.filter(x=>x.nextActionAt).length;
+  const quality=$("#kpiQuality");
+  if(quality)quality.innerHTML='<div class="idea"><span>Coordonnées renseignées</span><strong>'+withContact+' / '+p.length+'</strong></div><div class="idea"><span>Prospects qualifiés</span><strong>'+qualified+' / '+p.length+'</strong></div><div class="idea"><span>Prochaine action programmée</span><strong>'+withNext+' / '+p.length+'</strong></div>';
 }
 function renderProspects(){const body=$("#prospectTable");body.innerHTML=state.prospects.length?state.prospects.map(p=>'<tr><td><strong>'+esc(p.name)+'</strong><br><span class="muted">'+esc(p.phone||p.email)+'</span></td><td>'+esc(p.city)+'</td><td>'+horizon(p.horizon)+'</td><td>'+esc(p.source)+'</td><td><span class="badge">'+esc(p.status)+'</span></td><td>'+(p.score!=null?'<span class="badge '+priorityClass(p.priority)+'">'+esc(p.priority)+' · '+p.score+'</span>':"—")+'</td><td><button class="secondary" data-action="qualify" data-id="'+esc(p.id)+'">'+(p.score!=null?"Ré-analyser":"Analyser")+'</button> '+(p.score!=null?'<button class="secondary" data-action="details" data-id="'+esc(p.id)+'">Détails</button> ':'')+'<button class="secondary" data-action="delete" data-id="'+esc(p.id)+'">Suppr.</button></td></tr>').join(""):"<tr><td colspan='7' class='muted'>Aucun prospect.</td></tr>";$("#storageStatus").textContent="Données serveur · PostgreSQL si DATABASE_URL est active."}
 function localDateTime(v){if(!v)return "";const d=new Date(v);const z=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes())}
