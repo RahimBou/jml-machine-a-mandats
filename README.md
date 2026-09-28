@@ -25,4 +25,4 @@ Le moteur DVF/DPE de **JML Prospection** reste séparé et n'est pas modifié da
 
 ## Statut
 
-Version 0.1.0 : fondations et écran de pilotage.
+Version 0.3.0 : pipeline prospects, qualification par règles, priorités A/B/C et suggestions de relance. Les envois restent manuels.
