@@ -1,4 +1,5 @@
 const state={prospects:[],leads:[]};
+if(window.location.search){history.replaceState(null,"",window.location.pathname+window.location.hash);}
 const $=(s,r=document)=>r.querySelector(s);const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const views={dashboard:["Tableau de bord","Piloter l'acquisition, la qualification et le suivi des propriétaires."],prospects:["Prospects","Centraliser et suivre les propriétaires potentiellement vendeurs."],publication:["JML Publication","Préparer les contenus qui attirent les propriétaires locaux."],leadmagnet:["Lead Magnet","Capturer des demandes avec consentement explicite."],relances:["Relances","Préparer les prochaines actions sans envoi automatique."],kpi:["KPI","Mesurer le flux de prospects et les conversions."]};
 function toast(message,error=false){const el=$("#toast");el.textContent=message;el.className="toast show"+(error?" error":"");clearTimeout(toast.t);toast.t=setTimeout(()=>el.className="toast",3500)}
