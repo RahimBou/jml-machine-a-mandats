@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.1.2";
+const VERSION = "1.1.3";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -277,7 +277,7 @@ app.post("/api/prospects", async (req,res) => {
   const p=normalizeProspect(req.body||{});
   if(!p.name) return res.status(400).json({ok:false,error:"Nom / prénom requis."});
   if(!validEmail(p.email)) return res.status(400).json({ok:false,error:"Email invalide."});
-  if(!p.contact_basis || p.contact_basis==="À vérifier") return res.status(400).json({ok:false,error:"Base de contact à préciser avant l'enregistrement."});
+  
   try{
     if(pool){
       const dup=await db(`SELECT id,name FROM jml_prospects
