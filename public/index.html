@@ -16,7 +16,7 @@
 <div class="sidebar-foot">Données DVF/DPE : projet JML Prospection séparé.</div>
 </aside>
 <main>
-<header class="topbar"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="pageTitle">Tableau de bord</h1><p id="pageSubtitle">Piloter l'acquisition, la qualification et le suivi des propriétaires.</p></div><button type="button" class="primary" id="newProspectBtn">+ Nouveau prospect</button></header>
+<header class="topbar"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="pageTitle">Tableau de bord</h1><p id="pageSubtitle">Piloter l'acquisition, la qualification et le suivi des propriétaires.</p></div><button type="button" class="primary" id="newProspectBtn" onclick="window.jmlNewProspect();return false;">+ Nouveau prospect</button></header>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="detailModal" class="modal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
@@ -54,6 +54,17 @@
 <footer>JML Machine à Mandats · V1.0.0 · CRM acquisition · PostgreSQL</footer>
 </main></div>
 <script>
+window.jmlNewProspect=function(){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  var target=document.getElementById('view-prospects');
+  if(target)target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.view==='prospects')});
+  var title=document.getElementById('pageTitle'); if(title)title.textContent='Prospects';
+  var subtitle=document.getElementById('pageSubtitle'); if(subtitle)subtitle.textContent='Centraliser et suivre les propriétaires potentiellement vendeurs.';
+  window.scrollTo(0,0);
+  setTimeout(function(){var n=document.getElementById('pName');if(n)n.focus()},50);
+  if(window.jmlShowView)window.jmlShowView('prospects');
+};
 window.jmlNav=function(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
   var target=document.getElementById('view-'+id);
