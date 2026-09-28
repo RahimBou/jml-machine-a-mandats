@@ -412,7 +412,7 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
         await db("UPDATE jml_prospects SET last_contact_at=$2,contact_count=contact_count+1,updated_at=NOW() WHERE id=$1",[req.params.id,t]);
       }
       if(outcome==="RDV pris") await db("UPDATE jml_prospects SET status='RDV pris',updated_at=NOW() WHERE id=$1",[req.params.id]);
-      if(outcome==="Pas de projet"||outcome==="Refus") await db("UPDATE jml_prospects SET status='Pas de projet',updated_at=NOW() WHERE id=$1]);
+      if(outcome==="Pas de projet"||outcome==="Refus") await db("UPDATE jml_prospects SET status='Pas de projet',updated_at=NOW() WHERE id=$1",[req.params.id]);
       if(!["Appel","SMS","Email","RDV","Visite"].includes(type) && !outcome) await db("UPDATE jml_prospects SET updated_at=NOW() WHERE id=$1",[req.params.id]);
       return res.status(201).json({ok:true,activity:{id,type,note,outcome:outcome||null,created_at:t}});
     }
