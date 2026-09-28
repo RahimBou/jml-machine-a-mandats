@@ -68,18 +68,18 @@ main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;just
       <div class="full actions"><button class="primary">Enregistrer le prospect</button><button type="button" class="secondary" id="cancelForm">Annuler</button></div>
     </form>
   </div>
-  <div class="card section"><h2>Pipeline</h2><div style="overflow:auto"><table class="table"><thead><tr><th>Prospect</th><th>Commune</th><th>Projet</th><th>Source</th><th>Statut</th><th></th></tr></thead><tbody id="prospectTable"></tbody></table></div></div>
+  <div class="card section"><h2>Pipeline</h2><div style="overflow:auto"><table class="table"><thead><tr><th>Prospect</th><th>Commune</th><th>Projet</th><th>Source</th><th>Statut</th><th>Priorité</th><th></th></tr></thead><tbody id="prospectTable"></tbody></table></div></div>
 </section>
 
 <section id="publication" class="view"><div class="card"><h2>JML Publication — idées locales</h2><p class="muted">Première base éditoriale. On ajoutera ensuite la génération IA et la planification.</p><div id="ideas"></div></div></section>
 
 <section id="leadmagnet" class="view"><div class="card"><h2>Lead Magnet</h2><div class="notice"><strong>Proposition V1 :</strong> « Les 10 erreurs qui peuvent faire perdre de l'argent lors de la vente d'une maison dans les Ardennes ».</div><div class="section"><p class="muted">Étape suivante : créer la page de capture, le formulaire et la séquence de suivi. Aucun contact ne sera envoyé automatiquement sans validation.</p></div></div></section>
 
-<section id="relances" class="view"><div class="card"><h2>Relances</h2><div class="notice">Le moteur de relance sera construit après le pipeline prospects. Il proposera une prochaine action, pas un envoi automatique non contrôlé.</div></div></section>
+<section id="relances" class="view"><div class="card"><h2>Relances à préparer</h2><p class="muted">La machine propose une prochaine action et un message. Rien n'est envoyé automatiquement.</p><div id="relanceList"></div></div></section>
 
 <section id="kpi" class="view"><div class="card"><h2>KPI</h2><div class="grid"><div><span class="muted">Leads</span><div class="metric" id="kLeads">0</div></div><div><span class="muted">RDV</span><div class="metric" id="kRdv">0</div></div><div><span class="muted">Mandats</span><div class="metric" id="kMandats">0</div></div><div><span class="muted">Taux RDV</span><div class="metric" id="kRate">0%</div></div></div></div></section>
 
-<footer class="section muted">JML Machine à Mandats · v0.2.0 · Prototype fonctionnel · données prospects stockées localement dans le navigateur pour cette première étape.</footer>
+<footer class="section muted">JML Machine à Mandats · v0.3.0 · qualification par règles · données prospects stockées localement dans le navigateur pour cette étape.</footer>
 </main></div>
 <script>
 const KEY="jml_mandats_prospects_v1";
@@ -96,19 +96,40 @@ function render(){
   const mandats=prospects.filter(p=>p.status==="Mandat");
   $("#mProspects").textContent=prospects.length;$("#mHot").textContent=hot.length;$("#mRdv").textContent=rdv.length;$("#mMandats").textContent=mandats.length;
   $("#kLeads").textContent=prospects.length;$("#kRdv").textContent=rdv.length;$("#kMandats").textContent=mandats.length;$("#kRate").textContent=prospects.length?Math.round(rdv.length/prospects.length*100)+"%":"0%";
-  const top=[...prospects].filter(p=>p.horizon==="0-3"||p.horizon==="3-6").slice(0,5);
+  const top=[...prospects].filter(p=>p.horizon==="0-3"||p.horizon==="3-6").sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);
   $("#priorityList").innerHTML=top.length?top.map(p=>`<div class="idea"><div><strong>${esc(p.name)}</strong><span class="muted">${esc(p.city||"")} · ${horizonLabel(p.horizon)}</span></div><span class="badge ${priority(p)}">${p.horizon==="0-3"?"PRIORITÉ":"À SUIVRE"}</span></div>`).join(""):"Aucun prospect avec un projet à 6 mois ou moins.";
-  $("#prospectTable").innerHTML=prospects.length?[...prospects].reverse().map((p,i)=>`<tr><td><strong>${esc(p.name)}</strong><br><span class="muted">${esc(p.phone||p.email||"")}</span></td><td>${esc(p.city||"")}</td><td>${horizonLabel(p.horizon)}</td><td>${esc(p.source)}</td><td><span class="badge">${esc(p.status)}</span></td><td><button class="secondary" onclick="removeProspect('${p.id}')">Suppr.</button></td></tr>`).join(""):"<tr><td colspan='6' class='muted'>Aucun prospect. Ajoute le premier.</td></tr>";
+  $("#prospectTable").innerHTML=prospects.length?[...prospects].reverse().map((p,i)=>`<tr><td><strong>${esc(p.name)}</strong><br><span class="muted">${esc(p.phone||p.email||"")}</span></td><td>${esc(p.city||"")}</td><td>${horizonLabel(p.horizon)}</td><td>${esc(p.source)}</td><td><span class="badge">${esc(p.status)}</span></td><td>${p.score?`<span class="badge ${p.priority==="A"?"hot":p.priority==="B"?"warm":"cold"}">${esc(p.priority)} · ${p.score}</span>`:"<span class="muted">À analyser</span>"}</td><td><button class="secondary" onclick="qualifyProspect('${p.id}')">Analyser</button> <button class="secondary" onclick="removeProspect('${p.id}')">Suppr.</button></td></tr>`).join(""):"<tr><td colspan='7' class='muted'>Aucun prospect. Ajoute le premier.</td></tr>";
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
+window.qualifyProspect=async id=>{
+ const p=prospects.find(x=>x.id===id); if(!p)return;
+ try{
+  const r=await fetch("/api/qualify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
+  const q=await r.json(); Object.assign(p,q); save();
+  alert("Priorité "+q.priority+" · score "+q.score+"/100\\n\\n"+q.reasons.join("\\n")+"\\n\\nProchaine action : "+q.nextAction);
+ }catch(e){alert("Analyse indisponible pour le moment.");}
+};
+window.prepareRelance=async id=>{
+ const p=prospects.find(x=>x.id===id); if(!p)return;
+ try{
+  const r=await fetch("/api/relance-message",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
+  const x=await r.json(); await navigator.clipboard?.writeText(x.message);
+  alert("Message préparé et copié dans le presse-papiers.\\n\\n"+x.message);
+ }catch(e){alert("Impossible de préparer la relance.");}
+};
 window.removeProspect=id=>{if(confirm("Supprimer ce prospect ?")){prospects=prospects.filter(p=>p.id!==id);save()}};
 
 $$("[data-view]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
+function renderRelances(){
+ const list=prospects.filter(p=>p.status!=="Mandat"&&p.status!=="Pas de projet"&&(p.horizon==="0-3"||p.horizon==="3-6"||p.status==="À relancer"||p.status==="À qualifier")).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,10);
+ const box=document.querySelector("#relanceList"); if(!box)return;
+ box.innerHTML=list.length?list.map(p=>"<div class='idea'><div><strong>"+esc(p.name)+"</strong><span class='muted'>"+esc(p.city||"")+" · "+horizonLabel(p.horizon)+" · "+(p.score?"Priorité "+esc(p.priority)+" · "+p.score+"/100":"non analysé")+"</span></div><button class='secondary' onclick=\"prepareRelance('"+p.id+"')\">Préparer le message</button></div>").join(""):"<div class='notice'>Aucune relance prioritaire pour le moment.</div>";
+}
 function show(id){
   $$(".view").forEach(v=>v.classList.remove("active"));$("#"+id).classList.add("active");
   $$("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
   const names={dashboard:"Tableau de bord",prospects:"Prospects",publication:"JML Publication",leadmagnet:"Lead Magnet",relances:"Relances",kpi:"KPI"};
-  $("#title").textContent=names[id];
+  $("#title").textContent=names[id]; if(id==="relances") renderRelances();
 }
 $("#newProspect").onclick=()=>{show("prospects");setTimeout(()=>document.querySelector("[name=name]").focus(),50)};
 $("#cancelForm").onclick=()=>show("dashboard");
@@ -118,7 +139,7 @@ $("#prospectForm").addEventListener("submit",e=>{
 async function loadIdeas(){
  try{const ideas=await fetch("/api/publication-ideas").then(r=>r.json());$("#ideas").innerHTML=ideas.map(x=>`<div class="idea"><div><span class="tag">${esc(x.target)}</span><strong>${esc(x.title)}</strong><span class="muted">${esc(x.hook)}</span></div><button class="secondary" onclick="navigator.clipboard?.writeText(${JSON.stringify(x.hook)})">Copier</button></div>`).join("")}catch(e){}
 }
-render();loadIdeas();
+render();renderRelances();loadIdeas();
 </script>
 </body>
 </html>
