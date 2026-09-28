@@ -51,6 +51,8 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_updated ON jml_prospects(updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_status ON jml_prospects(status);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_jml_prospects_phone ON jml_prospects(phone) WHERE phone IS NOT NULL AND phone <> '';
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_jml_prospects_email ON jml_prospects(LOWER(email)) WHERE email IS NOT NULL AND email <> '';
     ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS contact_consent BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS consent_at TIMESTAMPTZ;
     CREATE TABLE IF NOT EXISTS jml_leads (
@@ -142,6 +144,11 @@ app.post("/api/prospects", async (req,res)=>{
   const t=now();
   try{
     if(pool){
+      const dup=await db(`SELECT id,name FROM jml_prospects
+        WHERE (phone IS NOT NULL AND phone <> '' AND phone=$1)
+           OR (email IS NOT NULL AND email <> '' AND LOWER(email)=LOWER($2))
+        LIMIT 1`,[p.phone||null,p.email||null]);
+      if(dup.rowCount)return res.status(409).json({ok:false,error:"Ce prospect existe déjà dans le CRM.",existingId:dup.rows[0].id,existingName:dup.rows[0].name});
       const consentAt = p.contact_consent ? t : null;
       await db(`INSERT INTO jml_prospects
         (id,name,city,phone,email,property_type,horizon,source,status,contact_basis,contact_consent,consent_at,notes,created_at,updated_at)
@@ -151,7 +158,10 @@ app.post("/api/prospects", async (req,res)=>{
     }
     const out={...p,createdAt:t,updatedAt:t};memory.prospects.set(p.id,out);
     res.status(201).json({ok:true,persisted:false,prospect:out});
-  }catch(e){res.status(500).json({ok:false,error:"Enregistrement du prospect indisponible."})}
+  }catch(e){
+    if(e.code==="23505")return res.status(409).json({ok:false,error:"Ce prospect existe déjà dans le CRM."});
+    res.status(500).json({ok:false,error:"Enregistrement du prospect indisponible."})
+  }
 });
 
 app.put("/api/prospects/:id", async (req,res)=>{
