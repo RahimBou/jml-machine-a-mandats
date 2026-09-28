@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.2.1";
+const VERSION = "1.2.2";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -23,6 +23,7 @@ const pool = hasDatabase ? new Pool({
 const memory = { prospects: new Map(), leads: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
 const newId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 const STATUS_VALUES = ["À qualifier","Contacté","À relancer","RDV pris","Estimation","Mandat","Pas de projet"];
@@ -177,7 +178,7 @@ function normalizeProspect(body, existing = {}) {
     source: clean(body.source ?? existing.source ?? "Autre", 80),
     status: clean(body.status ?? existing.status ?? "À qualifier", 40),
     contact_basis: clean(body.contact_basis ?? existing.contact_basis ?? "À vérifier", 60),
-    contact_consent: body.contact_consent === true || body.contact_consent === "true" || existing.contact_consent === true,
+    contact_consent: toBoolean(body.contact_consent) || toBoolean(existing.contact_consent),
     consent_at: existing.consent_at || null,
     notes: clean(body.notes ?? existing.notes, 2000)
   };
@@ -444,7 +445,7 @@ app.delete("/api/prospects/:id", async (req,res) => {
 
 app.post("/api/leads", async (req,res) => {
   const b=req.body||{};
-  const lead={id:newId(),name:clean(b.name,120),email:clean(b.email,180),phone:clean(b.phone,40),city:clean(b.city,100),propertyType:clean(b.propertyType,60),horizon:clean(b.horizon,20),source:clean(b.source||"Lead Magnet",80),consent:b.consent===true||b.consent==="true",createdAt:now()};
+  const lead={id:newId(),name:clean(b.name,120),email:clean(b.email,180),phone:clean(b.phone,40),city:clean(b.city,100),propertyType:clean(b.propertyType,60),horizon:clean(b.horizon,20),source:clean(b.source||"Lead Magnet",80),consent:toBoolean(b.consent),createdAt:now()};
   if(!lead.name) return apiError(res,400,"JML-L003","Nom requis.");
   if(!lead.email&&!lead.phone) return apiError(res,400,"JML-L004","Email ou téléphone requis.");
   if(!validEmail(lead.email)) return apiError(res,400,"JML-L005","Email invalide.");
