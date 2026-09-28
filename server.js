@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.1.0";
+const VERSION = "1.1.1";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
