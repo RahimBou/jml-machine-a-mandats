@@ -29,15 +29,15 @@ main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;just
   <div class="brand"><small>JML Immobilier · Ardennes</small><strong>Machine à Mandats</strong></div>
   <nav id="nav">
     <button class="active" data-view="dashboard">⌂ Tableau de bord</button>
-    <button data-view="prospects">◎ Prospects</button>
-    <button data-view="publication">✦ JML Publication</button>
-    <button data-view="leadmagnet">↳ Lead Magnet</button>
-    <button data-view="relances">↻ Relances</button>
-    <button data-view="kpi">▦ KPI</button>
+    <button type="button" data-view="prospects">◎ Prospects</button>
+    <button type="button" data-view="publication">✦ JML Publication</button>
+    <button type="button" data-view="leadmagnet">↳ Lead Magnet</button>
+    <button type="button" data-view="relances">↻ Relances</button>
+    <button type="button" data-view="kpi">▦ KPI</button>
   </nav>
 </aside>
 <main>
-<div class="top"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="title">Tableau de bord</h1><p class="sub">Construire progressivement un système d'acquisition, de qualification et de suivi des propriétaires.</p></div><button class="primary" id="newProspect">+ Nouveau prospect</button></div>
+<div class="top"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="title">Tableau de bord</h1><p class="sub">Construire progressivement un système d'acquisition, de qualification et de suivi des propriétaires.</p></div><button class="primary" id="newProspect" type="button">+ Nouveau prospect</button></div>
 
 <section id="dashboard" class="view active">
   <div class="grid">
@@ -98,7 +98,7 @@ function render(){
   $("#kLeads").textContent=prospects.length;$("#kRdv").textContent=rdv.length;$("#kMandats").textContent=mandats.length;$("#kRate").textContent=prospects.length?Math.round(rdv.length/prospects.length*100)+"%":"0%";
   const top=[...prospects].filter(p=>p.horizon==="0-3"||p.horizon==="3-6").sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);
   $("#priorityList").innerHTML=top.length?top.map(p=>`<div class="idea"><div><strong>${esc(p.name)}</strong><span class="muted">${esc(p.city||"")} · ${horizonLabel(p.horizon)}</span></div><span class="badge ${priority(p)}">${p.horizon==="0-3"?"PRIORITÉ":"À SUIVRE"}</span></div>`).join(""):"Aucun prospect avec un projet à 6 mois ou moins.";
-  $("#prospectTable").innerHTML=prospects.length?[...prospects].reverse().map((p,i)=>`<tr><td><strong>${esc(p.name)}</strong><br><span class="muted">${esc(p.phone||p.email||"")}</span></td><td>${esc(p.city||"")}</td><td>${horizonLabel(p.horizon)}</td><td>${esc(p.source)}</td><td><span class="badge">${esc(p.status)}</span></td><td>${p.score?`<span class="badge ${p.priority==="A"?"hot":p.priority==="B"?"warm":"cold"}">${esc(p.priority)} · ${p.score}</span>`:"<span class="muted">À analyser</span>"}</td><td><button class="secondary" onclick="qualifyProspect('${p.id}')">Analyser</button> <button class="secondary" onclick="removeProspect('${p.id}')">Suppr.</button></td></tr>`).join(""):"<tr><td colspan='7' class='muted'>Aucun prospect. Ajoute le premier.</td></tr>";
+  $("#prospectTable").innerHTML=prospects.length?[...prospects].reverse().map((p,i)=>`<tr><td><strong>${esc(p.name)}</strong><br><span class="muted">${esc(p.phone||p.email||"")}</span></td><td>${esc(p.city||"")}</td><td>${horizonLabel(p.horizon)}</td><td>${esc(p.source)}</td><td><span class="badge">${esc(p.status)}</span></td><td>${p.score?`<span class="badge ${p.priority==="A"?"hot":p.priority==="B"?"warm":"cold"}">${esc(p.priority)} · ${p.score}</span>`:"<span class="muted">À analyser</span>"}</td><td><button class="secondary" data-action="qualify" data-id="${esc(p.id)}">Analyser</button> <button class="secondary" data-action="remove" data-id="${esc(p.id)}">Suppr.</button></td></tr>`).join(""):"<tr><td colspan='7' class='muted'>Aucun prospect. Ajoute le premier.</td></tr>";
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
 window.qualifyProspect=async id=>{
@@ -134,10 +134,10 @@ function show(id){
 $("#newProspect").onclick=()=>{show("prospects");setTimeout(()=>document.querySelector("[name=name]").focus(),50)};
 $("#cancelForm").onclick=()=>show("dashboard");
 $("#prospectForm").addEventListener("submit",e=>{
- e.preventDefault();const f=new FormData(e.target);const p=Object.fromEntries(f.entries());p.id=crypto.randomUUID();p.createdAt=new Date().toISOString();prospects.push(p);e.target.reset();save();show("prospects");
+ e.preventDefault();const f=new FormData(e.target);const p=Object.fromEntries(f.entries());p.id=(crypto.randomUUID?crypto.randomUUID():"lead-"+Date.now()+"-"+Math.random().toString(36).slice(2));p.createdAt=new Date().toISOString();prospects.push(p);e.target.reset();save();show("prospects");
 });
 async function loadIdeas(){
- try{const ideas=await fetch("/api/publication-ideas").then(r=>r.json());$("#ideas").innerHTML=ideas.map(x=>`<div class="idea"><div><span class="tag">${esc(x.target)}</span><strong>${esc(x.title)}</strong><span class="muted">${esc(x.hook)}</span></div><button class="secondary" onclick="navigator.clipboard?.writeText(${JSON.stringify(x.hook)})">Copier</button></div>`).join("")}catch(e){}
+ try{const ideas=await fetch("/api/publication-ideas").then(r=>r.json());$("#ideas").innerHTML=ideas.map(x=>`<div class="idea"><div><span class="tag">${esc(x.target)}</span><strong>${esc(x.title)}</strong><span class="muted">${esc(x.hook)}</span></div><button class="secondary" data-copy="${esc(x.hook)}">Copier</button></div>`).join("")}catch(e){}
 }
 async function loadLeads(){
  const box=$("#leadList"), status=$("#leadStatus"); if(!box)return;
@@ -147,6 +147,18 @@ async function loadLeads(){
   box.innerHTML=x.leads.length?x.leads.map(l=>"<div class='idea'><div><strong>"+esc(l.name)+"</strong><span class='muted'>"+esc(l.city||"")+" · "+esc(l.email||l.phone||"")+" · "+esc(l.horizon||"")+"</span></div><span class='badge'>"+esc(l.source||"Lead Magnet")+"</span></div>").join(""):"<div class='notice'>Aucun lead capté pour le moment.</div>";
  }catch(e){status.textContent="Impossible de charger les leads.";box.innerHTML="";}
 }
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-action],[data-copy]");
+ if(!b)return;
+ const a=b.dataset.action;
+ if(a==="qualify") qualifyProspect(b.dataset.id);
+ else if(a==="remove") removeProspect(b.dataset.id);
+ else if(a==="relance") prepareRelance(b.dataset.id);
+ else if(b.dataset.copy){
+   navigator.clipboard?.writeText(b.dataset.copy).catch(()=>{});
+   alert("Copié dans le presse-papiers.");
+ }
+});
 $("#loadLeads")?.addEventListener("click",loadLeads);
 render();renderRelances();loadIdeas();loadLeads();
 </script>
