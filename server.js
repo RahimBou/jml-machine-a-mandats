@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.2.2";
+const VERSION = "1.5.0";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -474,6 +474,61 @@ app.get("/api/leads", async (_req,res) => {
     if(pool){const q=await db("SELECT * FROM jml_leads ORDER BY created_at DESC LIMIT 500");return res.json({ok:true,persisted:true,leads:q.rows});}
     res.json({ok:true,persisted:false,leads:[...memory.leads.values()].reverse()});
   }catch(e){res.status(503).json({ok:false,error:"Lecture des leads indisponible.",detail:e.message});}
+});
+
+
+
+function buildMandatIntelligence(prospects, activitiesByProspect = new Map()){
+  const nowMs=Date.now();
+  return prospects.map(p=>{
+    const reasons=[];
+    const daysSinceContact=p.last_contact_at ? Math.floor((nowMs-new Date(p.last_contact_at).getTime())/86400000) : null;
+    if(p.horizon==="0-3") reasons.push("Projet annoncé dans les 3 mois");
+    else if(p.horizon==="3-6") reasons.push("Projet annoncé dans les 3 à 6 mois");
+    if(p.status==="À relancer") reasons.push("Relance déjà prévue");
+    if(p.status==="RDV pris") reasons.push("Rendez-vous déjà obtenu");
+    if(p.status==="Estimation") reasons.push("Étape estimation en cours");
+    if(daysSinceContact !== null && daysSinceContact >= 30) reasons.push("Aucun contact depuis "+daysSinceContact+" jours");
+    if(p.contact_count===0) reasons.push("Premier contact à réaliser");
+    const last=(activitiesByProspect.get(p.id)||[])[0]||null;
+    if(last?.outcome==="À rappeler") reasons.push("Le dernier échange demande un rappel");
+    if(last?.outcome==="Intéressé") reasons.push("Intérêt vendeur confirmé lors du dernier échange");
+    const baseScore=Number.isFinite(Number(p.score)) ? Number(p.score) : 0;
+    let priorityBoost=0;
+    if(p.horizon==="0-3") priorityBoost+=30;
+    if(p.horizon==="3-6") priorityBoost+=20;
+    if(last?.outcome==="À rappeler") priorityBoost+=15;
+    if(p.status==="RDV pris") priorityBoost+=15;
+    if(p.status==="Estimation") priorityBoost+=20;
+    if(daysSinceContact>=30) priorityBoost+=10;
+    const action=p.status==="RDV pris" ? "Préparer le rendez-vous"
+      : p.status==="Estimation" ? "Faire le suivi de l'estimation"
+      : p.horizon==="0-3" ? "Appeler et proposer un rendez-vous"
+      : p.horizon==="3-6" ? "Programmer une relance datée"
+      : "Qualifier le projet puis planifier la prochaine action";
+    return {id:p.id,name:p.name,city:p.city||"",status:p.status,horizon:p.horizon,score:baseScore,priority:p.priority||null,
+      reasons:reasons.slice(0,5),priorityBoost,nextAction:action,lastOutcome:last?.outcome||null,lastActivityAt:last?.created_at||null};
+  }).filter(x=>x.status!=="Mandat"&&x.status!=="Pas de projet")
+    .sort((a,b)=>((b.score||0)+(b.priorityBoost||0))-((a.score||0)+(a.priorityBoost||0))).slice(0,5);
+}
+
+app.get("/api/mandat-intelligence", async (_req,res)=>{
+  try{
+    let prospects=[],activities=[];
+    if(pool){
+      const p=await db("SELECT * FROM jml_prospects WHERE status NOT IN ('Mandat','Pas de projet') ORDER BY updated_at DESC");
+      const a=await db("SELECT prospect_id,id,type,note,outcome,created_at FROM jml_activities ORDER BY created_at DESC LIMIT 1000");
+      prospects=p.rows;activities=a.rows;
+    }else prospects=[...memory.prospects.values()].filter(p=>p.status!=="Mandat"&&p.status!=="Pas de projet");
+    const map=new Map();
+    activities.forEach(a=>{if(!map.has(a.prospect_id))map.set(a.prospect_id,[]);map.get(a.prospect_id).push(a);});
+    res.json({ok:true,count:prospects.length,priorities:buildMandatIntelligence(prospects,map),modules:[
+      {key:"reactivation",label:"Réactivation des anciennes opportunités",prompts:[1,2,5,7]},
+      {key:"rdv",label:"Préparation du rendez-vous vendeur",prompts:[9,10,12,13,15]},
+      {key:"objections",label:"Traitement des objections",prompts:[23,24,25,27]},
+      {key:"daily",label:"Priorités du jour",prompts:[37,39]}
+    ]});
+  }catch(e){unexpected(res,"JML-P015","Intelligence mandat indisponible.",e);}
 });
 
 app.get("/api/publication-ideas",(_req,res)=>res.json([
