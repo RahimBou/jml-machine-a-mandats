@@ -1,28 +1,27 @@
-# JML Machine à Mandats
+# JML Machine à Mandats — V1.0.0
 
-Application séparée de **JML Prospection** destinée à construire un système d'acquisition et de suivi des mandats pour les Ardennes.
+Reconstruction complète après les problèmes d'interface de la V0.x.
 
-## Architecture prévue
+## Architecture
+- Express + PostgreSQL
+- API REST pour les prospects et les leads
+- Aucun stockage métier des prospects dans localStorage
+- Navigation centralisée dans \`public/app.js\`
+- Aucun \`onclick\` inline dans l'application
+- Qualification séparée de l'enregistrement
+- Lead Magnet avec consentement explicite
+- Aucun envoi automatique de message
+- JML Prospection (DVF/DPE) reste séparé
 
-1. JML Publication — contenu local
-2. Lead Magnet — capture de prospects
-3. Prospects — centralisation
-4. Qualification IA — intention et horizon
-5. CRM — suivi
-6. Relances — suivi non intrusif
-7. KPI — mesure des sources et conversions
+## Modules V1
+Tableau de bord · Prospects · JML Publication · Lead Magnet · Relances · KPI
 
-## Principe de sécurité
+## Render
+Build: \`npm install\`
+Start: \`npm start\`
+Persistance: variable \`DATABASE_URL\`
 
-Le moteur DVF/DPE de **JML Prospection** reste séparé et n'est pas modifié dans ce projet.
+La base PostgreSQL existante n'est pas supprimée. L'application utilise ses propres tables \`jml_prospects\` et \`jml_leads\`.
 
-## Déploiement Render
-
-- Runtime : Node
-- Build : `npm install`
-- Start : `npm start`
-- Port : `PORT` fourni par Render
-
-## Statut
-
-Version 0.3.0 : pipeline prospects, qualification par règles, priorités A/B/C et suggestions de relance. Les envois restent manuels.
+## Version
+1.0.0
