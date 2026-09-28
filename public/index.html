@@ -73,13 +73,13 @@ main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;just
 
 <section id="publication" class="view"><div class="card"><h2>JML Publication — idées locales</h2><p class="muted">Première base éditoriale. On ajoutera ensuite la génération IA et la planification.</p><div id="ideas"></div></div></section>
 
-<section id="leadmagnet" class="view"><div class="card"><h2>Lead Magnet</h2><div class="notice"><strong>Proposition V1 :</strong> « Les 10 erreurs qui peuvent faire perdre de l'argent lors de la vente d'une maison dans les Ardennes ».</div><div class="section"><p class="muted">Étape suivante : créer la page de capture, le formulaire et la séquence de suivi. Aucun contact ne sera envoyé automatiquement sans validation.</p></div></div></section>
+<section id="leadmagnet" class="view"><div class="card"><h2>Lead Magnet</h2><div class="notice"><strong>V1 en ligne :</strong> « Les 10 erreurs à éviter avant de vendre votre maison ».</div><div class="actions"><a class="primary" href="/guide" target="_blank" style="text-decoration:none;display:inline-block">Ouvrir la page de capture</a><button class="secondary" id="loadLeads">Actualiser les leads</button></div><div class="section"><div id="leadStatus" class="muted">Les leads issus du formulaire apparaîtront ici. La persistance nécessite DATABASE_URL sur Render.</div><div id="leadList"></div></div></div></section>
 
 <section id="relances" class="view"><div class="card"><h2>Relances à préparer</h2><p class="muted">La machine propose une prochaine action et un message. Rien n'est envoyé automatiquement.</p><div id="relanceList"></div></div></section>
 
 <section id="kpi" class="view"><div class="card"><h2>KPI</h2><div class="grid"><div><span class="muted">Leads</span><div class="metric" id="kLeads">0</div></div><div><span class="muted">RDV</span><div class="metric" id="kRdv">0</div></div><div><span class="muted">Mandats</span><div class="metric" id="kMandats">0</div></div><div><span class="muted">Taux RDV</span><div class="metric" id="kRate">0%</div></div></div></div></section>
 
-<footer class="section muted">JML Machine à Mandats · v0.3.0 · qualification par règles · données prospects stockées localement dans le navigateur pour cette étape.</footer>
+<footer class="section muted">JML Machine à Mandats · v0.4.0 · Lead Magnet + qualification · persistance serveur via PostgreSQL si DATABASE_URL est configurée.</footer>
 </main></div>
 <script>
 const KEY="jml_mandats_prospects_v1";
@@ -139,7 +139,16 @@ $("#prospectForm").addEventListener("submit",e=>{
 async function loadIdeas(){
  try{const ideas=await fetch("/api/publication-ideas").then(r=>r.json());$("#ideas").innerHTML=ideas.map(x=>`<div class="idea"><div><span class="tag">${esc(x.target)}</span><strong>${esc(x.title)}</strong><span class="muted">${esc(x.hook)}</span></div><button class="secondary" onclick="navigator.clipboard?.writeText(${JSON.stringify(x.hook)})">Copier</button></div>`).join("")}catch(e){}
 }
-render();renderRelances();loadIdeas();
+async function loadLeads(){
+ const box=$("#leadList"), status=$("#leadStatus"); if(!box)return;
+ try{
+  const r=await fetch("/api/leads"); const x=await r.json(); if(!r.ok)throw new Error(x.error||"Erreur");
+  status.textContent=x.persisted?"Leads enregistrés dans la base PostgreSQL.":"Mode temporaire : les leads seront perdus au redémarrage tant que DATABASE_URL n'est pas configurée.";
+  box.innerHTML=x.leads.length?x.leads.map(l=>"<div class='idea'><div><strong>"+esc(l.name)+"</strong><span class='muted'>"+esc(l.city||"")+" · "+esc(l.email||l.phone||"")+" · "+esc(l.horizon||"")+"</span></div><span class='badge'>"+esc(l.source||"Lead Magnet")+"</span></div>").join(""):"<div class='notice'>Aucun lead capté pour le moment.</div>";
+ }catch(e){status.textContent="Impossible de charger les leads.";box.innerHTML="";}
+}
+$("#loadLeads")?.addEventListener("click",loadLeads);
+render();renderRelances();loadIdeas();loadLeads();
 </script>
 </body>
 </html>
