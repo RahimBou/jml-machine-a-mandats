@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JML — Machine à Mandats</title>
+  <style>
+    :root { --gold:#b8944e; --ink:#17332c; --cream:#f7f3ea; --card:#fffdf8; --muted:#68746f; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,system-ui,-apple-system,sans-serif; background:var(--cream); color:var(--ink); }
+    header { padding:32px 20px; background:var(--ink); color:white; }
+    .wrap { max-width:1100px; margin:auto; }
+    .eyebrow { color:#d8bb7a; text-transform:uppercase; letter-spacing:.12em; font-size:12px; font-weight:700; }
+    h1 { margin:8px 0; font-size:clamp(30px,5vw,52px); }
+    .subtitle { margin:0; color:#dce5df; max-width:700px; }
+    main { padding:28px 20px 60px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+    .card { background:var(--card); border:1px solid #e4ddce; border-radius:16px; padding:20px; box-shadow:0 6px 20px rgba(23,51,44,.05); }
+    .card h2 { margin:0 0 8px; font-size:18px; }
+    .card p { margin:0; color:var(--muted); line-height:1.5; }
+    .status { margin-top:24px; padding:16px 18px; border-radius:12px; background:white; border:1px solid #e4ddce; }
+    .ok { color:#1e7650; font-weight:700; }
+    footer { max-width:1100px; margin:auto; padding:0 20px 30px; color:var(--muted); font-size:13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="eyebrow">JML Immobilier · Ardennes</div>
+      <h1>Machine à Mandats</h1>
+      <p class="subtitle">Un système local pour attirer, qualifier, suivre et relancer les propriétaires, sans toucher au moteur DVF/DPE de JML Prospection.</p>
+    </div>
+  </header>
+  <main>
+    <div class="wrap">
+      <div id="modules" class="grid"></div>
+      <div class="status">État du système : <span id="status" class="ok">vérification…</span></div>
+    </div>
+  </main>
+  <footer>Version 0.1.0 — fondations uniquement. Les modules seront activés progressivement.</footer>
+  <script>
+    async function init() {
+      try {
+        const [config, health] = await Promise.all([
+          fetch("/api/config").then(r => r.json()),
+          fetch("/api/health").then(r => r.json())
+        ]);
+        document.getElementById("status").textContent = "En ligne · " + health.region + " · " + health.sector;
+        document.getElementById("modules").innerHTML = config.modules.map((m, i) =>
+          '<article class="card"><h2>' + (i + 1) + ". " + m + '</h2><p>Module prévu pour la machine à mandats JML.</p></article>'
+        ).join("");
+      } catch (e) {
+        document.getElementById("status").textContent = "Erreur de connexion";
+      }
+    }
+    init();
+  </script>
+</body>
+</html>
