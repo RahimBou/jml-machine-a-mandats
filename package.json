@@ -1,6 +1,6 @@
 {
   "name": "jml-machine-a-mandats",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "JML Machine à Mandats — prospection et acquisition immobilière pour les Ardennes",
   "main": "server.js",
