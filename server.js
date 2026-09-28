@@ -1,10 +1,14 @@
 const express = require("express");
 const path = require("path");
+const crypto = require("crypto");
+const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+const VERSION = "0.4.0";
 
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const modules = [
@@ -16,13 +20,70 @@ const modules = [
   { id: "kpi", label: "KPI", icon: "▦" }
 ];
 
-app.get("/api/health", (_req, res) => {
+const memoryLeads = [];
+let pool = null;
+
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false }
+  });
+}
+
+async function initDb() {
+  if (!pool) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      city TEXT,
+      property_type TEXT,
+      horizon TEXT,
+      source TEXT,
+      consent BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+}
+
+function clean(value, max = 300) {
+  return String(value || "").trim().slice(0, max);
+}
+
+function validEmail(email) {
+  return !email || /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+}
+
+function leadFromBody(body) {
+  return {
+    id: crypto.randomUUID(),
+    name: clean(body.name, 120),
+    email: clean(body.email, 180),
+    phone: clean(body.phone, 40),
+    city: clean(body.city, 100),
+    property_type: clean(body.propertyType, 60),
+    horizon: clean(body.horizon, 30),
+    source: clean(body.source || "Lead Magnet", 80),
+    consent: body.consent === true || body.consent === "true",
+    created_at: new Date().toISOString()
+  };
+}
+
+app.get("/api/health", async (_req, res) => {
+  let database = "memory";
+  if (pool) {
+    try { await pool.query("SELECT 1"); database = "postgres"; }
+    catch (_e) { database = "postgres-error"; }
+  }
   res.json({
     ok: true,
     app: "JML Machine à Mandats",
-    version: "0.3.0",
+    version: VERSION,
     region: process.env.JML_REGION || "Ardennes",
-    sector: process.env.JML_SECTOR || "Charleville-Mézières"
+    sector: process.env.JML_SECTOR || "Charleville-Mézières",
+    database
   });
 });
 
@@ -32,6 +93,48 @@ app.get("/api/config", (_req, res) => {
     sector: process.env.JML_SECTOR || "Charleville-Mézières",
     modules
   });
+});
+
+app.get("/guide", (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "guide.html"));
+});
+
+app.post("/api/leads", async (req, res) => {
+  const lead = leadFromBody(req.body || {});
+  if (!lead.name) return res.status(400).json({ ok: false, error: "Nom requis." });
+  if (!lead.email && !lead.phone) return res.status(400).json({ ok: false, error: "Email ou téléphone requis." });
+  if (!validEmail(lead.email)) return res.status(400).json({ ok: false, error: "Email invalide." });
+  if (!lead.consent) return res.status(400).json({ ok: false, error: "Consentement requis." });
+
+  if (pool) {
+    try {
+      await pool.query(
+        `INSERT INTO leads (id,name,email,phone,city,property_type,horizon,source,consent,created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [lead.id, lead.name, lead.email || null, lead.phone || null, lead.city || null,
+         lead.property_type || null, lead.horizon || null, lead.source || "Lead Magnet",
+         lead.consent, lead.created_at]
+      );
+      return res.status(201).json({ ok: true, id: lead.id, persisted: true });
+    } catch (_e) {
+      return res.status(500).json({ ok: false, error: "Enregistrement indisponible." });
+    }
+  }
+
+  memoryLeads.push(lead);
+  return res.status(201).json({ ok: true, id: lead.id, persisted: false });
+});
+
+app.get("/api/leads", async (_req, res) => {
+  if (pool) {
+    try {
+      const result = await pool.query("SELECT id,name,email,phone,city,property_type,horizon,source,consent,created_at FROM leads ORDER BY created_at DESC LIMIT 500");
+      return res.json({ ok: true, persisted: true, leads: result.rows });
+    } catch (_e) {
+      return res.status(500).json({ ok: false, error: "Lecture indisponible." });
+    }
+  }
+  res.json({ ok: true, persisted: false, leads: memoryLeads.slice().reverse() });
 });
 
 app.post("/api/qualify", (req, res) => {
@@ -49,7 +152,6 @@ app.post("/api/qualify", (req, res) => {
   if (p.city) { score += 5; reasons.push("Commune renseignée"); }
   if (p.type && p.type !== "Autre") { score += 5; reasons.push("Type de bien identifié"); }
   if (p.source) { score += 5; reasons.push("Source du contact identifiée"); }
-
   if (p.status === "RDV pris") score += 10;
   if (p.status === "Mandat") score = 100;
 
@@ -68,7 +170,7 @@ app.post("/api/qualify", (req, res) => {
 
 app.post("/api/relance-message", (req, res) => {
   const p = req.body || {};
-  const name = (p.name || "Bonjour").trim();
+  const name = clean(p.name, 120) || "Bonjour";
   let message = `Bonjour ${name}, je me permets de revenir vers vous concernant votre projet immobilier. Où en êtes-vous aujourd'hui ? Si vous le souhaitez, nous pouvons faire un point simplement sur votre bien et sur le calendrier de votre projet. Bonne journée, Abderrahim — JML Immobilier.`;
   if (p.horizon === "0-3") {
     message = `Bonjour ${name}, je reviens vers vous au sujet de votre projet de vente. Comme votre projet se rapproche, je peux vous proposer un point rapide sur la valeur actuelle de votre bien et les étapes à anticiper. Dites-moi simplement quand vous êtes disponible. Bonne journée, Abderrahim — JML Immobilier.`;
@@ -99,6 +201,9 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`JML Machine à Mandats v0.3.0 running on port ${PORT}`);
-});
+initDb()
+  .then(() => app.listen(PORT, () => console.log(`JML Machine à Mandats v${VERSION} running on port ${PORT}`)))
+  .catch((error) => {
+    console.error("Database initialization failed:", error.message);
+    app.listen(PORT, () => console.log(`JML Machine à Mandats v${VERSION} running on port ${PORT} without database`));
+  });
