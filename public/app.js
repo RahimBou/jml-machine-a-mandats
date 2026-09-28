@@ -47,6 +47,15 @@ function renderDashboard(){
   }).join(""):"Aucun prospect analysé pour le moment.";
   const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
   const urgent=p.filter(x=>x.status!=="Mandat"&&x.status!=="Pas de projet"&&x.nextActionAt&&new Date(x.nextActionAt)<tomorrow).sort((a,b)=>new Date(a.nextActionAt)-new Date(b.nextActionAt)).slice(0,5);
+  const work=[...p].filter(x=>x.status!=="Mandat"&&x.status!=="Pas de projet").sort((a,b)=>{
+    const aa=actionPriority(a),bb=actionPriority(b);
+    return aa.rank-bb.rank||(b.score||0)-(a.score||0);
+  }).slice(0,5);
+  const workBox=$("#dailyWorkList");
+  if(workBox)workBox.innerHTML=work.length?work.map(x=>{
+    const ap=actionPriority(x);
+    return '<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+esc(ap.level)+' · '+esc(ap.reason)+' · '+horizon(x.horizon)+'</span></div><button class="secondary" data-action="details" data-id="'+esc(x.id)+'">Traiter</button></div>';
+  }).join(""):"Aucun prospect à traiter.";
   const box=$("#dashboardRelances");
   if(box)box.innerHTML=urgent.length?urgent.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+(new Date(x.nextActionAt)<today?"🔴 En retard":"🟠 Aujourd'hui")+' · '+new Date(x.nextActionAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+'</span></div><button class="secondary" data-action="details" data-id="'+esc(x.id)+'">Ouvrir</button></div>').join(""):"Aucune relance urgente.";
 }
