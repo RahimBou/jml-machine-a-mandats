@@ -22,7 +22,7 @@ const pool = hasDatabase ? new Pool({
 
 const memory = { prospects: new Map(), leads: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
-const cleanEmail = v => String(v ?? "").normalize("NFKC").replace(/[\\u200B-\\u200D\\uFEFF]/g,"").trim().slice(0,180);
+const cleanEmail = v => String(v ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g,"").trim().slice(0,180);
 const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(v));
 const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
 const newId = () => crypto.randomUUID();
