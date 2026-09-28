@@ -10,7 +10,26 @@ window.jmlShowView=showView;
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
 function horizon(h){return({"0-3":"0–3 mois","3-6":"3–6 mois","6-12":"6–12 mois","12+":"Plus de 12 mois",unknown:"À déterminer"})[h]||h}
 function priorityClass(p){return p==="A"?"priority-a":p==="B"?"priority-b":"priority-c"}
-function renderDashboard(){const p=state.prospects,hot=p.filter(x=>x.horizon==="0-3"||x.horizon==="3-6"),rdv=p.filter(x=>x.status==="RDV pris"),mandats=p.filter(x=>x.status==="Mandat");$("#statProspects").textContent=p.length;$("#statHot").textContent=hot.length;$("#statRdv").textContent=rdv.length;$("#statMandats").textContent=mandats.length;$("#kProspects").textContent=p.length;$("#kRdv").textContent=rdv.length;$("#kMandats").textContent=mandats.length;$("#kRate").textContent=p.length?Math.round(rdv.length/p.length*100)+"%":"0%";const top=[...p].filter(x=>x.score!=null).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);$("#priorityList").innerHTML=top.length?top.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+esc(x.city)+' · '+horizon(x.horizon)+'</span></div><span class="badge '+priorityClass(x.priority)+'">'+esc(x.priority)+' · '+x.score+'/100</span></div>').join(""):"Aucun prospect analysé pour le moment."}
+function renderDashboard(){
+  const p=state.prospects;
+  const hot=p.filter(x=>x.horizon==="0-3"||x.horizon==="3-6");
+  const rdv=p.filter(x=>x.status==="RDV pris");
+  const mandats=p.filter(x=>x.status==="Mandat");
+  $("#statProspects").textContent=p.length;
+  $("#statHot").textContent=hot.length;
+  $("#statRdv").textContent=rdv.length;
+  $("#statMandats").textContent=mandats.length;
+  $("#kProspects").textContent=p.length;
+  $("#kRdv").textContent=rdv.length;
+  $("#kMandats").textContent=mandats.length;
+  $("#kRate").textContent=p.length?Math.round(rdv.length/p.length*100)+"%":"0%";
+  const top=[...p].filter(x=>x.score!=null).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);
+  $("#priorityList").innerHTML=top.length?top.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+esc(x.city)+' · '+horizon(x.horizon)+'</span></div><span class="badge '+priorityClass(x.priority)+'">'+esc(x.priority)+' · '+x.score+'/100</span></div>').join(""):"Aucun prospect analysé pour le moment.";
+  const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
+  const urgent=p.filter(x=>x.status!=="Mandat"&&x.status!=="Pas de projet"&&x.nextActionAt&&new Date(x.nextActionAt)<tomorrow).sort((a,b)=>new Date(a.nextActionAt)-new Date(b.nextActionAt)).slice(0,5);
+  const box=$("#dashboardRelances");
+  if(box)box.innerHTML=urgent.length?urgent.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+(new Date(x.nextActionAt)<today?"🔴 En retard":"🟠 Aujourd'hui")+' · '+new Date(x.nextActionAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+'</span></div><button class="secondary" data-action="details" data-id="'+esc(x.id)+'">Ouvrir</button></div>').join(""):"Aucune relance urgente.";
+}
 function renderProspects(){const body=$("#prospectTable");body.innerHTML=state.prospects.length?state.prospects.map(p=>'<tr><td><strong>'+esc(p.name)+'</strong><br><span class="muted">'+esc(p.phone||p.email)+'</span></td><td>'+esc(p.city)+'</td><td>'+horizon(p.horizon)+'</td><td>'+esc(p.source)+'</td><td><span class="badge">'+esc(p.status)+'</span></td><td>'+(p.score!=null?'<span class="badge '+priorityClass(p.priority)+'">'+esc(p.priority)+' · '+p.score+'</span>':"—")+'</td><td><button class="secondary" data-action="qualify" data-id="'+esc(p.id)+'">'+(p.score!=null?"Ré-analyser":"Analyser")+'</button> '+(p.score!=null?'<button class="secondary" data-action="details" data-id="'+esc(p.id)+'">Détails</button> ':'')+'<button class="secondary" data-action="delete" data-id="'+esc(p.id)+'">Suppr.</button></td></tr>').join(""):"<tr><td colspan='7' class='muted'>Aucun prospect.</td></tr>";$("#storageStatus").textContent="Données serveur · PostgreSQL si DATABASE_URL est active."}
 function localDateTime(v){if(!v)return "";const d=new Date(v);const z=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes())}
 function openDetails(id){
