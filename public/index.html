@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JML — Machine à Mandats</title><link rel="stylesheet" href="/styles.css?v=1.2.2"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JML — Machine à Mandats</title><link rel="stylesheet" href="/styles.css?v=1.2.3"></head>
 <body>
 <div class="app">
 <aside class="sidebar">
@@ -75,5 +75,31 @@ window.jmlNav=function(id){
   window.scrollTo(0,0);
 };
 </script>
-<script src="/app.js?v=1.2.2" defer></script>
+<script src="/app.js?v=1.2.3" defer></script>
+<script defer>
+window.addEventListener("load",function(){
+  setTimeout(async function(){
+    if(window.__JML_APP_READY)return;
+    try{
+      const r=await fetch("/api/prospects",{cache:"no-store",credentials:"same-origin"});
+      const d=await r.json();
+      const p=Array.isArray(d.prospects)?d.prospects:[];
+      const set=function(id,value){var e=document.getElementById(id);if(e)e.textContent=String(value)};
+      const hot=p.filter(function(x){return x.horizon==="0-3"||x.horizon==="3-6"}).length;
+      const rdv=p.filter(function(x){return x.status==="RDV pris"}).length;
+      const mandats=p.filter(function(x){return x.status==="Mandat"}).length;
+      set("statProspects",p.length);set("statHot",hot);set("statRdv",rdv);set("statMandats",mandats);
+      set("kProspects",p.length);set("kRdv",rdv);set("kMandats",mandats);set("kRate",p.length?Math.round(rdv/p.length*100)+"%":"0%");
+      var list=document.getElementById("priorityList");
+      if(list)list.innerHTML=p.length?"<div class='notice'>"+p.length+" prospect(s) récupéré(s) depuis PostgreSQL. Ouvre « Prospects » pour les consulter.</div>":"Aucun prospect enregistré.";
+      var status=document.getElementById("storageStatus");
+      if(status)status.textContent=(d.persisted?"PostgreSQL":"Mémoire locale")+" · "+p.length+" prospect(s) · récupération de secours";
+      var table=document.getElementById("prospectTable");
+      if(table&&p.length)table.innerHTML=p.map(function(x){return "<tr><td><strong>"+String(x.name||"").replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})+"</strong></td><td>"+String(x.city||"")+"</td><td>"+String(x.horizon||"")+"</td><td>"+String(x.source||"")+"</td><td>"+String(x.status||"")+"</td><td>"+(x.score!=null?String(x.score):"—")+"</td><td>Serveur</td></tr>"}).join("");
+    }catch(e){
+      var s=document.getElementById("storageStatus");if(s)s.textContent="Erreur de récupération serveur : "+e.message;
+    }
+  },1200);
+});
+</script>
 </body></html>
