@@ -22,6 +22,8 @@ const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const newId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
+const STATUS_VALUES=["À qualifier","Contacté","À relancer","RDV pris","Estimation","Mandat","Pas de projet"];
+
 
 async function db(sql, params = []) { return pool ? pool.query(sql, params) : null; }
 
@@ -54,6 +56,7 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_updated ON jml_prospects(updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_status ON jml_prospects(status);
+    CREATE INDEX IF NOT EXISTS idx_jml_prospects_next_action ON jml_prospects(next_action_at);
     DELETE FROM jml_prospects
       WHERE phone IS NOT NULL AND phone <> ''
       AND id NOT IN (SELECT MIN(id) FROM jml_prospects WHERE phone IS NOT NULL AND phone <> '' GROUP BY phone);
@@ -148,6 +151,30 @@ app.get("/api/health", async (_req,res)=>{
   let database="memory";
   if(pool){try{await db("SELECT 1");database="postgres"}catch{database="postgres-error"}}
   res.json({ok:true,app:"JML Machine à Mandats",version:VERSION,database,region:"Ardennes",sector:"Charleville-Mézières"});
+});
+
+app.get("/api/pipeline", async (_req,res)=>{
+  try{
+    if(pool){
+      const q=await db("SELECT status,COUNT(*)::int AS count FROM jml_prospects GROUP BY status ORDER BY status");
+      const out=Object.fromEntries(STATUS_VALUES.map(s=>[s,0])); q.rows.forEach(r=>{out[r.status]=r.count}); return res.json({ok:true,pipeline:out});
+    }
+    const out=Object.fromEntries(STATUS_VALUES.map(s=>[s,0])); for(const p of memory.prospects.values())out[p.status]=(out[p.status]||0)+1; res.json({ok:true,pipeline:out});
+  }catch{res.status(500).json({ok:false,error:"Pipeline indisponible."})}
+});
+
+app.put("/api/prospects/:id/status", async (req,res)=>{
+  const status=clean(req.body?.status,40);
+  if(!STATUS_VALUES.includes(status))return res.status(400).json({ok:false,error:"Statut invalide."});
+  try{
+    if(pool){
+      const q=await db("UPDATE jml_prospects SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING *",[req.params.id,status]);
+      if(!q.rowCount)return res.status(404).json({ok:false,error:"Prospect introuvable."});
+      return res.json({ok:true,prospect:rowToProspect(q.rows[0])});
+    }
+    const p=memory.prospects.get(req.params.id);if(!p)return res.status(404).json({ok:false,error:"Prospect introuvable."});
+    p.status=status;p.updatedAt=now();memory.prospects.set(p.id,p);res.json({ok:true,prospect:p});
+  }catch{res.status(500).json({ok:false,error:"Modification du statut indisponible."})}
 });
 
 app.get("/api/prospects", async (_req,res)=>{
