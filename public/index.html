@@ -28,12 +28,12 @@ main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;just
 <aside>
   <div class="brand"><small>JML Immobilier · Ardennes</small><strong>Machine à Mandats</strong></div>
   <nav id="nav">
-    <button class="active" data-view="dashboard">⌂ Tableau de bord</button>
+    <button class="active" data-view="dashboard" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('dashboard').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='dashboard'));document.getElementById('title').textContent="Tableau de bord";if('dashboard'==='relances')renderRelances();return false;">⌂ Tableau de bord</button>
     <button type="button" data-view="prospects" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('prospects').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='prospects'));document.getElementById('title').textContent='Prospects';document.querySelector('[name=name]')?.focus();return false;">◎ Prospects</button>
-    <button type="button" data-view="publication">✦ JML Publication</button>
-    <button type="button" data-view="leadmagnet">↳ Lead Magnet</button>
-    <button type="button" data-view="relances">↻ Relances</button>
-    <button type="button" data-view="kpi">▦ KPI</button>
+    <button type="button" data-view="publication" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('publication').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='publication'));document.getElementById('title').textContent="JML Publication";if('publication'==='relances')renderRelances();return false;">✦ JML Publication</button>
+    <button type="button" data-view="leadmagnet" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('leadmagnet').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='leadmagnet'));document.getElementById('title').textContent="Lead Magnet";if('leadmagnet'==='relances')renderRelances();return false;">↳ Lead Magnet</button>
+    <button type="button" data-view="relances" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('relances').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='relances'));document.getElementById('title').textContent="Relances";if('relances'==='relances')renderRelances();return false;">↻ Relances</button>
+    <button type="button" data-view="kpi" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('kpi').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='kpi'));document.getElementById('title').textContent="KPI";if('kpi'==='relances')renderRelances();return false;">▦ KPI</button>
   </nav>
 </aside>
 <main>
