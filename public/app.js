@@ -24,6 +24,22 @@ function actionPriority(p){
   if(p.status==="À qualifier")return {level:"À QUALIFIER",rank:3,reason:"Qualification à terminer"};
   return {level:"SUIVI",rank:4,reason:"Suivi commercial"};
 }
+function recommendedAction(p){
+  if(p.status==="Mandat")return {title:"Suivre le mandat",detail:"Vérifier la prochaine étape du dossier et maintenir le contact.",kind:"SUIVI"};
+  if(p.status==="RDV pris")return {title:"Préparer et confirmer le RDV",detail:"Vérifier le besoin, le bien et les éléments à préparer avant le rendez-vous.",kind:"RDV"};
+  if(p.status==="Estimation")return {title:"Préparer l'estimation",detail:"Rassembler les informations du bien et confirmer le besoin du propriétaire.",kind:"ESTIMATION"};
+  if(p.status==="Pas de projet")return {title:"Aucune action immédiate",detail:"Projet clos pour le moment. Conserver l'information pour un éventuel changement.",kind:"SUIVI"};
+  if(p.nextActionAt){
+    const d=new Date(p.nextActionAt);
+    if(!Number.isNaN(d.getTime())&&d<new Date())return {title:"Traiter l'action en retard",detail:p.nextAction||"Une action programmée est dépassée.",kind:"URGENT"};
+  }
+  if(p.horizon==="0-3"&&!p.lastContactAt)return {title:"Appeler pour qualifier le projet",detail:"Projet annoncé à court terme et aucun contact enregistré.",kind:"URGENT"};
+  if(p.horizon==="0-3")return {title:"Prendre contact rapidement",detail:"Projet à court terme : confirmer le besoin et proposer un rendez-vous.",kind:"URGENT"};
+  if(p.horizon==="3-6")return {title:"Programmer une relance concrète",detail:"Le projet est identifié dans les 3 à 6 mois : définir une prochaine étape.",kind:"À PRÉPARER"};
+  if(p.status==="À qualifier")return {title:"Terminer la qualification",detail:"Préciser l'horizon, le besoin et la prochaine action avant de poursuivre.",kind:"À QUALIFIER"};
+  if(!p.phone&&!p.email)return {title:"Compléter les coordonnées",detail:"Aucun téléphone ni email n'est actuellement renseigné.",kind:"À COMPLÉTER"};
+  return {title:"Préparer le prochain contact",detail:"Choisir une prochaine action et la programmer dans le CRM.",kind:"SUIVI"};
+}
 function renderDashboard(){
   const p=state.prospects;
   const hot=p.filter(x=>x.horizon==="0-3"||x.horizon==="3-6");
@@ -80,7 +96,7 @@ function openDetails(id){
   const contact=p.phone||p.email||"Aucun contact renseigné";
   const next=p.nextAction||"Aucune prochaine action programmée";
   const ap=actionPriority(p);
-  $("#detailBody").innerHTML='<div class="notice"><strong>À faire maintenant</strong><br><b>'+esc(ap.level)+'</b> · '+esc(ap.reason)+'<br>'+esc(next)+(p.nextActionAt?' · '+new Date(p.nextActionAt).toLocaleString("fr-FR"):'')+'</div>'+
+  $("#detailBody").innerHTML='<div class="notice"><strong>Action recommandée</strong><br><b>'+esc(recommendedAction(p).title)+'</b><br><span class="muted">'+esc(recommendedAction(p).detail)+'</span><br><br><strong>Priorité :</strong> '+esc(ap.level)+' · '+esc(ap.reason)+(p.nextActionAt?' · '+new Date(p.nextActionAt).toLocaleString("fr-FR"):'')+'<br><strong>Action programmée :</strong> '+esc(next)+'</div>'+
   '<div class="form-actions" style="margin-top:12px;flex-wrap:wrap">'+
   '<button class="secondary" type="button" data-action="set-status" data-status="Contacté" data-id="'+esc(id)+'">Contacté</button>'+
   '<button class="secondary" type="button" data-action="set-status" data-status="À relancer" data-id="'+esc(id)+'">À relancer</button>'+
