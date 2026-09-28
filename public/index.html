@@ -1,180 +1,50 @@
 <!doctype html>
 <html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JML — Machine à Mandats</title>
-<style>
-:root{--green:#17332c;--green2:#23473d;--gold:#b8944e;--cream:#f6f2e9;--card:#fffdf8;--line:#e4ddce;--muted:#68746f;--danger:#a94a3b}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--cream);color:var(--green)}
-button,input,select,textarea{font:inherit}button{cursor:pointer}
-.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-aside{background:var(--green);color:#fff;padding:24px 16px;position:sticky;top:0;height:100vh}
-.brand{padding:4px 10px 24px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:18px}.brand small{color:#d8bb7a;text-transform:uppercase;letter-spacing:.12em;font-weight:700}.brand strong{display:block;font-size:22px;margin-top:5px}
-nav button{display:flex;width:100%;border:0;background:transparent;color:#dce5df;padding:12px 10px;border-radius:10px;text-align:left;margin:3px 0;gap:10px}nav button:hover,nav button.active{background:var(--green2);color:#fff}
-main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}.eyebrow{color:var(--gold);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}h1{font-size:34px;margin:5px 0}.sub{color:var(--muted);margin:0}
-.primary{background:var(--green);color:white;border:0;border-radius:10px;padding:12px 16px;font-weight:700}.primary:hover{background:var(--green2)}
-.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 5px 18px rgba(23,51,44,.04)}.metric{font-size:30px;font-weight:800;margin-top:7px}.muted{color:var(--muted);font-size:13px}.section{margin-top:22px}.section h2{font-size:19px}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}label{font-size:13px;font-weight:700;display:block;margin-bottom:5px}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;background:white;color:var(--green)}textarea{min-height:90px;resize:vertical}
-.actions{display:flex;gap:8px;margin-top:12px}.secondary{border:1px solid var(--line);background:white;color:var(--green);border-radius:9px;padding:10px 13px}
-.table{width:100%;border-collapse:collapse}.table th,.table td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eee8d8;font-size:11px;font-weight:800}.hot{background:#e5f1e9;color:#246043}.warm{background:#f5ecd5;color:#7a5b1d}.cold{background:#eee;color:#666}
-.idea{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.idea:last-child{border-bottom:0}.idea strong{display:block}.tag{font-size:11px;color:var(--gold);font-weight:800;text-transform:uppercase}
-.notice{padding:13px 15px;background:#fff;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:13px}
-@media(max-width:850px){.app{grid-template-columns:1fr}aside{position:static;height:auto}.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.form{grid-template-columns:1fr}main{padding:20px}}@media(max-width:520px){.grid{grid-template-columns:1fr}.top{flex-direction:column}}
-</style>
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JML — Machine à Mandats</title><link rel="stylesheet" href="/styles.css"></head>
 <body>
 <div class="app">
-<aside>
-  <div class="brand"><small>JML Immobilier · Ardennes</small><strong>Machine à Mandats</strong></div>
-  <nav id="nav">
-    <button class="active" data-view="dashboard" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('dashboard').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='dashboard'));document.getElementById('title').textContent="Tableau de bord";if('dashboard'==='relances')renderRelances();return false;">⌂ Tableau de bord</button>
-    <button type="button" data-view="prospects" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('prospects').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='prospects'));document.getElementById('title').textContent='Prospects';document.querySelector('[name=name]')?.focus();return false;">◎ Prospects</button>
-    <button type="button" data-view="publication" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('publication').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='publication'));document.getElementById('title').textContent="JML Publication";if('publication'==='relances')renderRelances();return false;">✦ JML Publication</button>
-    <button type="button" data-view="leadmagnet" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('leadmagnet').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='leadmagnet'));document.getElementById('title').textContent="Lead Magnet";if('leadmagnet'==='relances')renderRelances();return false;">↳ Lead Magnet</button>
-    <button type="button" data-view="relances" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('relances').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='relances'));document.getElementById('title').textContent="Relances";if('relances'==='relances')renderRelances();return false;">↻ Relances</button>
-    <button type="button" data-view="kpi" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('kpi').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='kpi'));document.getElementById('title').textContent="KPI";if('kpi'==='relances')renderRelances();return false;">▦ KPI</button>
-  </nav>
+<aside class="sidebar">
+<div class="brand"><span>JML IMMOBILIER · ARDENNES</span><strong>Machine à Mandats</strong><small>V1 — CRM acquisition</small></div>
+<nav id="mainNav" aria-label="Navigation principale">
+<button type="button" class="nav-btn active" data-view="dashboard">⌂ <span>Tableau de bord</span></button>
+<button type="button" class="nav-btn" data-view="prospects">◎ <span>Prospects</span></button>
+<button type="button" class="nav-btn" data-view="publication">✦ <span>JML Publication</span></button>
+<button type="button" class="nav-btn" data-view="leadmagnet">↳ <span>Lead Magnet</span></button>
+<button type="button" class="nav-btn" data-view="relances">↻ <span>Relances</span></button>
+<button type="button" class="nav-btn" data-view="kpi">▦ <span>KPI</span></button>
+</nav>
+<div class="sidebar-foot">Données DVF/DPE : projet JML Prospection séparé.</div>
 </aside>
 <main>
-<div class="top"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="title">Tableau de bord</h1><p class="sub">Construire progressivement un système d'acquisition, de qualification et de suivi des propriétaires.</p></div><button class="primary" id="newProspect" type="button" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('prospects').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='prospects'));document.getElementById('title').textContent='Prospects';document.querySelector('[name=name]')?.focus();return false;">+ Nouveau prospect</button></div>
+<header class="topbar"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="pageTitle">Tableau de bord</h1><p id="pageSubtitle">Piloter l'acquisition, la qualification et le suivi des propriétaires.</p></div><button type="button" class="primary" id="newProspectBtn">+ Nouveau prospect</button></header>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<section id="dashboard" class="view active">
-  <div class="grid">
-    <div class="card"><div class="muted">Prospects</div><div class="metric" id="mProspects">0</div></div>
-    <div class="card"><div class="muted">Projet ≤ 6 mois</div><div class="metric" id="mHot">0</div></div>
-    <div class="card"><div class="muted">Rendez-vous</div><div class="metric" id="mRdv">0</div></div>
-    <div class="card"><div class="muted">Mandats</div><div class="metric" id="mMandats">0</div></div>
-  </div>
-  <div class="two section">
-    <div class="card"><h2>Priorités</h2><div id="priorityList" class="notice">Aucun prospect enregistré.</div></div>
-    <div class="card"><h2>Logique JML</h2><p class="muted">Attirer → capter → qualifier → relancer → rendez-vous → mandat.</p><p class="muted">Les données DVF/DPE de JML Prospection restent séparées à ce stade.</p></div>
-  </div>
+<section class="view active" id="view-dashboard">
+<div class="stats"><div class="stat"><span>Prospects</span><strong id="statProspects">0</strong></div><div class="stat"><span>Projet ≤ 6 mois</span><strong id="statHot">0</strong></div><div class="stat"><span>RDV</span><strong id="statRdv">0</strong></div><div class="stat"><span>Mandats</span><strong id="statMandats">0</strong></div></div>
+<div class="columns"><article class="card"><div class="card-head"><h2>Priorités</h2><button class="link-btn" data-view="prospects">Voir les prospects</button></div><div id="priorityList" class="empty">Aucun prospect enregistré.</div></article><article class="card"><h2>Architecture V1</h2><div class="steps"><div><b>1</b> Attirer</div><div><b>2</b> Capter</div><div><b>3</b> Qualifier</div><div><b>4</b> Relancer</div><div><b>5</b> RDV</div><div><b>6</b> Mandat</div></div></article></div>
 </section>
 
-<section id="prospects" class="view">
-  <div class="card">
-    <h2>Nouveau prospect vendeur</h2>
-    <form id="prospectForm" class="form">
-      <div><label>Nom / prénom</label><input name="name" required></div>
-      <div><label>Commune</label><input name="city" placeholder="Charleville-Mézières"></div>
-      <div><label>Téléphone</label><input name="phone" type="tel"></div>
-      <div><label>Email</label><input name="email" type="email"></div>
-      <div><label>Type de bien</label><select name="type"><option>Maison</option><option>Appartement</option><option>Immeuble</option><option>Terrain</option><option>Autre</option></select></div>
-      <div><label>Horizon du projet</label><select name="horizon"><option value="0-3">0–3 mois</option><option value="3-6">3–6 mois</option><option value="6-12">6–12 mois</option><option value="12+">Plus de 12 mois</option><option value="unknown">À déterminer</option></select></div>
-      <div><label>Source</label><select name="source"><option>Facebook</option><option>Instagram</option><option>JML Publication</option><option>Lead Magnet</option><option>JML Prospection</option><option>Recommandation</option><option>Terrain</option><option>Autre</option></select></div>
-      <div><label>Statut</label><select name="status"><option>À qualifier</option><option>À relancer</option><option>RDV à prendre</option><option>RDV pris</option><option>Mandat</option><option>Pas de projet</option></select></div>
-      <div class="full"><label>Notes</label><textarea name="notes" placeholder="Informations utiles, contexte, prochaine action…"></textarea></div>
-      <div class="full notice" style="margin-top:4px">
-        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
-          <input type="checkbox" name="contactConsent" value="yes" required style="margin-top:4px;width:auto">
-          <span><strong>Consentement / autorisation de contact</strong><br><span class="muted">J’ai vérifié que ce prospect peut être contacté et, lorsque le consentement est requis, qu’il a été obtenu. Le détail de la base de contact peut être précisé dans les notes.</span></span>
-        </label>
-      </div>
-      <div class="full actions"><button class="primary">Enregistrer le prospect</button><button type="button" class="secondary" id="cancelForm">Annuler</button></div>
-    </form>
-  </div>
-  <div class="card section"><h2>Pipeline</h2><div style="overflow:auto"><table class="table"><thead><tr><th>Prospect</th><th>Commune</th><th>Projet</th><th>Source</th><th>Statut</th><th>Priorité</th><th></th></tr></thead><tbody id="prospectTable"></tbody></table></div></div>
+<section class="view" id="view-prospects">
+<div class="card"><div class="card-head"><div><h2>Nouveau prospect vendeur</h2><p class="muted">Enregistrement serveur PostgreSQL. Aucun prospect ne reste uniquement dans le navigateur.</p></div></div>
+<form id="prospectForm" class="form" novalidate>
+<div><label for="pName">Nom / prénom *</label><input id="pName" name="name" required maxlength="120"></div><div><label for="pCity">Commune</label><input id="pCity" name="city" maxlength="100" placeholder="Charleville-Mézières"></div>
+<div><label for="pPhone">Téléphone</label><input id="pPhone" name="phone" type="tel" maxlength="40"></div><div><label for="pEmail">Email</label><input id="pEmail" name="email" type="email" maxlength="180"></div>
+<div><label for="pType">Type de bien *</label><select id="pType" name="property_type"><option>Maison</option><option>Appartement</option><option>Immeuble</option><option>Terrain</option><option>Commerce</option><option>Autre</option></select></div>
+<div><label for="pHorizon">Horizon *</label><select id="pHorizon" name="horizon"><option value="0-3">0–3 mois</option><option value="3-6">3–6 mois</option><option value="6-12">6–12 mois</option><option value="12+">Plus de 12 mois</option><option value="unknown">À déterminer</option></select></div>
+<div><label for="pSource">Source *</label><select id="pSource" name="source"><option>JML Prospection</option><option>Facebook</option><option>Instagram</option><option>JML Publication</option><option>Lead Magnet</option><option>Recommandation</option><option>Terrain</option><option>Autre</option></select></div>
+<div><label for="pStatus">Statut *</label><select id="pStatus" name="status"><option>À qualifier</option><option>À relancer</option><option>RDV à prendre</option><option>RDV pris</option><option>Mandat</option><option>Pas de projet</option></select></div>
+<div class="full"><label for="pBasis">Base de contact / autorisation *</label><select id="pBasis" name="contact_basis" required><option value="À vérifier">À vérifier</option><option>Consentement obtenu</option><option>Contact demandé par la personne</option><option>Base de contact professionnelle autorisée</option><option>Autre base documentée</option></select><p class="hint">À renseigner selon l'origine réelle du contact. Le Lead Magnet gère son consentement explicite séparément.</p></div>
+<div class="full"><label for="pNotes">Notes</label><textarea id="pNotes" name="notes" maxlength="2000" placeholder="Contexte, bien, prochaine action…"></textarea></div>
+<div class="full form-actions"><button class="primary" type="submit">Enregistrer le prospect</button><button class="secondary" type="button" id="cancelProspect">Annuler</button></div>
+</form></div>
+<div class="card section"><div class="card-head"><h2>Pipeline</h2><span id="storageStatus" class="muted"></span></div><div class="table-wrap"><table><thead><tr><th>Prospect</th><th>Commune</th><th>Projet</th><th>Source</th><th>Statut</th><th>Priorité</th><th>Actions</th></tr></thead><tbody id="prospectTable"></tbody></table></div></div>
 </section>
 
-<section id="publication" class="view"><div class="card"><h2>JML Publication — idées locales</h2><p class="muted">Première base éditoriale. On ajoutera ensuite la génération IA et la planification.</p><div id="ideas"></div></div></section>
-
-<section id="leadmagnet" class="view"><div class="card"><h2>Lead Magnet</h2><div class="notice"><strong>V1 en ligne :</strong> « Les 10 erreurs à éviter avant de vendre votre maison ».</div><div class="actions"><a class="primary" href="/guide" target="_blank" style="text-decoration:none;display:inline-block">Ouvrir la page de capture</a><button class="secondary" id="loadLeads">Actualiser les leads</button></div><div class="section"><div id="leadStatus" class="muted">Les leads issus du formulaire apparaîtront ici. La persistance nécessite DATABASE_URL sur Render.</div><div id="leadList"></div></div></div></section>
-
-<section id="relances" class="view"><div class="card"><h2>Relances à préparer</h2><p class="muted">La machine propose une prochaine action et un message. Rien n'est envoyé automatiquement.</p><div id="relanceList"></div></div></section>
-
-<section id="kpi" class="view"><div class="card"><h2>KPI</h2><div class="grid"><div><span class="muted">Leads</span><div class="metric" id="kLeads">0</div></div><div><span class="muted">RDV</span><div class="metric" id="kRdv">0</div></div><div><span class="muted">Mandats</span><div class="metric" id="kMandats">0</div></div><div><span class="muted">Taux RDV</span><div class="metric" id="kRate">0%</div></div></div></div></section>
-
-<footer class="section muted">JML Machine à Mandats · v0.4.2 · Lead Magnet + qualification + prospects · persistance PostgreSQL.</footer>
+<section class="view" id="view-publication"><div class="card"><h2>JML Publication</h2><p class="muted">Base éditoriale locale. La génération IA et la planification seront ajoutées après stabilisation du CRM.</p><div id="ideas"></div></div></section>
+<section class="view" id="view-leadmagnet"><div class="card"><div class="card-head"><div><h2>Lead Magnet</h2><p class="muted">Capture publique avec consentement explicite.</p></div><a class="primary link-button" href="/guide" target="_blank" rel="noopener">Ouvrir la page</a></div><div id="leadStatus" class="notice">Chargement…</div><div id="leadList"></div></div></section>
+<section class="view" id="view-relances"><div class="card"><h2>Relances</h2><p class="muted">La V1 prépare les actions. Aucun message n'est envoyé automatiquement.</p><div id="relanceList"></div></div></section>
+<section class="view" id="view-kpi"><div class="card"><h2>KPI</h2><div class="stats"><div class="stat"><span>Prospects</span><strong id="kProspects">0</strong></div><div class="stat"><span>RDV</span><strong id="kRdv">0</strong></div><div class="stat"><span>Mandats</span><strong id="kMandats">0</strong></div><div class="stat"><span>Taux RDV / prospects</span><strong id="kRate">0%</strong></div></div></div></section>
+<footer>JML Machine à Mandats · V1.0.0 · CRM acquisition · PostgreSQL</footer>
 </main></div>
-<script>
-const KEY="jml_mandats_prospects_v1";
-let prospects=[];
-try{
-  const raw=localStorage.getItem(KEY);
-  const parsed=raw?JSON.parse(raw):[];
-  prospects=Array.isArray(parsed)?parsed:[];
-}catch(e){
-  prospects=[];
-  try{localStorage.removeItem(KEY)}catch(_e){}
-}
-const $=s=>document.querySelector(s);
-const $$=s=>document.querySelectorAll(s);
-
-function save(){localStorage.setItem(KEY,JSON.stringify(prospects));render();}
-function horizonLabel(h){return {"0-3":"0–3 mois","3-6":"3–6 mois","6-12":"6–12 mois","12+":"+12 mois","unknown":"À déterminer"}[h]||h}
-function priority(p){return p.horizon==="0-3"?"hot":p.horizon==="3-6"?"warm":"cold"}
-function render(){
-  const hot=prospects.filter(p=>p.horizon==="0-3"||p.horizon==="3-6");
-  const rdv=prospects.filter(p=>p.status==="RDV pris");
-  const mandats=prospects.filter(p=>p.status==="Mandat");
-  $("#mProspects").textContent=prospects.length;$("#mHot").textContent=hot.length;$("#mRdv").textContent=rdv.length;$("#mMandats").textContent=mandats.length;
-  $("#kLeads").textContent=prospects.length;$("#kRdv").textContent=rdv.length;$("#kMandats").textContent=mandats.length;$("#kRate").textContent=prospects.length?Math.round(rdv.length/prospects.length*100)+"%":"0%";
-  const top=[...prospects].filter(p=>p.horizon==="0-3"||p.horizon==="3-6").sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);
-  $("#priorityList").innerHTML=top.length?top.map(p=>`<div class="idea"><div><strong>${esc(p.name)}</strong><span class="muted">${esc(p.city||"")} · ${horizonLabel(p.horizon)}</span></div><span class="badge ${priority(p)}">${p.horizon==="0-3"?"PRIORITÉ":"À SUIVRE"}</span></div>`).join(""):"Aucun prospect avec un projet à 6 mois ou moins.";
-  $("#prospectTable").innerHTML=prospects.length?[...prospects].reverse().map((p,i)=>`<tr><td><strong>${esc(p.name)}</strong><br><span class="muted">${esc(p.phone||p.email||"")}</span></td><td>${esc(p.city||"")}</td><td>${horizonLabel(p.horizon)}</td><td>${esc(p.source)}</td><td><span class="badge">${esc(p.status)}</span></td><td>${p.score?`<span class="badge ${p.priority==="A"?"hot":p.priority==="B"?"warm":"cold"}">${esc(p.priority)} · ${p.score}</span>`:"<span class="muted">À analyser</span>"}</td><td><button type="button" class="secondary" data-action="qualify" data-id="${esc(p.id)}">Analyser</button> <button type="button" class="secondary" data-action="remove" data-id="${esc(p.id)}">Suppr.</button></td></tr>`).join(""):"<tr><td colspan='7' class='muted'>Aucun prospect. Ajoute le premier.</td></tr>";
-}
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
-window.qualifyProspect=async id=>{
- const p=prospects.find(x=>x.id===id); if(!p)return;
- try{
-  const r=await fetch("/api/qualify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
-  const q=await r.json(); Object.assign(p,q); save();
-  alert("Priorité "+q.priority+" · score "+q.score+"/100\\n\\n"+q.reasons.join("\\n")+"\\n\\nProchaine action : "+q.nextAction);
- }catch(e){alert("Analyse indisponible pour le moment.");}
-};
-window.prepareRelance=async id=>{
- const p=prospects.find(x=>x.id===id); if(!p)return;
- try{
-  const r=await fetch("/api/relance-message",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
-  const x=await r.json(); await navigator.clipboard?.writeText(x.message);
-  alert("Message préparé et copié dans le presse-papiers.\\n\\n"+x.message);
- }catch(e){alert("Impossible de préparer la relance.");}
-};
-window.removeProspect=id=>{if(confirm("Supprimer ce prospect ?")){prospects=prospects.filter(p=>p.id!==id);save()}};
-
-$$("[data-view]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
-function renderRelances(){
- const list=prospects.filter(p=>p.status!=="Mandat"&&p.status!=="Pas de projet"&&(p.horizon==="0-3"||p.horizon==="3-6"||p.status==="À relancer"||p.status==="À qualifier")).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,10);
- const box=document.querySelector("#relanceList"); if(!box)return;
- box.innerHTML=list.length?list.map(p=>"<div class='idea'><div><strong>"+esc(p.name)+"</strong><span class='muted'>"+esc(p.city||"")+" · "+horizonLabel(p.horizon)+" · "+(p.score?"Priorité "+esc(p.priority)+" · "+p.score+"/100":"non analysé")+"</span></div><button class='secondary' onclick=\"prepareRelance('"+p.id+"')\">Préparer le message</button></div>").join(""):"<div class='notice'>Aucune relance prioritaire pour le moment.</div>";
-}
-function show(id){
-  $$(".view").forEach(v=>v.classList.remove("active"));$("#"+id).classList.add("active");
-  $$("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
-  const names={dashboard:"Tableau de bord",prospects:"Prospects",publication:"JML Publication",leadmagnet:"Lead Magnet",relances:"Relances",kpi:"KPI"};
-  $("#title").textContent=names[id]; if(id==="relances") renderRelances();
-}
-$("#newProspect").onclick=()=>{show("prospects");setTimeout(()=>document.querySelector("[name=name]").focus(),50)};
-$("#cancelForm").onclick=()=>show("dashboard");
-$("#prospectForm").addEventListener("submit",e=>{
- e.preventDefault();const f=new FormData(e.target);const p=Object.fromEntries(f.entries());p.contactConsent=p.contactConsent==="yes";p.consentAt=p.contactConsent?new Date().toISOString():null;p.id=(crypto.randomUUID?crypto.randomUUID():"lead-"+Date.now()+"-"+Math.random().toString(36).slice(2));p.createdAt=new Date().toISOString();prospects.push(p);e.target.reset();save();show("prospects");
-});
-async function loadIdeas(){
- try{const ideas=await fetch("/api/publication-ideas").then(r=>r.json());$("#ideas").innerHTML=ideas.map(x=>`<div class="idea"><div><span class="tag">${esc(x.target)}</span><strong>${esc(x.title)}</strong><span class="muted">${esc(x.hook)}</span></div><button type="button" class="secondary" data-copy="${esc(x.hook)}">Copier</button></div>`).join("")}catch(e){}
-}
-async function loadLeads(){
- const box=$("#leadList"), status=$("#leadStatus"); if(!box)return;
- try{
-  const r=await fetch("/api/leads"); const x=await r.json(); if(!r.ok)throw new Error(x.error||"Erreur");
-  status.textContent=x.persisted?"Leads enregistrés dans la base PostgreSQL.":"Mode temporaire : les leads seront perdus au redémarrage tant que DATABASE_URL n'est pas configurée.";
-  box.innerHTML=x.leads.length?x.leads.map(l=>"<div class='idea'><div><strong>"+esc(l.name)+"</strong><span class='muted'>"+esc(l.city||"")+" · "+esc(l.email||l.phone||"")+" · "+esc(l.horizon||"")+"</span></div><span class='badge'>"+esc(l.source||"Lead Magnet")+"</span></div>").join(""):"<div class='notice'>Aucun lead capté pour le moment.</div>";
- }catch(e){status.textContent="Impossible de charger les leads.";box.innerHTML="";}
-}
-document.addEventListener("click",e=>{
- const b=e.target.closest("[data-action],[data-copy]");
- if(!b)return;
- const a=b.dataset.action;
- if(a==="qualify") qualifyProspect(b.dataset.id);
- else if(a==="remove") removeProspect(b.dataset.id);
- else if(a==="relance") prepareRelance(b.dataset.id);
- else if(b.dataset.copy){
-   navigator.clipboard?.writeText(b.dataset.copy).catch(()=>{});
-   alert("Copié dans le presse-papiers.");
- }
-});
-$("#loadLeads")?.addEventListener("click",loadLeads);
-render();renderRelances();loadIdeas();loadLeads();
-</script>
-</body>
-</html>
+<script src="/app.js" defer></script>
+</body></html>
