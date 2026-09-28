@@ -22,7 +22,8 @@ const pool = hasDatabase ? new Pool({
 
 const memory = { prospects: new Map(), leads: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
-const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const cleanEmail = v => String(v ?? "").normalize("NFKC").replace(/[\\u200B-\\u200D\\uFEFF]/g,"").trim().slice(0,180);
+const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(v));
 const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
 const newId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -172,7 +173,7 @@ function normalizeProspect(body, existing = {}) {
     name: clean(body.name ?? existing.name, 120),
     city: clean(body.city ?? existing.city, 100),
     phone: clean(body.phone ?? existing.phone, 40),
-    email: clean(body.email ?? existing.email, 180),
+    email: cleanEmail(body.email ?? existing.email),
     property_type: clean(body.property_type ?? body.type ?? existing.property_type ?? "Maison", 60),
     horizon: clean(body.horizon ?? existing.horizon ?? "unknown", 20),
     source: clean(body.source ?? existing.source ?? "Autre", 80),
