@@ -85,6 +85,7 @@ async function initDb() {
       prospect_id TEXT NOT NULL REFERENCES jml_prospects(id) ON DELETE CASCADE,
       type TEXT NOT NULL,
       note TEXT,
+      outcome TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -124,6 +125,8 @@ async function initDb() {
     created_at:"TIMESTAMPTZ NOT NULL DEFAULT NOW()",
     updated_at:"TIMESTAMPTZ NOT NULL DEFAULT NOW()"
   };
+  await db(`ALTER TABLE jml_activities ADD COLUMN IF NOT EXISTS outcome TEXT`);
+
   for (const [name,type] of Object.entries(columns)) {
     await db(`ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS ${name} ${type}`);
   }
@@ -384,7 +387,7 @@ app.post("/api/prospects/:id/qualify", async (req,res) => {
 app.get("/api/prospects/:id/activities", async (req,res) => {
   try{
     if(pool){
-      const q=await db("SELECT id,type,note,created_at FROM jml_activities WHERE prospect_id=$1 ORDER BY created_at DESC LIMIT 100",[req.params.id]);
+      const q=await db("SELECT id,type,note,outcome,created_at FROM jml_activities WHERE prospect_id=$1 ORDER BY created_at DESC LIMIT 100",[req.params.id]);
       return res.json({ok:true,activities:q.rows});
     }
     res.json({ok:true,activities:[]});
@@ -394,6 +397,9 @@ app.get("/api/prospects/:id/activities", async (req,res) => {
 app.post("/api/prospects/:id/activity", async (req,res) => {
   const type=clean(req.body?.type,40);
   const note=clean(req.body?.note,1000);
+  const outcome=clean(req.body?.outcome,80);
+  const allowedOutcomes=["Pas de réponse","Intéressé","À rappeler","RDV pris","Pas de projet","Refus"];
+  if(outcome && !allowedOutcomes.includes(outcome)) return res.status(400).json({ok:false,error:"Résultat d’action invalide."});
   const allowed=["Appel","SMS","Email","RDV","Visite","Note"];
   if(!allowed.includes(type)) return res.status(400).json({ok:false,error:"Type d'action invalide."});
   try{
@@ -401,15 +407,16 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
       const exists=await db("SELECT id FROM jml_prospects WHERE id=$1",[req.params.id]);
       if(!exists.rowCount) return res.status(404).json({ok:false,error:"Prospect introuvable."});
       const id=newId(),t=now();
-      await db("INSERT INTO jml_activities (id,prospect_id,type,note,created_at) VALUES ($1,$2,$3,$4,$5)",[id,req.params.id,type,note||null,t]);
+      await db("INSERT INTO jml_activities (id,prospect_id,type,note,outcome,created_at) VALUES ($1,$2,$3,$4,$5,$6)",[id,req.params.id,type,note||null,outcome||null,t]);
       if(["Appel","SMS","Email","RDV","Visite"].includes(type)){
         await db("UPDATE jml_prospects SET last_contact_at=$2,contact_count=contact_count+1,updated_at=NOW() WHERE id=$1",[req.params.id,t]);
-      }else{
-        await db("UPDATE jml_prospects SET updated_at=NOW() WHERE id=$1",[req.params.id]);
       }
-      return res.status(201).json({ok:true,activity:{id,type,note,created_at:t}});
+      if(outcome==="RDV pris") await db("UPDATE jml_prospects SET status='RDV pris',updated_at=NOW() WHERE id=$1",[req.params.id]);
+      if(outcome==="Pas de projet"||outcome==="Refus") await db("UPDATE jml_prospects SET status='Pas de projet',updated_at=NOW() WHERE id=$1]);
+      if(!["Appel","SMS","Email","RDV","Visite"].includes(type) && !outcome) await db("UPDATE jml_prospects SET updated_at=NOW() WHERE id=$1",[req.params.id]);
+      return res.status(201).json({ok:true,activity:{id,type,note,outcome:outcome||null,created_at:t}});
     }
-    res.status(201).json({ok:true,activity:{id:newId(),type,note,created_at:now()}});
+    res.status(201).json({ok:true,activity:{id:newId(),type,note,outcome:outcome||null,created_at:now()}});
   }catch(e){unexpected(res,"JML-P012","Enregistrement de l'action indisponible.",e);}
 });
 
