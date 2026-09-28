@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.1.3";
+const VERSION = "1.2.0";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -26,6 +26,16 @@ const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const newId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 const STATUS_VALUES = ["À qualifier","Contacté","À relancer","RDV pris","Estimation","Mandat","Pas de projet"];
+
+function apiError(res, status, code, message, detail = null) {
+  const payload = { ok:false, error:message, code };
+  if (detail && process.env.NODE_ENV !== "production") payload.detail = String(detail);
+  return res.status(status).json(payload);
+}
+function unexpected(res, code, message, err) {
+  console.error(code, err);
+  return apiError(res, 503, code, message, err?.message);
+}
 
 async function db(sql, params = []) {
   if (!pool) throw new Error("DATABASE_URL manquante");
@@ -258,7 +268,7 @@ app.get("/api/pipeline", async (_req,res) => {
     const out=Object.fromEntries(STATUS_VALUES.map(s=>[s,0]));
     for(const p of memory.prospects.values()) out[p.status]=(out[p.status]||0)+1;
     res.json({ok:true,pipeline:out});
-  }catch(e){ res.status(503).json({ok:false,error:"Pipeline indisponible.",detail:e.message}); }
+  }catch(e){ unexpected(res,"JML-P006","Pipeline indisponible.",e); }
 });
 
 app.get("/api/prospects", async (_req,res) => {
@@ -269,14 +279,14 @@ app.get("/api/prospects", async (_req,res) => {
     }
     res.json({ok:true,persisted:false,prospects:[...memory.prospects.values()].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))});
   }catch(e){
-    res.status(503).json({ok:false,error:"Lecture des prospects indisponible.",detail:e.message});
+    unexpected(res,"JML-P005","Lecture des prospects indisponible.",e);
   }
 });
 
 app.post("/api/prospects", async (req,res) => {
   const p=normalizeProspect(req.body||{});
-  if(!p.name) return res.status(400).json({ok:false,error:"Nom / prénom requis."});
-  if(!validEmail(p.email)) return res.status(400).json({ok:false,error:"Email invalide."});
+  if(!p.name) return apiError(res,400,"JML-P001","Nom / prénom requis.");
+  if(!validEmail(p.email)) return apiError(res,400,"JML-P002","Email invalide.");
   
   try{
     if(pool){
@@ -284,7 +294,7 @@ app.post("/api/prospects", async (req,res) => {
         WHERE (phone IS NOT NULL AND phone <> '' AND phone=$1)
            OR (email IS NOT NULL AND email <> '' AND LOWER(email)=LOWER($2))
         LIMIT 1`,[p.phone||null,p.email||null]);
-      if(dup.rowCount) return res.status(409).json({ok:false,error:"Ce prospect existe déjà dans le CRM.",existingId:dup.rows[0].id,existingName:dup.rows[0].name});
+      if(dup.rowCount) return apiError(res,409,"JML-P003","Ce prospect existe déjà dans le CRM.");
       const t=now();
       const consentAt=p.contact_consent?t:null;
       await db(`INSERT INTO jml_prospects
@@ -298,14 +308,14 @@ app.post("/api/prospects", async (req,res) => {
     memory.prospects.set(p.id,out);
     res.status(201).json({ok:true,persisted:false,prospect:out});
   }catch(e){
-    if(e.code==="23505") return res.status(409).json({ok:false,error:"Ce prospect existe déjà dans le CRM."});
-    res.status(503).json({ok:false,error:"Enregistrement du prospect indisponible.",detail:e.message});
+    if(e.code==="23505") return apiError(res,409,"JML-P003","Ce prospect existe déjà dans le CRM.");
+    unexpected(res,"JML-P004","Enregistrement du prospect indisponible.",e);
   }
 });
 
 app.put("/api/prospects/:id/status", async (req,res) => {
   const status=clean(req.body?.status,40);
-  if(!STATUS_VALUES.includes(status)) return res.status(400).json({ok:false,error:"Statut invalide."});
+  if(!STATUS_VALUES.includes(status)) return apiError(res,400,"JML-P007","Statut invalide.");
   try{
     if(pool){
       const q=await db("UPDATE jml_prospects SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING *",[req.params.id,status]);
@@ -316,7 +326,7 @@ app.put("/api/prospects/:id/status", async (req,res) => {
     if(!p) return res.status(404).json({ok:false,error:"Prospect introuvable."});
     p.status=status;p.updatedAt=now();memory.prospects.set(p.id,p);
     res.json({ok:true,prospect:p});
-  }catch(e){res.status(503).json({ok:false,error:"Modification du statut indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-P008","Modification du statut indisponible.",e);}
 });
 
 app.put("/api/prospects/:id", async (req,res) => {
@@ -325,8 +335,8 @@ app.put("/api/prospects/:id", async (req,res) => {
       const old=await db("SELECT * FROM jml_prospects WHERE id=$1",[req.params.id]);
       if(!old.rowCount) return res.status(404).json({ok:false,error:"Prospect introuvable."});
       const p=normalizeProspect(req.body||{},rowToProspect(old.rows[0]));
-      if(!p.name) return res.status(400).json({ok:false,error:"Nom / prénom requis."});
-      if(!validEmail(p.email)) return res.status(400).json({ok:false,error:"Email invalide."});
+      if(!p.name) return apiError(res,400,"JML-P001","Nom / prénom requis.");
+      if(!validEmail(p.email)) return apiError(res,400,"JML-P002","Email invalide.");
       const consentAt=p.contact_consent?(old.rows[0].consent_at||now()):null;
       await db(`UPDATE jml_prospects SET name=$2,city=$3,phone=$4,email=$5,property_type=$6,horizon=$7,source=$8,status=$9,contact_basis=$10,contact_consent=$11,consent_at=$12,notes=$13,updated_at=NOW() WHERE id=$1`,
         [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,p.contact_consent,consentAt,p.notes||null]);
@@ -339,7 +349,7 @@ app.put("/api/prospects/:id", async (req,res) => {
     const out={...old,...p,updatedAt:now()};
     memory.prospects.set(p.id,out);
     res.json({ok:true,persisted:false,prospect:out});
-  }catch(e){res.status(503).json({ok:false,error:"Modification indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-P009","Modification indisponible.",e);}
 });
 
 app.post("/api/prospects/:id/qualify", async (req,res) => {
@@ -357,7 +367,7 @@ app.post("/api/prospects/:id/qualify", async (req,res) => {
     if(pool) await db("UPDATE jml_prospects SET score=$2,priority=$3,reasons=$4,next_action=$5,updated_at=NOW() WHERE id=$1",[p.id,q.score,q.priority,JSON.stringify(q.reasons),q.nextAction]);
     else memory.prospects.set(p.id,{...p,...q,updatedAt:now()});
     res.json({ok:true,...q});
-  }catch(e){res.status(503).json({ok:false,error:"Qualification indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-P010","Qualification indisponible.",e);}
 });
 
 app.get("/api/prospects/:id/activities", async (req,res) => {
@@ -367,7 +377,7 @@ app.get("/api/prospects/:id/activities", async (req,res) => {
       return res.json({ok:true,activities:q.rows});
     }
     res.json({ok:true,activities:[]});
-  }catch(e){res.status(503).json({ok:false,error:"Historique indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-P011","Historique indisponible.",e);}
 });
 
 app.post("/api/prospects/:id/activity", async (req,res) => {
@@ -389,7 +399,7 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
       return res.status(201).json({ok:true,activity:{id,type,note,created_at:t}});
     }
     res.status(201).json({ok:true,activity:{id:newId(),type,note,created_at:now()}});
-  }catch(e){res.status(503).json({ok:false,error:"Enregistrement de l'action indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-P012","Enregistrement de l'action indisponible.",e);}
 });
 
 app.put("/api/prospects/:id/follow-up", async (req,res) => {
@@ -408,7 +418,7 @@ app.put("/api/prospects/:id/follow-up", async (req,res) => {
     p.nextAction=nextAction||null;p.nextActionAt=nextActionAt?p.nextActionAt=nextActionAt.toISOString():null;p.updatedAt=now();
     memory.prospects.set(p.id,p);
     res.json({ok:true,prospect:p});
-  }catch(e){res.status(503).json({ok:false,error:"Programmation de la relance indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-P013","Programmation de la relance indisponible.",e);}
 });
 
 app.delete("/api/prospects/:id", async (req,res) => {
@@ -420,16 +430,16 @@ app.delete("/api/prospects/:id", async (req,res) => {
     }
     memory.prospects.delete(req.params.id);
     res.json({ok:true,persisted:false});
-  }catch(e){res.status(503).json({ok:false,error:"Suppression indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-P014","Suppression indisponible.",e);}
 });
 
 app.post("/api/leads", async (req,res) => {
   const b=req.body||{};
   const lead={id:newId(),name:clean(b.name,120),email:clean(b.email,180),phone:clean(b.phone,40),city:clean(b.city,100),propertyType:clean(b.propertyType,60),horizon:clean(b.horizon,20),source:clean(b.source||"Lead Magnet",80),consent:b.consent===true||b.consent==="true",createdAt:now()};
-  if(!lead.name) return res.status(400).json({ok:false,error:"Nom requis."});
-  if(!lead.email&&!lead.phone) return res.status(400).json({ok:false,error:"Email ou téléphone requis."});
-  if(!validEmail(lead.email)) return res.status(400).json({ok:false,error:"Email invalide."});
-  if(!lead.consent) return res.status(400).json({ok:false,error:"Consentement requis."});
+  if(!lead.name) return apiError(res,400,"JML-L003","Nom requis.");
+  if(!lead.email&&!lead.phone) return apiError(res,400,"JML-L004","Email ou téléphone requis.");
+  if(!validEmail(lead.email)) return apiError(res,400,"JML-L005","Email invalide.");
+  if(!lead.consent) return apiError(res,400,"JML-L006","Consentement requis.");
   try{
     if(pool){
       await db(`INSERT INTO jml_leads (id,name,email,phone,city,property_type,horizon,source,consent,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
@@ -438,7 +448,7 @@ app.post("/api/leads", async (req,res) => {
     }
     memory.leads.set(lead.id,lead);
     res.status(201).json({ok:true,persisted:false,id:lead.id});
-  }catch(e){res.status(503).json({ok:false,error:"Enregistrement du lead indisponible.",detail:e.message});}
+  }catch(e){unexpected(res,"JML-L001","Enregistrement du lead indisponible.",e);}
 });
 
 app.get("/api/leads", async (_req,res) => {
