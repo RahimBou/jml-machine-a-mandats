@@ -40,6 +40,21 @@ function recommendedAction(p){
   if(!p.phone&&!p.email)return {title:"Compléter les coordonnées",detail:"Aucun téléphone ni email n'est actuellement renseigné.",kind:"À COMPLÉTER"};
   return {title:"Préparer le prochain contact",detail:"Choisir une prochaine action et la programmer dans le CRM.",kind:"SUIVI"};
 }
+
+async function loadMandatIntelligence(){
+  const box=$("#mandatIntelligenceList");
+  if(!box)return;
+  try{
+    const data=await api("/api/mandat-intelligence");
+    const items=data.priorities||[];
+    box.innerHTML=items.length?items.map((x,i)=>{
+      const reasons=(x.reasons||[]).slice(0,3).map(r=>'<span class="muted">• '+esc(r)+'</span>').join("");
+      return '<div class="idea"><div><strong>'+(i+1)+'. '+esc(x.name)+'</strong><span class="muted">'+esc(x.city||"")+' · '+esc(x.nextAction)+'</span>'+reasons+'</div><button class="secondary" data-action="details" data-id="'+esc(x.id)+'">Traiter</button></div>';
+    }).join(""):'<div class="notice">Aucune opportunité prioritaire à traiter pour le moment.</div>';
+  }catch(e){
+    box.innerHTML='<div class="notice">Intelligence commerciale indisponible : '+esc(e.message)+'</div>';
+  }
+}
 function renderDashboard(){
   const p=state.prospects;
   const hot=p.filter(x=>x.horizon==="0-3"||x.horizon==="3-6");
@@ -153,7 +168,7 @@ function renderRelances(){
 }
 function renderLeads(){const l=state.leads;$("#leadStatus").textContent=l.length?l.length+" lead(s) enregistré(s) côté serveur.":"Aucun lead capté pour le moment.";$("#leadList").innerHTML=l.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+esc(x.city||"")+' · '+esc(x.email||x.phone||"")+' · '+esc(x.horizon||"")+'</span></div><span class="badge">Lead Magnet</span></div>').join("")}
 async function loadProspects(){const p=await api("/api/prospects");const incoming=Array.isArray(p.prospects)?p.prospects:[];state.prospects=incoming;renderDashboard();renderProspects();const status=$("#storageStatus");if(status)status.textContent=(p.persisted?"PostgreSQL":"Mémoire locale")+" · "+state.prospects.length+" prospect(s)";if($("#pipelineBoard"))renderPipeline();return incoming.length} 
-async function load(){const errors=[];try{await loadProspects();window.__JML_APP_READY=true}catch(e){errors.push("prospects ["+(e.code||"JML-HTTP")+"]: "+e.message)}try{const l=await api("/api/leads");state.leads=l.leads||[];renderLeads()}catch(e){errors.push("leads ["+(e.code||"JML-HTTP")+"]: "+e.message)}try{const i=await api("/api/publication-ideas");$("#ideas").innerHTML=(i||[]).map(x=>'<div class="idea"><div><span class="muted">'+esc(x.target)+'</span><strong>'+esc(x.title)+'</strong><span class="muted">'+esc(x.hook)+'</span></div><button class="secondary" data-action="copy" data-text="'+esc(x.hook)+'">Copier</button></div>').join("")}catch(e){errors.push("publication ["+(e.code||"JML-HTTP")+"]: "+e.message)}if(errors.length)toast("Certaines données n’ont pas pu être chargées : "+errors.join(" · "),true)}
+async function load(){const errors=[];try{await loadProspects();await loadMandatIntelligence();window.__JML_APP_READY=true}catch(e){errors.push("prospects ["+(e.code||"JML-HTTP")+"]: "+e.message)}try{const l=await api("/api/leads");state.leads=l.leads||[];renderLeads()}catch(e){errors.push("leads ["+(e.code||"JML-HTTP")+"]: "+e.message)}try{const i=await api("/api/publication-ideas");$("#ideas").innerHTML=(i||[]).map(x=>'<div class="idea"><div><span class="muted">'+esc(x.target)+'</span><strong>'+esc(x.title)+'</strong><span class="muted">'+esc(x.hook)+'</span></div><button class="secondary" data-action="copy" data-text="'+esc(x.hook)+'">Copier</button></div>').join("")}catch(e){errors.push("publication ["+(e.code||"JML-HTTP")+"]: "+e.message)}if(errors.length)toast("Certaines données n’ont pas pu être chargées : "+errors.join(" · "),true)}
 window.jmlAction=async function(a,id,b){
   try{
     if(a==="delete"){if(!confirm("Supprimer ce prospect ?"))return;await api("/api/prospects/"+encodeURIComponent(id),{method:"DELETE"});toast("Prospect supprimé.");await load();return}
