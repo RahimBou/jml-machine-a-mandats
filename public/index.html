@@ -55,15 +55,16 @@
 </main></div>
 <script>
 window.jmlNewProspect=function(){
-  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  var views=document.querySelectorAll('.view');
+  views.forEach(function(v){v.classList.remove('active')});
   var target=document.getElementById('view-prospects');
-  if(target)target.classList.add('active');
+  if(!target)return;
+  target.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.view==='prospects')});
   var title=document.getElementById('pageTitle'); if(title)title.textContent='Prospects';
   var subtitle=document.getElementById('pageSubtitle'); if(subtitle)subtitle.textContent='Centraliser et suivre les propriétaires potentiellement vendeurs.';
   window.scrollTo(0,0);
   setTimeout(function(){var n=document.getElementById('pName');if(n)n.focus()},50);
-  if(window.jmlShowView)window.jmlShowView('prospects');
 };
 window.jmlNav=function(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
@@ -84,7 +85,7 @@ window.addEventListener("unhandledrejection",function(e){
   window.__JML_FRONTEND_ERROR="Promise: "+(e.reason&&e.reason.message?e.reason.message:String(e.reason||"Erreur inconnue"));
 });
 </script>
-<script src="/app.js?v=1.2.4" defer></script>
+<script src="/app.js?v=1.2.5" defer></script>
 <script defer>
 window.addEventListener("load",function(){
   setTimeout(async function(){
