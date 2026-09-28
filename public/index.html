@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JML — Machine à Mandats</title><link rel="stylesheet" href="/styles.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JML — Machine à Mandats</title><link rel="stylesheet" href="/styles.css?v=1.0.3"></head>
 <body>
 <div class="app">
 <aside class="sidebar">
@@ -51,7 +51,7 @@
 <section class="view" id="view-leadmagnet"><div class="card"><div class="card-head"><div><h2>Lead Magnet</h2><p class="muted">Capture publique avec consentement explicite.</p></div><a class="primary link-button" href="/guide" target="_blank" rel="noopener">Ouvrir la page</a></div><div id="leadStatus" class="notice">Chargement…</div><div id="leadList"></div></div></section>
 <section class="view" id="view-relances"><div class="card"><h2>Relances</h2><p class="muted">La V1 prépare les actions. Aucun message n'est envoyé automatiquement.</p><div id="relanceList"></div></div></section>
 <section class="view" id="view-kpi"><div class="card"><h2>KPI</h2><div class="stats"><div class="stat"><span>Prospects</span><strong id="kProspects">0</strong></div><div class="stat"><span>RDV</span><strong id="kRdv">0</strong></div><div class="stat"><span>Mandats</span><strong id="kMandats">0</strong></div><div class="stat"><span>Taux RDV / prospects</span><strong id="kRate">0%</strong></div></div></div></section>
-<footer>JML Machine à Mandats · V1.0.2 · CRM acquisition · PostgreSQL</footer>
+<footer>JML Machine à Mandats · V1.0.3 · CRM acquisition · PostgreSQL</footer>
 </main></div>
 <script>
 window.jmlNewProspect=function(){
@@ -75,5 +75,5 @@ window.jmlNav=function(id){
   window.scrollTo(0,0);
 };
 </script>
-<script src="/app.js" defer></script>
+<script src="/app.js?v=1.0.3" defer></script>
 </body></html>
