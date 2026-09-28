@@ -57,7 +57,7 @@
 window.jmlNav=function(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
   var target=document.getElementById('view-'+id);
-  if(target)target.classList.add('active');
+  if(target)target.classList.add('active'); if(window.jmlShowView){window.jmlShowView(id);return;}
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.view===id)});
   var titles={dashboard:['Tableau de bord',"Piloter l'acquisition, la qualification et le suivi des propriétaires."],prospects:['Prospects',"Centraliser et suivre les propriétaires potentiellement vendeurs."],publication:['JML Publication',"Préparer les contenus qui attirent les propriétaires locaux."],leadmagnet:['Lead Magnet',"Capturer des demandes avec consentement explicite."],relances:['Relances',"Préparer les prochaines actions sans envoi automatique."],kpi:['KPI',"Mesurer le flux de prospects et les conversions."]};
   if(titles[id]){document.getElementById('pageTitle').textContent=titles[id][0];document.getElementById('pageSubtitle').textContent=titles[id][1]}
