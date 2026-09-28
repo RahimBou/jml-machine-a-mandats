@@ -142,10 +142,11 @@ app.post("/api/prospects", async (req,res)=>{
   const t=now();
   try{
     if(pool){
+      const consentAt = p.contact_consent ? t : null;
       await db(`INSERT INTO jml_prospects
-        (id,name,city,phone,email,property_type,horizon,source,status,contact_basis,notes,created_at,updated_at)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)`,
-        [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,p.notes||null,t]);
+        (id,name,city,phone,email,property_type,horizon,source,status,contact_basis,contact_consent,consent_at,notes,created_at,updated_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14)`,
+        [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,p.contact_consent,consentAt,p.notes||null,t]);
       return res.status(201).json({ok:true,persisted:true,prospect:{...p,createdAt:t,updatedAt:t}});
     }
     const out={...p,createdAt:t,updatedAt:t};memory.prospects.set(p.id,out);
@@ -161,8 +162,9 @@ app.put("/api/prospects/:id", async (req,res)=>{
       const p=normalizeProspect(req.body||{},rowToProspect(old.rows[0]));
       if(!p.name)return res.status(400).json({ok:false,error:"Nom / prénom requis."});
       if(!validEmail(p.email))return res.status(400).json({ok:false,error:"Email invalide."});
-      await db(`UPDATE jml_prospects SET name=$2,city=$3,phone=$4,email=$5,property_type=$6,horizon=$7,source=$8,status=$9,contact_basis=$10,notes=$11,updated_at=NOW() WHERE id=$1`,
-        [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,p.notes||null]);
+      const consentAt = p.contact_consent ? (old.rows[0].consent_at || now()) : null;
+      await db(`UPDATE jml_prospects SET name=$2,city=$3,phone=$4,email=$5,property_type=$6,horizon=$7,source=$8,status=$9,contact_basis=$10,contact_consent=$11,consent_at=$12,notes=$13,updated_at=NOW() WHERE id=$1`,
+        [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,p.contact_consent,consentAt,p.notes||null]);
       const q=await db("SELECT * FROM jml_prospects WHERE id=$1",[p.id]);
       return res.json({ok:true,persisted:true,prospect:rowToProspect(q.rows[0])});
     }
