@@ -24,7 +24,30 @@ async function loadActivities(id){
   try{const d=await api("/api/prospects/"+encodeURIComponent(id)+"/activities");const list=d.activities||[];$("#activityList").innerHTML=list.length?list.map(a=>'<div class="idea"><div><strong>'+esc(a.type)+'</strong><span class="muted">'+new Date(a.created_at).toLocaleString("fr-FR")+'</span></div><span>'+esc(a.note||"")+'</span></div>').join(""):"<span class='muted'>Aucune action enregistrée.</span>"}catch(e){$("#activityList").textContent=e.message}
 }
 async function renderPipeline(){try{const d=await api("/api/pipeline");const counts=d.pipeline||{};const statuses=["À qualifier","Contacté","À relancer","RDV pris","Estimation","Mandat","Pas de projet"];$("#pipelineBoard").innerHTML=statuses.map(st=>{const people=state.prospects.filter(p=>p.status===st);return '<div class="pipeline-col"><h3>'+esc(st)+'</h3><div class="pipeline-count">'+(counts[st]||0)+'</div><div class="pipeline-list">'+people.map(p=>'<div class="pipeline-person"><strong>'+esc(p.name)+'</strong><span class="muted">'+esc(p.city||"")+'</span><select data-pipeline-id="'+esc(p.id)+'"><option value="'+esc(st)+'">'+esc(st)+'</option>'+statuses.filter(x=>x!==st).map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("")+'</select></div>').join("")+'</div></div>'}).join("")}catch(e){$("#pipelineBoard").innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
-function renderRelances(){const list=state.prospects.filter(p=>p.status!=="Mandat"&&p.status!=="Pas de projet"&&(p.nextActionAt||p.horizon==="0-3"||p.horizon==="3-6"||p.status==="À relancer"||p.status==="À qualifier")).sort((a,b)=>{const ad=a.nextActionAt?new Date(a.nextActionAt).getTime():Infinity,bd=b.nextActionAt?new Date(b.nextActionAt).getTime():Infinity;return ad-bd || (b.score||0)-(a.score||0)}).slice(0,10);$("#relanceList").innerHTML=list.length?list.map(p=>'<div class="idea"><div><strong>'+esc(p.name)+'</strong><span class="muted">'+esc(p.city)+' · '+horizon(p.horizon)+' · '+(p.score!=null?"Priorité "+esc(p.priority):"non analysé")+(p.nextActionAt?" · "+new Date(p.nextActionAt).toLocaleDateString("fr-FR"):"")+'</span></div><button class="secondary" data-action="relance" data-id="'+esc(p.id)+'">Préparer</button></div>').join(""):"<div class='notice'>Aucune relance prioritaire.</div>"}
+function renderRelances(){
+  const now=new Date();
+  const startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const endToday=new Date(startToday);endToday.setDate(endToday.getDate()+1);
+  const list=state.prospects.filter(p=>p.status!=="Mandat"&&p.status!=="Pas de projet"&&(p.nextActionAt||p.horizon==="0-3"||p.horizon==="3-6"||p.status==="À relancer"||p.status==="À qualifier"));
+  const late=[],today=[],upcoming=[],unplanned=[];
+  list.forEach(p=>{
+    if(!p.nextActionAt){unplanned.push(p);return}
+    const d=new Date(p.nextActionAt);
+    if(d<startToday)late.push(p);
+    else if(d<endToday)today.push(p);
+    else upcoming.push(p);
+  });
+  const sort=(a,b)=>{
+    const ad=a.nextActionAt?new Date(a.nextActionAt).getTime():Infinity;
+    const bd=b.nextActionAt?new Date(b.nextActionAt).getTime():Infinity;
+    return ad-bd||(b.score||0)-(a.score||0);
+  };
+  [late,today,upcoming,unplanned].forEach(x=>x.sort(sort));
+  const item=p=>'<div class="idea"><div><strong>'+esc(p.name)+'</strong><span class="muted">'+esc(p.city)+' · '+horizon(p.horizon)+(p.score!=null?' · Priorité '+esc(p.priority):'')+(p.nextActionAt?' · '+new Date(p.nextActionAt).toLocaleString("fr-FR"):'')+'</span></div><button class="secondary" data-action="relance" data-id="'+esc(p.id)+'">Préparer</button></div>';
+  const empty="<div class='notice'>Aucune relance dans cette catégorie.</div>";
+  const set=(id,items)=>{const el=$("#"+id);if(el)el.innerHTML=items.length?items.map(item).join(""):empty};
+  set("relanceLate",late);set("relanceToday",today);set("relanceUpcoming",upcoming);set("relanceUnplanned",unplanned);
+}
 function renderLeads(){const l=state.leads;$("#leadStatus").textContent=l.length?l.length+" lead(s) enregistré(s) côté serveur.":"Aucun lead capté pour le moment.";$("#leadList").innerHTML=l.map(x=>'<div class="idea"><div><strong>'+esc(x.name)+'</strong><span class="muted">'+esc(x.city||"")+' · '+esc(x.email||x.phone||"")+' · '+esc(x.horizon||"")+'</span></div><span class="badge">Lead Magnet</span></div>').join("")}
 async function loadProspects(){const p=await api("/api/prospects");const incoming=Array.isArray(p.prospects)?p.prospects:[];state.prospects=incoming;renderDashboard();renderProspects();const status=$("#storageStatus");if(status)status.textContent=(p.persisted?"PostgreSQL":"Mémoire locale")+" · "+state.prospects.length+" prospect(s)";if($("#pipelineBoard"))renderPipeline();return incoming.length} 
 async function load(){const errors=[];try{await loadProspects();window.__JML_APP_READY=true}catch(e){errors.push("prospects ["+(e.code||"JML-HTTP")+"]: "+e.message)}try{const l=await api("/api/leads");state.leads=l.leads||[];renderLeads()}catch(e){errors.push("leads ["+(e.code||"JML-HTTP")+"]: "+e.message)}try{const i=await api("/api/publication-ideas");$("#ideas").innerHTML=(i||[]).map(x=>'<div class="idea"><div><span class="muted">'+esc(x.target)+'</span><strong>'+esc(x.title)+'</strong><span class="muted">'+esc(x.hook)+'</span></div><button class="secondary" data-action="copy" data-text="'+esc(x.hook)+'">Copier</button></div>').join("")}catch(e){errors.push("publication ["+(e.code||"JML-HTTP")+"]: "+e.message)}if(errors.length)toast("Certaines données n’ont pas pu être chargées : "+errors.join(" · "),true)}
