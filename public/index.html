@@ -6,12 +6,12 @@
 <aside class="sidebar">
 <div class="brand"><span>JML IMMOBILIER · ARDENNES</span><strong>Machine à Mandats</strong><small>V1 — CRM acquisition</small></div>
 <nav id="mainNav" aria-label="Navigation principale">
-<button type="button" class="nav-btn active" data-view="dashboard">⌂ <span>Tableau de bord</span></button>
-<button type="button" class="nav-btn" data-view="prospects">◎ <span>Prospects</span></button>
-<button type="button" class="nav-btn" data-view="publication">✦ <span>JML Publication</span></button>
-<button type="button" class="nav-btn" data-view="leadmagnet">↳ <span>Lead Magnet</span></button>
-<button type="button" class="nav-btn" data-view="relances">↻ <span>Relances</span></button>
-<button type="button" class="nav-btn" data-view="kpi">▦ <span>KPI</span></button>
+<button type="button" class="nav-btn active" data-view="dashboard" onclick="window.jmlNav('dashboard');return false;">⌂ <span>Tableau de bord</span></button>
+<button type="button" class="nav-btn" data-view="prospects" onclick="window.jmlNav('prospects');return false;">◎ <span>Prospects</span></button>
+<button type="button" class="nav-btn" data-view="publication" onclick="window.jmlNav('publication');return false;">✦ <span>JML Publication</span></button>
+<button type="button" class="nav-btn" data-view="leadmagnet" onclick="window.jmlNav('leadmagnet');return false;">↳ <span>Lead Magnet</span></button>
+<button type="button" class="nav-btn" data-view="relances" onclick="window.jmlNav('relances');return false;">↻ <span>Relances</span></button>
+<button type="button" class="nav-btn" data-view="kpi" onclick="window.jmlNav('kpi');return false;">▦ <span>KPI</span></button>
 </nav>
 <div class="sidebar-foot">Données DVF/DPE : projet JML Prospection séparé.</div>
 </aside>
@@ -53,5 +53,16 @@
 <section class="view" id="view-kpi"><div class="card"><h2>KPI</h2><div class="stats"><div class="stat"><span>Prospects</span><strong id="kProspects">0</strong></div><div class="stat"><span>RDV</span><strong id="kRdv">0</strong></div><div class="stat"><span>Mandats</span><strong id="kMandats">0</strong></div><div class="stat"><span>Taux RDV / prospects</span><strong id="kRate">0%</strong></div></div></div></section>
 <footer>JML Machine à Mandats · V1.0.0 · CRM acquisition · PostgreSQL</footer>
 </main></div>
+<script>
+window.jmlNav=function(id){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  var target=document.getElementById('view-'+id);
+  if(target)target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.view===id)});
+  var titles={dashboard:['Tableau de bord',"Piloter l'acquisition, la qualification et le suivi des propriétaires."],prospects:['Prospects',"Centraliser et suivre les propriétaires potentiellement vendeurs."],publication:['JML Publication',"Préparer les contenus qui attirent les propriétaires locaux."],leadmagnet:['Lead Magnet',"Capturer des demandes avec consentement explicite."],relances:['Relances',"Préparer les prochaines actions sans envoi automatique."],kpi:['KPI',"Mesurer le flux de prospects et les conversions."]};
+  if(titles[id]){document.getElementById('pageTitle').textContent=titles[id][0];document.getElementById('pageSubtitle').textContent=titles[id][1]}
+  window.scrollTo(0,0);
+};
+</script>
 <script src="/app.js" defer></script>
 </body></html>
