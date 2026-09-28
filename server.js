@@ -51,6 +51,12 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_updated ON jml_prospects(updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_status ON jml_prospects(status);
+    DELETE FROM jml_prospects
+      WHERE phone IS NOT NULL AND phone <> ''
+      AND id NOT IN (SELECT MIN(id) FROM jml_prospects WHERE phone IS NOT NULL AND phone <> '' GROUP BY phone);
+    DELETE FROM jml_prospects
+      WHERE email IS NOT NULL AND email <> ''
+      AND id NOT IN (SELECT MIN(id) FROM jml_prospects WHERE email IS NOT NULL AND email <> '' GROUP BY LOWER(email));
     CREATE UNIQUE INDEX IF NOT EXISTS uq_jml_prospects_phone ON jml_prospects(phone) WHERE phone IS NOT NULL AND phone <> '';
     CREATE UNIQUE INDEX IF NOT EXISTS uq_jml_prospects_email ON jml_prospects(LOWER(email)) WHERE email IS NOT NULL AND email <> '';
     ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS contact_consent BOOLEAN NOT NULL DEFAULT FALSE;
