@@ -92,6 +92,16 @@ function renderKpi(){
 }
 function renderProspects(){const body=$("#prospectTable");body.innerHTML=state.prospects.length?state.prospects.map(p=>{const ap=actionPriority(p);return '<tr><td><strong>'+esc(p.name)+'</strong><br><span class="muted">'+esc(p.phone||p.email)+'</span></td><td>'+esc(p.city)+'</td><td>'+horizon(p.horizon)+'</td><td>'+esc(p.source)+'</td><td><span class="badge">'+esc(p.status)+'</span></td><td>'+(p.score!=null?'<span class="badge '+priorityClass(p.priority)+'">'+esc(ap.level)+' · '+esc(p.priority)+' · '+p.score+'</span>':"—")+'</td><td><button class="secondary" data-action="qualify" data-id="'+esc(p.id)+'">'+(p.score!=null?"Ré-analyser":"Analyser")+'</button> '+(p.score!=null?'<button class="secondary" data-action="details" data-id="'+esc(p.id)+'">Détails</button> ':'')+'<button class="secondary" data-action="delete" data-id="'+esc(p.id)+'">Suppr.</button></td></tr>'}).join(""):"<tr><td colspan='7' class='muted'>Aucun prospect.</td></tr>";$("#storageStatus").textContent="Données serveur · PostgreSQL si DATABASE_URL est active."}
 function localDateTime(v){if(!v)return "";const d=new Date(v);const z=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes())}
+function openNextWorkProspect(currentId){
+  const work=[...state.prospects].filter(x=>x.status!=="Mandat"&&x.status!=="Pas de projet").sort((a,b)=>{
+    const aa=actionPriority(a),bb=actionPriority(b);
+    return aa.rank-bb.rank||(b.score||0)-(a.score||0);
+  });
+  const index=work.findIndex(x=>x.id===currentId);
+  const next=work[index+1]||work[0];
+  if(!next||next.id===currentId){toast("Aucun autre prospect dans la file.");return}
+  openDetails(next.id);
+}
 function openDetails(id){
   const p=state.prospects.find(x=>x.id===id);if(!p)return;
   $("#detailTitle").textContent=p.name;
@@ -103,6 +113,7 @@ function openDetails(id){
   '<button class="secondary" type="button" data-action="set-status" data-status="Contacté" data-id="'+esc(id)+'">Contacté</button>'+
   '<button class="secondary" type="button" data-action="set-status" data-status="À relancer" data-id="'+esc(id)+'">À relancer</button>'+
   '<button class="secondary" type="button" data-action="set-status" data-status="RDV pris" data-id="'+esc(id)+'">RDV pris</button>'+
+  '<button class="secondary" type="button" data-action="next-work" data-id="'+esc(id)+'">Prospect suivant →</button>'+
   '</div>'+
   '<div class="next-action"><strong>Checklist du jour</strong><div class="detail-reasons"><div>['+(p.score!=null?'✓':' ')+'] Qualification enregistrée</div><div>['+(p.lastContactAt?'✓':' ')+'] Contact réalisé</div><div>['+(p.nextActionAt?'✓':' ')+'] Prochaine action programmée</div></div></div>'+  '<div class="detail-grid"><div class="detail-item"><span>Statut</span><strong>'+esc(p.status)+'</strong></div><div class="detail-item"><span>Priorité commerciale</span><strong>'+esc(ap.level)+'</strong></div><div class="detail-item"><span>Priorité qualification</span><strong class="badge '+priorityClass(p.priority)+'">'+esc(p.priority||"—")+' '+(p.score!=null?"· "+p.score+"/100":"")+'</strong></div><div class="detail-item"><span>Projet</span><strong>'+horizon(p.horizon)+'</strong></div><div class="detail-item"><span>Type de bien</span><strong>'+esc(p.propertyType||"—")+'</strong></div><div class="detail-item"><span>Contact</span><strong>'+esc(contact)+'</strong></div><div class="detail-item"><span>Source</span><strong>'+esc(p.source||"—")+'</strong></div><div class="detail-item"><span>Base de contact</span><strong>'+esc(p.contactBasis||"À vérifier")+'</strong></div><div class="detail-item"><span>Autorisation</span><strong>'+(p.contactConsent?"Obtenue":"Non obtenue")+'</strong></div><div class="detail-item"><span>Dernier contact</span><strong>'+(p.lastContactAt?new Date(p.lastContactAt).toLocaleString("fr-FR"):"Aucun")+'</strong></div><div class="detail-item"><span>Contacts</span><strong>'+esc(p.contactCount||0)+'</strong></div></div>'+
   '<div class="next-action"><strong>Programmer la prochaine action</strong><div class="form" style="margin-top:10px"><input id="followAction" value="'+esc(p.nextAction||"Relancer le prospect")+'" placeholder="Ex. Appeler pour proposer un RDV"><input id="followDate" type="datetime-local" value="'+localDateTime(p.nextActionAt)+'"><button class="primary" type="button" data-action="save-followup" data-id="'+esc(id)+'">Programmer la relance</button></div></div>'+
@@ -152,6 +163,7 @@ window.jmlAction=async function(a,id,b){
     if(a==="save-activity"){const type=$("#activityType").value,note=$("#activityNote").value;await api("/api/prospects/"+encodeURIComponent(id)+"/activity",{method:"POST",body:JSON.stringify({type,note})});toast("Action enregistrée.");await load();openDetails(id);return}
     if(a==="save-followup"){const nextAction=$("#followAction").value.trim(),nextActionAt=$("#followDate").value;await api("/api/prospects/"+encodeURIComponent(id)+"/follow-up",{method:"PUT",body:JSON.stringify({nextAction,nextActionAt})});toast("Prochaine relance programmée.");await load();openDetails(id);return}
     if(a==="relance"){openDetails(id);return}
+    if(a==="next-work"){openNextWorkProspect(id);return}
     if(a==="copy"){const value=b?.dataset?.text||"";if(navigator.clipboard)await navigator.clipboard.writeText(value);toast("Copié.");return}
   }catch(err){toast((err.code?err.code+" — ":"")+err.message,true)}
 };
