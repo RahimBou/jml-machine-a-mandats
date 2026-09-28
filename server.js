@@ -39,6 +39,8 @@ async function initDb() {
       source TEXT NOT NULL DEFAULT 'Autre',
       status TEXT NOT NULL DEFAULT 'À qualifier',
       contact_basis TEXT NOT NULL DEFAULT 'À vérifier',
+      contact_consent BOOLEAN NOT NULL DEFAULT FALSE,
+      consent_at TIMESTAMPTZ,
       notes TEXT,
       score INTEGER,
       priority TEXT,
@@ -49,6 +51,8 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_updated ON jml_prospects(updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_jml_prospects_status ON jml_prospects(status);
+    ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS contact_consent BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS consent_at TIMESTAMPTZ;
     CREATE TABLE IF NOT EXISTS jml_leads (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -77,6 +81,8 @@ function normalizeProspect(body, existing = {}) {
     source: clean(body.source || existing.source || "Autre", 80),
     status: clean(body.status || existing.status || "À qualifier", 40),
     contact_basis: clean(body.contact_basis || existing.contact_basis || "À vérifier", 60),
+    contact_consent: body.contact_consent === true || body.contact_consent === "true" || existing.contact_consent === true,
+    consent_at: existing.consent_at || null,
     notes: clean(body.notes, 2000)
   };
 }
@@ -85,7 +91,7 @@ function rowToProspect(r) {
   return {
     id:r.id,name:r.name,city:r.city||"",phone:r.phone||"",email:r.email||"",
     propertyType:r.property_type,horizon:r.horizon,source:r.source,status:r.status,
-    contactBasis:r.contact_basis,notes:r.notes||"",score:r.score ?? null,
+    contactBasis:r.contact_basis,contactConsent:!!r.contact_consent,consentAt:r.consent_at||null,notes:r.notes||"",score:r.score ?? null,
     priority:r.priority||null,reasons:r.reasons||[],nextAction:r.next_action||null,
     createdAt:r.created_at,updatedAt:r.updated_at
   };
