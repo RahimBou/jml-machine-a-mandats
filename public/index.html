@@ -29,7 +29,7 @@ main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;just
   <div class="brand"><small>JML Immobilier · Ardennes</small><strong>Machine à Mandats</strong></div>
   <nav id="nav">
     <button class="active" data-view="dashboard">⌂ Tableau de bord</button>
-    <button type="button" data-view="prospects">◎ Prospects</button>
+    <button type="button" data-view="prospects" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('prospects').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='prospects'));document.getElementById('title').textContent='Prospects';document.querySelector('[name=name]')?.focus();return false;">◎ Prospects</button>
     <button type="button" data-view="publication">✦ JML Publication</button>
     <button type="button" data-view="leadmagnet">↳ Lead Magnet</button>
     <button type="button" data-view="relances">↻ Relances</button>
@@ -37,7 +37,7 @@ main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;just
   </nav>
 </aside>
 <main>
-<div class="top"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="title">Tableau de bord</h1><p class="sub">Construire progressivement un système d'acquisition, de qualification et de suivi des propriétaires.</p></div><button class="primary" id="newProspect" type="button">+ Nouveau prospect</button></div>
+<div class="top"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="title">Tableau de bord</h1><p class="sub">Construire progressivement un système d'acquisition, de qualification et de suivi des propriétaires.</p></div><button class="primary" id="newProspect" type="button" onclick="document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('prospects').classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='prospects'));document.getElementById('title').textContent='Prospects';document.querySelector('[name=name]')?.focus();return false;">+ Nouveau prospect</button></div>
 
 <section id="dashboard" class="view active">
   <div class="grid">
