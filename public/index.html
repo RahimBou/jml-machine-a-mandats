@@ -18,6 +18,12 @@
 <main>
 <header class="topbar"><div><div class="eyebrow">Ardennes · Charleville-Mézières</div><h1 id="pageTitle">Tableau de bord</h1><p id="pageSubtitle">Piloter l'acquisition, la qualification et le suivi des propriétaires.</p></div><button type="button" class="primary" id="newProspectBtn">+ Nouveau prospect</button></header>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="detailModal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="card-head"><div><div class="eyebrow">Qualification JML</div><h2 id="detailTitle">Détails du prospect</h2></div><button type="button" class="secondary" id="closeDetail">Fermer</button></div>
+    <div id="detailBody"></div>
+  </div>
+</div>
 
 <section class="view active" id="view-dashboard">
 <div class="stats"><div class="stat"><span>Prospects</span><strong id="statProspects">0</strong></div><div class="stat"><span>Projet ≤ 6 mois</span><strong id="statHot">0</strong></div><div class="stat"><span>RDV</span><strong id="statRdv">0</strong></div><div class="stat"><span>Mandats</span><strong id="statMandats">0</strong></div></div>
