@@ -115,6 +115,7 @@ function rowToProspect(r) {
     propertyType:r.property_type,horizon:r.horizon,source:r.source,status:r.status,
     contactBasis:r.contact_basis,contactConsent:!!r.contact_consent,consentAt:r.consent_at||null,notes:r.notes||"",score:r.score ?? null,
     priority:r.priority||null,reasons:r.reasons||[],nextAction:r.next_action||null,
+    nextActionAt:r.next_action_at||null,lastContactAt:r.last_contact_at||null,contactCount:r.contact_count||0,
     createdAt:r.created_at,updatedAt:r.updated_at
   };
 }
