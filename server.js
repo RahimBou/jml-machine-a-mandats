@@ -251,7 +251,16 @@ app.get("/api/diagnostic", async (_req,res) => {
     const q=await db("SELECT COUNT(*)::int AS count FROM jml_prospects");
     const a=await db("SELECT COUNT(*)::int AS count FROM jml_activities");
     const l=await db("SELECT COUNT(*)::int AS count FROM jml_leads");
-    res.json({ok:true,version:VERSION,database:"postgres",prospects:q.rows[0].count,activities:a.rows[0].count,leads:l.rows[0].count});
+    const last=await db("SELECT id,name,created_at,updated_at FROM jml_prospects ORDER BY created_at DESC LIMIT 5");
+    res.json({
+      ok:true,
+      version:VERSION,
+      database:"postgres",
+      prospects:q.rows[0].count,
+      activities:a.rows[0].count,
+      leads:l.rows[0].count,
+      lastProspects:last.rows
+    });
   }catch(e){
     res.status(503).json({ok:false,version:VERSION,database:"postgres-error",error:e.message});
   }
