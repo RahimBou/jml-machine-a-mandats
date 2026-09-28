@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.2.0";
+const VERSION = "1.2.1";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -308,8 +308,8 @@ app.post("/api/prospects", async (req,res) => {
       const consentAt=p.contact_consent?t:null;
       await db(`INSERT INTO jml_prospects
         (id,name,city,phone,email,property_type,horizon,source,status,contact_basis,contact_consent,consent_at,notes,created_at,updated_at)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14)`,
-        [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,p.contact_consent,consentAt,p.notes||null,t]);
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,p.contact_consent,consentAt,p.notes||null,t,t]);
       const q=await db("SELECT * FROM jml_prospects WHERE id=$1",[p.id]);
       return res.status(201).json({ok:true,persisted:true,prospect:rowToProspect(q.rows[0])});
     }
