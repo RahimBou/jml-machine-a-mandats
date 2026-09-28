@@ -1,6 +1,6 @@
 {
   "name": "jml-machine-a-mandats",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "JML Machine à Mandats — acquisition, CRM et suivi des propriétaires dans les Ardennes",
   "main": "server.js",
