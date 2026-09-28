@@ -65,6 +65,12 @@ main{padding:30px;max-width:1250px;width:100%;margin:auto}.top{display:flex;just
       <div><label>Source</label><select name="source"><option>Facebook</option><option>Instagram</option><option>JML Publication</option><option>Lead Magnet</option><option>JML Prospection</option><option>Recommandation</option><option>Terrain</option><option>Autre</option></select></div>
       <div><label>Statut</label><select name="status"><option>À qualifier</option><option>À relancer</option><option>RDV à prendre</option><option>RDV pris</option><option>Mandat</option><option>Pas de projet</option></select></div>
       <div class="full"><label>Notes</label><textarea name="notes" placeholder="Informations utiles, contexte, prochaine action…"></textarea></div>
+      <div class="full notice" style="margin-top:4px">
+        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+          <input type="checkbox" name="contactConsent" value="yes" required style="margin-top:4px;width:auto">
+          <span><strong>Consentement / autorisation de contact</strong><br><span class="muted">J’ai vérifié que ce prospect peut être contacté et, lorsque le consentement est requis, qu’il a été obtenu. Le détail de la base de contact peut être précisé dans les notes.</span></span>
+        </label>
+      </div>
       <div class="full actions"><button class="primary">Enregistrer le prospect</button><button type="button" class="secondary" id="cancelForm">Annuler</button></div>
     </form>
   </div>
@@ -134,7 +140,7 @@ function show(id){
 $("#newProspect").onclick=()=>{show("prospects");setTimeout(()=>document.querySelector("[name=name]").focus(),50)};
 $("#cancelForm").onclick=()=>show("dashboard");
 $("#prospectForm").addEventListener("submit",e=>{
- e.preventDefault();const f=new FormData(e.target);const p=Object.fromEntries(f.entries());p.id=(crypto.randomUUID?crypto.randomUUID():"lead-"+Date.now()+"-"+Math.random().toString(36).slice(2));p.createdAt=new Date().toISOString();prospects.push(p);e.target.reset();save();show("prospects");
+ e.preventDefault();const f=new FormData(e.target);const p=Object.fromEntries(f.entries());p.contactConsent=p.contactConsent==="yes";p.consentAt=p.contactConsent?new Date().toISOString():null;p.id=(crypto.randomUUID?crypto.randomUUID():"lead-"+Date.now()+"-"+Math.random().toString(36).slice(2));p.createdAt=new Date().toISOString();prospects.push(p);e.target.reset();save();show("prospects");
 });
 async function loadIdeas(){
  try{const ideas=await fetch("/api/publication-ideas").then(r=>r.json());$("#ideas").innerHTML=ideas.map(x=>`<div class="idea"><div><span class="tag">${esc(x.target)}</span><strong>${esc(x.title)}</strong><span class="muted">${esc(x.hook)}</span></div><button type="button" class="secondary" data-copy="${esc(x.hook)}">Copier</button></div>`).join("")}catch(e){}
