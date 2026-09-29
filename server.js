@@ -81,7 +81,7 @@ app.get("/api/commune-market", async (req,res) => {
             message:"Repère communal issu des transactions DVF. Il sert à préparer notre échange et ne constitue pas une estimation du bien.",
             caution:"Si la commune compte peu de ventes, la médiane doit être interprétée avec prudence."
           };
-          communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});,{expiresAt:Date.now()+6*60*60*1000,data});
+          communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});
           return res.json({ok:true,...data,cache:false});
         }
       }
