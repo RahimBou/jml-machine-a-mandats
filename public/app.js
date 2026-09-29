@@ -183,7 +183,8 @@ window.jmlAction=async function(a,id,b){
   }catch(err){toast((err.code?err.code+" — ":"")+err.message,true)}
 };
 document.addEventListener("change",async e=>{const s=e.target.closest("[data-pipeline-id]");if(!s)return;try{await api("/api/prospects/"+encodeURIComponent(s.dataset.pipelineId)+"/status",{method:"PUT",body:JSON.stringify({status:s.value})});toast("Étape du pipeline mise à jour.");await load();renderPipeline()}catch(err){toast(err.message,true)}});
-document.addEventListener("change",e=>{if(e.target.id==="activityOutcome"){const box=$("#appointmentFields");if(box)box.style.display=e.target.value==="RDV pris"?"block":"none";}});\ndocument.addEventListener("click",e=>{
+document.addEventListener("change",e=>{if(e.target.id==="activityOutcome"){const box=$("#appointmentFields");if(box)box.style.display=e.target.value==="RDV pris"?"block":"none";}});
+document.addEventListener("click",e=>{
   const view=e.target.closest("[data-view]");
   if(view){e.preventDefault();window.jmlNav(view.dataset.view);return}
   const b=e.target.closest("button[data-action]");
