@@ -63,11 +63,11 @@ function parseEuroPerM2(value){
 
 function findEstimusCommuneUrl(html, city){
   const target=normalizeSearchCity(city).replace(/^\d{5}\s+/,"");
-  const re=/<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  const re=/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
   let match;
   while((match=re.exec(html))){
     const href=String(match[1] || "");
-    if(!/\\/commune\\//i.test(href)) continue;
+    if(!/\/commune\//i.test(href)) continue;
     const label=stripHtml(match[2]).replace(/^\d{5}\s+/,"");
     const normalized=normalizeSearchCity(label);
     if(normalized===target || normalized.endsWith(" "+target)){
