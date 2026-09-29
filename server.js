@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.0.0";
+const VERSION = "2.1.0";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -80,7 +80,7 @@ function unexpected(res, code, message, err) {
   return apiError(res, 503, code, message, err?.message);
 }
 
-async function sendAppointmentConfirmationEmail(prospect, note = "") {
+async function sendAppointmentConfirmationEmail(prospect, note = "", appointmentAt = null, appointmentLocation = "") {
   if (!prospect.email) return { sent: false, reason: "no-email" };
   const apiKey = String(process.env.RESEND_API_KEY || "").trim();
   const from = String(process.env.RESEND_FROM || "").trim();
@@ -91,13 +91,20 @@ async function sendAppointmentConfirmationEmail(prospect, note = "") {
   const firstName = clean(prospect.name, 120).split(/\s+/)[0] || "Bonjour";
   const cleanNote = clean(note, 500);
   const subject = "Confirmation de votre rendez-vous — JML Immobilier";
+  const appointmentDateText = appointmentAt ? new Date(appointmentAt).toLocaleString("fr-FR", { dateStyle:"full", timeStyle:"short", timeZone:"Europe/Paris" }) : "";
+  const appointmentLine = appointmentDateText ? "\n\n📅 " + appointmentDateText : "";
+  const locationLine = appointmentLocation ? "\n📍 " + appointmentLocation : "";
   const text = "Bonjour " + firstName + ",\n\n" +
     "Votre rendez-vous concernant votre projet immobilier a bien été enregistré avec JML Immobilier." +
+    appointmentLine + locationLine +
     (cleanNote ? "\n\nInformations indiquées : " + cleanNote : "") +
     "\n\nNous pourrons échanger simplement sur votre bien, votre projet et les prochaines étapes.\n\n" +
     "À bientôt,\nJML Immobilier\nVotre projet, notre engagement";
   const safeName = firstName.replace(/[&<>"]/g, "");
   const safeNote = cleanNote.replace(/[&<>"]/g, "");
+  const safeLocation = clean(appointmentLocation,250).replace(/[&<>"]/g, "");
+  const dateHtml = appointmentDateText ? "<p><strong>📅 Rendez-vous :</strong><br>" + appointmentDateText + "</p>" : "";
+  const locationHtml = safeLocation ? "<p><strong>📍 Lieu :</strong><br>" + safeLocation + "</p>" : "";
   const noteHtml = safeNote ? "<p><strong>Informations indiquées :</strong> " + safeNote + "</p>" : "";
   const html = "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
     "<body style=\"margin:0;background:#f5f1e8;font-family:Arial,sans-serif;color:#26352f\"><div style=\"max-width:620px;margin:30px auto;padding:0 16px\">" +
@@ -166,6 +173,8 @@ async function initDb() {
       type TEXT NOT NULL,
       note TEXT,
       outcome TEXT,
+      appointment_at TIMESTAMPTZ,
+      appointment_location TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -206,6 +215,8 @@ async function initDb() {
     updated_at:"TIMESTAMPTZ NOT NULL DEFAULT NOW()"
   };
   await db(`ALTER TABLE jml_activities ADD COLUMN IF NOT EXISTS outcome TEXT`);
+  await db(`ALTER TABLE jml_activities ADD COLUMN IF NOT EXISTS appointment_at TIMESTAMPTZ`);
+  await db(`ALTER TABLE jml_activities ADD COLUMN IF NOT EXISTS appointment_location TEXT`);
 
   for (const [name,type] of Object.entries(columns)) {
     await db(`ALTER TABLE jml_prospects ADD COLUMN IF NOT EXISTS ${name} ${type}`);
@@ -467,7 +478,7 @@ app.post("/api/prospects/:id/qualify", async (req,res) => {
 app.get("/api/prospects/:id/activities", async (req,res) => {
   try{
     if(pool){
-      const q=await db("SELECT id,type,note,outcome,created_at FROM jml_activities WHERE prospect_id=$1 ORDER BY created_at DESC LIMIT 100",[req.params.id]);
+      const q=await db("SELECT id,type,note,outcome,appointment_at,appointment_location,created_at FROM jml_activities WHERE prospect_id=$1 ORDER BY created_at DESC LIMIT 100",[req.params.id]);
       return res.json({ok:true,activities:q.rows});
     }
     res.json({ok:true,activities:[]});
@@ -478,6 +489,10 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
   const type=clean(req.body?.type,40);
   const note=clean(req.body?.note,1000);
   const outcome=clean(req.body?.outcome,80);
+  const appointmentAtRaw=clean(req.body?.appointmentAt,60);
+  const appointmentAt=appointmentAtRaw?new Date(appointmentAtRaw):null;
+  const appointmentLocation=clean(req.body?.appointmentLocation,250);
+  if(appointmentAt && Number.isNaN(appointmentAt.getTime())) return res.status(400).json({ok:false,error:"Date du rendez-vous invalide."});
   const allowedOutcomes=["Pas de réponse","Intéressé","À rappeler","RDV pris","Pas de projet","Refus"];
   if(outcome && !allowedOutcomes.includes(outcome)) return res.status(400).json({ok:false,error:"Résultat d'action invalide."});
   const allowed=["Appel","SMS","Email","RDV","Visite","Note"];
@@ -487,7 +502,7 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
       const exists=await db("SELECT id FROM jml_prospects WHERE id=$1",[req.params.id]);
       if(!exists.rowCount) return res.status(404).json({ok:false,error:"Prospect introuvable."});
       const id=newId(),t=now();
-      await db("INSERT INTO jml_activities (id,prospect_id,type,note,outcome,created_at) VALUES ($1,$2,$3,$4,$5,$6)",[id,req.params.id,type,note||null,outcome||null,t]);
+      await db("INSERT INTO jml_activities (id,prospect_id,type,note,outcome,appointment_at,appointment_location,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",[id,req.params.id,type,note||null,outcome||null,appointmentAt,appointmentLocation||null,t]);
       if(["Appel","SMS","Email","RDV","Visite"].includes(type)){
         await db("UPDATE jml_prospects SET last_contact_at=$2,contact_count=contact_count+1,updated_at=NOW() WHERE id=$1",[req.params.id,t]);
       }
@@ -497,7 +512,7 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
         const prospectResult = await db("SELECT * FROM jml_prospects WHERE id=$1",[req.params.id]);
         if(prospectResult.rowCount) {
           try {
-            emailConfirmation = await sendAppointmentConfirmationEmail(rowToProspect(prospectResult.rows[0]), note);
+            emailConfirmation = await sendAppointmentConfirmationEmail(rowToProspect(prospectResult.rows[0]), note, appointmentAt, appointmentLocation);
           } catch (emailErr) {
             console.error("JML appointment confirmation failed:", emailErr);
             emailConfirmation = { sent: false, reason: "send-failed" };
