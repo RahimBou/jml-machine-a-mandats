@@ -85,6 +85,176 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 .fb-appointment{margin-top:12px;padding:20px;border-radius:17px;background:#fffdf8}.fb-appointment h3{font-size:20px}.fb-appointment-grid{grid-template-columns:1fr 1fr}
 @media(max-width:760px){.fb-wrap{padding:16px 12px 40px}.seller-dashboard-hero{min-height:280px}.seller-dashboard-overlay{padding:20px}.seller-dashboard-overlay h3{font-size:30px}.seller-status{grid-template-columns:1fr}.seller-quick-grid{grid-template-columns:1fr 1fr}.seller-dashboard-grid{grid-template-columns:1fr}.seller-video{min-height:235px}.seller-guide-grid{grid-template-columns:1fr}.seller-events{grid-template-columns:1fr}.seller-appointment-preview{flex-direction:column;align-items:stretch}.seller-appointment-preview .primary{text-align:center}.fb-success-grid{grid-template-columns:1fr}.seller-market-big{grid-template-columns:1fr}.fb-appointment-grid{grid-template-columns:1fr}.fb-appointment-grid .full{grid-column:auto}}
 @media(max-width:430px){.seller-quick-grid{grid-template-columns:1fr}.seller-dashboard-overlay h3{font-size:27px}.seller-status-steps{gap:3px}.seller-status-steps>div{font-size:9px}.seller-dashboard-pills span{font-size:10px;padding:7px 9px}}
+/* V3.0 — direction premium JML / moins dashboard, plus immobilier */
+.fb-wrap{max-width:1080px;padding:30px 20px 70px}
+.fb-success{padding:0;border:0;background:transparent;box-shadow:none;margin-top:18px}
+.fb-success-head{padding:0 2px 18px;background:transparent;color:var(--green);border-radius:0;margin-bottom:0}
+.fb-success-head .eyebrow{color:#8a6b2e;font-weight:900;letter-spacing:.12em}
+.fb-success-head h2{font-size:27px!important;line-height:1.15;color:#173b31}
+.fb-success-head>div:last-child{color:var(--muted);font-size:13px}
+.fb-success-grid{display:none}
+
+.seller-space{margin-top:8px}
+.seller-dashboard-hero{
+  min-height:430px;
+  border-radius:28px;
+  border:1px solid #b8944e;
+  box-shadow:0 18px 50px rgba(23,51,44,.14);
+  background:
+    linear-gradient(180deg,rgba(8,48,39,.02) 15%,rgba(8,48,39,.84) 100%),
+    url("https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1600&q=88") center/cover;
+}
+.seller-dashboard-overlay{padding:38px;max-width:820px}
+.seller-dashboard-kicker{font-size:11px;letter-spacing:.18em}
+.seller-dashboard-overlay h3{font-size:48px;line-height:1.02;letter-spacing:-.025em;max-width:720px;margin-bottom:12px}
+.seller-dashboard-overlay p{font-size:16px;line-height:1.6;max-width:680px}
+.seller-dashboard-pills{margin-top:20px}
+.seller-dashboard-pills span{padding:9px 14px;font-size:11px}
+
+.seller-status{
+  grid-template-columns:1fr 1.7fr;
+  padding:19px 22px;
+  margin-top:16px;
+  border-radius:18px;
+  box-shadow:0 7px 24px rgba(23,51,44,.045)
+}
+.seller-status-copy strong{font-size:17px}
+.seller-status-copy span{font-size:11px}
+.seller-status-steps>div{font-size:10px}
+.seller-status-steps b{background:#eee8db}
+
+.seller-quick-grid{gap:12px;margin-top:16px}
+.seller-quick-card{
+  min-height:128px;
+  padding:18px;
+  border-radius:18px;
+  background:#fffdf8;
+  box-shadow:0 5px 18px rgba(23,51,44,.035);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.seller-quick-card:hover{box-shadow:0 10px 24px rgba(23,51,44,.08)}
+.seller-quick-icon{width:42px;height:42px}
+.seller-quick-card strong{font-size:14px}
+.seller-quick-card small{font-size:11px;line-height:1.5}
+.seller-disclaimer{margin-top:16px;padding:15px 18px;border-radius:0 12px 12px 0}
+
+.seller-dashboard-grid{grid-template-columns:1.45fr .95fr;gap:16px;margin-top:16px}
+.seller-panel{
+  border-radius:20px;
+  padding:22px;
+  box-shadow:0 8px 28px rgba(23,51,44,.045)
+}
+.seller-panel-head h4{font-size:21px}
+.seller-panel-head p{font-size:12px}
+.seller-panel-kicker{font-size:10px}
+
+.seller-market{gap:10px}
+.seller-metric{padding:14px;border-radius:14px}
+.seller-metric span{font-size:10px}
+.seller-metric strong{font-size:19px}
+.seller-metric small{font-size:10px}
+.seller-chart{margin-top:16px;padding:15px;border-radius:15px}
+.seller-source{font-size:10.5px}
+
+.seller-video-panel{padding:0;border:0;background:transparent;box-shadow:none}
+.seller-video{
+  height:100%;
+  min-height:250px;
+  margin-top:0;
+  border-radius:20px;
+  padding:26px;
+  background:
+    linear-gradient(120deg,rgba(16,57,47,.94),rgba(16,57,47,.58)),
+    url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1100&q=84") center/cover;
+}
+.seller-video h4{font-size:23px;line-height:1.15}
+.seller-video p{font-size:12px}
+.seller-play{width:62px;height:62px;flex-basis:62px}
+
+.seller-guides{margin-top:16px}
+.seller-guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.seller-guide-grid a{
+  min-height:145px;
+  display:flex;
+  flex-direction:column;
+  text-decoration:none;
+  color:var(--green);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:17px;
+  background:#faf7ef;
+  transition:.18s ease;
+}
+.seller-guide-grid a:hover{transform:translateY(-2px);border-color:#c8aa6d;box-shadow:0 9px 20px rgba(23,51,44,.07)}
+.seller-guide-grid a>span{font-size:23px}
+.seller-guide-grid a strong{font-size:14px;margin-top:10px}
+.seller-guide-grid a small{font-size:10.5px;line-height:1.5;color:var(--muted);margin-top:5px}
+.seller-guide-grid a b{font-size:10px;margin-top:auto;padding-top:10px;color:#8a6b2e}
+
+.seller-appointment-preview{
+  margin-top:16px;
+  padding:22px 24px;
+  border:0;
+  border-radius:20px;
+  background:#153b32;
+  color:#fff;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+}
+.seller-appointment-preview .seller-panel-kicker{color:#e0c17a}
+.seller-appointment-preview h4{color:#fff;font-size:23px;margin:4px 0}
+.seller-appointment-preview p{color:#dce7e0}
+.seller-appointment-preview .primary{background:#d8bb7a;color:#17332c;border:0;white-space:nowrap}
+
+.seller-events{display:none}
+.fb-success-note{display:none}
+#fbMarket,#fbEvents{display:none!important}
+
+.fb-appointment{
+  margin-top:18px;
+  padding:24px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  background:#fffdf8;
+  box-shadow:0 8px 28px rgba(23,51,44,.045)
+}
+.fb-appointment h3{font-size:22px}
+.fb-appointment p{font-size:12px}
+.fb-appointment input,.fb-appointment select,.fb-appointment textarea{padding:12px;border-radius:11px}
+.fb-appointment button.primary{padding:12px 18px}
+.fb-back{margin-top:18px}
+
+@media(max-width:760px){
+  .fb-wrap{padding:18px 12px 48px}
+  .seller-dashboard-hero{min-height:370px;border-radius:22px}
+  .seller-dashboard-overlay{padding:23px}
+  .seller-dashboard-overlay h3{font-size:35px}
+  .seller-dashboard-overlay p{font-size:13px}
+  .seller-status{grid-template-columns:1fr;gap:14px;padding:16px}
+  .seller-status-steps{grid-template-columns:repeat(3,1fr)}
+  .seller-quick-grid{grid-template-columns:repeat(2,1fr);gap:9px}
+  .seller-quick-card{min-height:130px;padding:13px;grid-template-columns:auto 1fr auto;gap:8px}
+  .seller-quick-icon{width:36px;height:36px;font-size:17px}
+  .seller-quick-card strong{font-size:12px}
+  .seller-quick-card small{font-size:10px}
+  .seller-dashboard-grid{grid-template-columns:1fr;gap:12px}
+  .seller-panel{padding:17px}
+  .seller-video{min-height:220px}
+  .seller-guide-grid{grid-template-columns:1fr}
+  .seller-guide-grid a{min-height:112px}
+  .seller-appointment-preview{flex-direction:column;align-items:stretch;padding:19px}
+  .seller-appointment-preview .primary{width:100%;text-align:center}
+  .fb-appointment{padding:17px}
+}
+@media(max-width:430px){
+  .seller-dashboard-overlay h3{font-size:31px}
+  .seller-dashboard-pills span{font-size:10px;padding:8px 10px}
+  .seller-status-steps>div{gap:5px;font-size:9px}
+  .seller-status-steps b{width:22px;height:22px;flex-basis:22px}
+  .seller-quick-grid{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -141,7 +311,7 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
     </div>
 
     <div class="seller-status">
-      <div class="seller-status-copy"><strong>✓ Votre demande est bien prise en compte</strong><span>Votre projet est enregistré. Vous gardez la main sur la suite.</span></div>
+      <div class="seller-status-copy"><strong>Votre projet est enregistré</strong><span>Vous gardez la main sur la suite. JML vous accompagne à chaque étape.</span></div>
       <div class="seller-status-steps"><div class="done"><b>1</b><span>Demande<br><small>Enregistrée</small></span></div><div><b>2</b><span>Confirmation<br><small>Par e-mail</small></span></div><div><b>3</b><span>Prochaine étape<br><small>Échange avec JML</small></span></div></div>
     </div>
 
@@ -195,9 +365,6 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
       <div class="seller-event-list" id="sellerEventMiniList"><div class="seller-event-mini"><strong>Événements locaux</strong><span>Chargement selon votre secteur…</span></div><div class="seller-event-mini"><strong>Vie locale</strong><span>Informations locales à venir.</span></div><div class="seller-event-mini"><strong>Marché immobilier</strong><span>Données actualisées selon les sources disponibles.</span></div></div>
     </div>
   </div>
-  <div class="fb-success-note"><strong>Les premiers repères pour votre projet</strong><br>Les informations présentées ici sont indicatives. Les données de marché doivent être vérifiées, datées et comparées avant toute décision.</div>
-  <div class="fb-market" id="fbMarket" style="display:none"><div class="fb-market-head"><div><h3>📊 Quelques repères de marché</h3><p id="fbMarketIntro">Des chiffres pour nourrir notre échange, pas pour remplacer une estimation.</p></div><span class="fb-market-badge">Sources croisées</span></div><div class="fb-market-main" id="fbMarketCards"></div><div class="fb-market-note" id="fbMarketNote"></div></div>
-  <div class="fb-events" id="fbEvents"><div class="fb-events-head"><div><h3>📍 À suivre dans les Ardennes</h3><p id="fbEventsIntro">Quelques rendez-vous locaux sélectionnés pour votre secteur.</p></div><span class="fb-market-badge">Sélection locale</span></div><div class="fb-events-grid" id="fbEventsGrid"></div><div class="fb-market-note">Une sélection d’événements locaux, régulièrement actualisée.</div></div>
   <div class="fb-appointment">
 <h3>📅 Demander un rendez-vous</h3>
 <p>Choisissez directement parmi les créneaux actuellement proposés. <strong>Le rendez-vous sera confirmé par JML Immobilier après vérification.</strong></p>
@@ -271,20 +438,29 @@ form.addEventListener("submit",async function(e){
    }catch(error){marketSource.textContent="Le repère local n’est pas disponible pour le moment. Les autres éléments de votre espace restent accessibles.";}
  }
  loadSellerMarket(city,propertyType);
- const cityNorm=city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
- const md=cityNorm==="charleville-mezieres"
-   ? [["Repère maison","Données locales","À préciser selon les ventes comparables"],["Ventes récentes","Données DVF","Secteur à définir"],["Tendance","À calculer","Sur période comparable"]]
-   : [["Repère local","Données disponibles","Votre commune"],["Ventes récentes","Données DVF","Secteur à définir"],["Comparables","À préparer","Type de bien + surface"]];
- if(marketCards){marketCards.innerHTML=md.map(function(x){return '<div class="seller-metric"><span>'+x[0]+'</span><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div>';}).join("");}
- if(marketSource)marketSource.textContent="Préparation du repère local…";
  const eventsGrid=document.getElementById("fbEventsGrid"),eventsIntro=document.getElementById("fbEventsIntro");
  try{
    const er=await fetch("/api/public-events?city="+encodeURIComponent(city)+"&propertyType="+encodeURIComponent(propertyType));
    const ed=await er.json();
    const selectedEvents=ed.events||[];
    if(eventsGrid){eventsGrid.innerHTML=selectedEvents.map(function(e){const d=new Date(e.start).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"});return '<article class="fb-event"><div class="fb-event-date">'+d+'</div><h4>'+e.title+'</h4><p>'+e.city+' · '+e.type+'</p><a href="'+e.url+'" target="_blank" rel="noopener">Voir l’événement →</a></article>';}).join("");}
-   if(eventsIntro)eventsIntro.textContent=city?"Quelques rendez-vous à venir dans votre secteur.":"Quelques rendez-vous à venir dans votre secteur.";
- }catch(_e){if(eventsGrid)eventsGrid.innerHTML="<div class=\"fb-market-note\">Les événements locaux seront actualisés prochainement.</div>";}
+   if(eventsIntro)eventsIntro.textContent="Quelques rendez-vous à venir dans votre secteur.";
+   const miniList=document.getElementById("sellerEventMiniList");
+   if(miniList){
+     if(selectedEvents.length){
+       miniList.innerHTML=selectedEvents.slice(0,3).map(function(e){
+         const d=new Date(e.start).toLocaleDateString("fr-FR",{day:"2-digit",month:"short"});
+         return '<div class="seller-event-mini"><strong>'+d+" · "+e.title+'</strong><span>'+e.city+" · "+e.type+'</span></div>';
+       }).join("");
+     }else{
+       miniList.innerHTML='<div class="seller-event-mini"><strong>Votre secteur</strong><span>Pas d’événement sélectionné pour le moment.</span></div>';
+     }
+   }
+ }catch(_e){
+   if(eventsGrid)eventsGrid.innerHTML="<div class=\"fb-market-note\">Les événements locaux seront actualisés prochainement.</div>";
+   const miniList=document.getElementById("sellerEventMiniList");
+   if(miniList)miniList.innerHTML='<div class="seller-event-mini"><strong>Votre secteur</strong><span>Les informations locales seront actualisées prochainement.</span></div>';
+ }
  const payload={
   name,city,phone,email,
   propertyType,
