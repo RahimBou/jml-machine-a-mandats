@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 const { Pool } = require("pg");
+const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
@@ -16,6 +17,7 @@ app.get("/facebook", (req, res) => {
   res.redirect(302, `/projet-vendeur${qs}`);
 });
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
+registerPublicEventsRoute(app, clean);
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const pool = hasDatabase ? new Pool({
