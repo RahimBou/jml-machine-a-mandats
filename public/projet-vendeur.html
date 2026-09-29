@@ -85,6 +85,8 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 .fb-appointment{margin-top:12px;padding:20px;border-radius:17px;background:#fffdf8}.fb-appointment h3{font-size:20px}.fb-appointment-grid{grid-template-columns:1fr 1fr}
 @media(max-width:760px){.fb-wrap{padding:16px 12px 40px}.seller-dashboard-hero{min-height:280px}.seller-dashboard-overlay{padding:20px}.seller-dashboard-overlay h3{font-size:30px}.seller-status{grid-template-columns:1fr}.seller-quick-grid{grid-template-columns:1fr 1fr}.seller-dashboard-grid{grid-template-columns:1fr}.seller-video{min-height:235px}.seller-guide-grid{grid-template-columns:1fr}.seller-events{grid-template-columns:1fr}.seller-appointment-preview{flex-direction:column;align-items:stretch}.seller-appointment-preview .primary{text-align:center}.fb-success-grid{grid-template-columns:1fr}.seller-market-big{grid-template-columns:1fr}.fb-appointment-grid{grid-template-columns:1fr}.fb-appointment-grid .full{grid-column:auto}}
 @media(max-width:430px){.seller-quick-grid{grid-template-columns:1fr}.seller-dashboard-overlay h3{font-size:27px}.seller-status-steps{gap:3px}.seller-status-steps>div{font-size:9px}.seller-dashboard-pills span{font-size:10px;padding:7px 9px}}
+/* V3.1 — sécurité mobile / cohérence des repères */
+.seller-quick-card{min-width:0;overflow:hidden}.seller-quick-card strong,.seller-quick-card small{overflow-wrap:anywhere}.seller-guide-grid a{min-width:0;box-sizing:border-box}.seller-market-tabs span{cursor:default}
 /* V3.0 — direction premium JML / moins dashboard, plus immobilier */
 .fb-wrap{max-width:1080px;padding:30px 20px 70px}
 .fb-success{padding:0;border:0;background:transparent;box-shadow:none;margin-top:18px}
@@ -327,13 +329,13 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
     <div class="seller-dashboard-grid">
       <section class="seller-panel seller-market-panel">
         <div class="seller-panel-head"><div><span class="seller-panel-kicker">📊 Marché local</span><h4>Quelques repères de marché</h4><p>Des repères pour nourrir notre échange, pas pour remplacer une estimation.</p></div><span class="seller-source-badge">Sources datées</span></div>
-        <div class="seller-market-tabs"><span class="active">Votre bien</span><span>Maison</span><span>Appartement</span></div>
+        <div class="seller-market-tabs" aria-label="Repères de prix"><span id="marketTabCommunal" class="active">Communal</span><span id="marketTabHouse">Maison</span><span id="marketTabApartment">Appartement</span></div>
         <div class="seller-market-big" id="sellerMarketMetrics">
           <div class="seller-metric"><span>Repère local</span><strong>Chargement…</strong><small>Recherche d’une source datée</small></div>
           <div class="seller-metric"><span>Ventes récentes</span><strong>À vérifier</strong><small>Selon le secteur</small></div>
           <div class="seller-metric"><span>Comparables</span><strong>À préparer</strong><small>Type + surface</small></div>
         </div>
-        <div class="seller-chart"><div class="seller-chart-title"><span>Repères indicatifs</span><span>Données datées uniquement</span></div><div class="seller-bars"><div class="seller-bar"><span>Maison</span><i style="width:78%"></i><strong>À calculer</strong></div><div class="seller-bar"><span>Appartement</span><i style="width:58%"></i><strong>À calculer</strong></div><div class="seller-bar"><span>Comparables</span><i style="width:42%"></i><strong>À préparer</strong></div></div></div>
+        <div class="seller-chart"><div class="seller-chart-title"><span>Repères indicatifs</span><span>Données datées uniquement</span></div><div class="seller-bars"><div class="seller-bar"><span>Maison</span><i style="width:78%"></i><strong>À calculer</strong></div><div class="seller-bar"><span>Appartement</span><i style="width:58%"></i><strong>À calculer</strong></div><div class="seller-bar"><span>Communal</span><i style="width:42%"></i><strong>À préparer</strong></div></div></div>
         <div class="seller-source" id="sellerMarketSource" aria-live="polite">Recherche d’un repère local uniquement lorsqu’une source exploitable et datée est disponible.</div>
       </section>
 
@@ -417,27 +419,63 @@ form.addEventListener("submit",async function(e){
  const marketCards=document.getElementById("sellerMarketMetrics");
  const marketSource=document.getElementById("sellerMarketSource");
  const chartBars=[...document.querySelectorAll(".seller-bar")];
- async function loadSellerMarket(cityValue, typeValue){
+ async function loadSellerMarket(cityValue,typeValue){
    if(!marketCards||!marketSource) return;
-   marketCards.innerHTML="<div class=\"seller-metric\"><span>Repère local</span><strong>Chargement…</strong><small>Recherche d’une source datée</small></div><div class=\"seller-metric\"><span>Ventes récentes</span><strong>À vérifier</strong><small>Selon le secteur</small></div><div class=\"seller-metric\"><span>Comparables</span><strong>À préparer</strong><small>Type + surface</small></div>";
+   marketCards.innerHTML="<div class=\"seller-metric\"><span>Repère local</span><strong>Chargement…</strong><small>Recherche d’une source datée</small></div><div class=\"seller-metric\"><span>Type de bien</span><strong>"+String(typeValue||"Votre bien")+"</strong><small>Repère à préciser</small></div><div class=\"seller-metric\"><span>Transactions</span><strong>À vérifier</strong><small>Selon le secteur</small></div>";
    if(!cityValue){marketSource.textContent="Indiquez votre commune pour rechercher un repère local. Aucun prix n’est inventé.";return;}
    try{
      const response=await fetch("/api/commune-market?city="+encodeURIComponent(cityValue),{cache:"no-store"});
      const data=await response.json();
      if(!response.ok) throw new Error(data.error||"Repère indisponible");
-     if(data.found && Number.isFinite(Number(data.price))){
-       const price=Number(data.price);
-       marketCards.innerHTML=[["Médiane communale",price.toLocaleString("fr-FR")+" €/m²",data.period||"Données disponibles"],["Source","DVF / Estimus","Repère, pas une estimation"],["Bien",""+typeValue,"Comparables à affiner"]].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
-       chartBars.forEach(function(bar,i){const widths=[Math.min(94,Math.max(35,price/30)),Math.min(88,Math.max(30,price/38)),Math.min(82,Math.max(25,price/45))];const fill=bar.querySelector("i"),value=bar.querySelector("strong");if(fill)fill.style.width=widths[i]+"%";if(value)value.textContent=i===0?price.toLocaleString("fr-FR")+" €/m²":i===1?"Repère local":"À comparer";});
-       marketSource.innerHTML="Source : <a href=\""+String(data.sourceUrl||"#").replace(/&/g,"&amp;").replace(/[\"<>]/g,"")+" \" target=\"_blank\" rel=\"noopener\">voir la source</a>. Période : "+String(data.period||"non précisée").replace(/[<>]/g,"")+". Ce repère ne constitue pas une estimation du bien.";
+     if(data.found && Number.isFinite(Number(data.communalPrice||data.price))){
+       const communal=Number(data.communalPrice||data.price);
+       const house=Number(data.housePrice||0);
+       const apartment=Number(data.apartmentPrice||0);
+       const transactions=Number(data.transactions||0);
+       const typePrice=typeValue==="Maison"?house:typeValue==="Appartement"?apartment:communal;
+       const typeLabel=typeValue==="Maison"||typeValue==="Appartement"?typeValue:"Bien";
+       const formatPrice=function(v){return Number.isFinite(v)&&v>0?v.toLocaleString("fr-FR")+" €/m²":"Non disponible";};
+       marketCards.innerHTML=[
+         ["Médiane communale",formatPrice(communal),data.period||"Données disponibles"],
+         [typeLabel,formatPrice(typePrice),"Repère du type de bien"],
+         ["Transactions",transactions?transactions.toLocaleString("fr-FR"):"Non disponible","12 derniers mois"]
+       ].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
+
+       const chartValues=[house||communal,apartment||communal,communal];
+       const max=Math.max.apply(null,chartValues.concat([1]));
+       chartBars.forEach(function(bar,i){
+         const v=chartValues[i];
+         const width=Math.min(96,Math.max(28,(v/max)*96));
+         const fill=bar.querySelector("i"),value=bar.querySelector("strong");
+         if(fill)fill.style.width=width+"%";
+         if(value)value.textContent=formatPrice(v);
+       });
+
+       const tabCommunal=document.getElementById("marketTabCommunal");
+       const tabHouse=document.getElementById("marketTabHouse");
+       const tabApartment=document.getElementById("marketTabApartment");
+       [tabCommunal,tabHouse,tabApartment].forEach(function(tab){if(tab)tab.classList.remove("active");});
+       const activeTab=typeValue==="Maison"?tabHouse:typeValue==="Appartement"?tabApartment:tabCommunal;
+       if(activeTab)activeTab.classList.add("active");
+
+       const sourceUrl=String(data.sourceUrl||"").replace(/&/g,"&amp;").replace(/[\"<>]/g,"");
+       marketSource.innerHTML="Source : <a href=\""+sourceUrl+"\" target=\"_blank\" rel=\"noopener\">Estimus / DVF</a>. Période : "+String(data.period||"non précisée").replace(/[<>]/g,"")+". "+String(data.message||"Ce repère ne constitue pas une estimation du bien.").replace(/[<>]/g,"");
      }else{
        const d=data.department||{};
-       marketCards.innerHTML=[["Ardennes — médiane",Number(d.median||0).toLocaleString("fr-FR")+" €/m²",d.period||"Données disponibles"],["Maison",Number(d.house||0).toLocaleString("fr-FR")+" €/m²","Repère départemental"],["Appartement",Number(d.apartment||0).toLocaleString("fr-FR")+" €/m²","Repère départemental"]].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
-       marketSource.textContent=(data.message||"Repère communal indisponible.")+" Les chiffres affichés sont départementaux et ne remplacent pas une comparaison locale."; 
+       const formatPrice=function(v){return Number.isFinite(Number(v))&&Number(v)>0?Number(v).toLocaleString("fr-FR")+" €/m²":"Non disponible";};
+       marketCards.innerHTML=[
+         ["Ardennes — médiane",formatPrice(d.median),d.period||"Données disponibles"],
+         ["Maison",formatPrice(d.house),"Repère départemental"],
+         ["Appartement",formatPrice(d.apartment),"Repère départemental"]
+       ].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
+       marketSource.textContent=(data.message||"Repère communal indisponible.")+" Aucun prix communal n’est affiché lorsqu’il n’a pas été identifié de façon suffisamment fiable.";
      }
-   }catch(error){marketSource.textContent="Le repère local n’est pas disponible pour le moment. Les autres éléments de votre espace restent accessibles.";}
+   }catch(error){
+     console.warn("JML seller market:",error);
+     marketSource.textContent="Le repère local n’est pas disponible pour le moment. Les autres éléments de votre espace restent accessibles.";
+   }
  }
- loadSellerMarket(city,propertyType);
+loadSellerMarket(city,propertyType);
  const eventsGrid=document.getElementById("fbEventsGrid"),eventsIntro=document.getElementById("fbEventsIntro");
  try{
    const er=await fetch("/api/public-events?city="+encodeURIComponent(city)+"&propertyType="+encodeURIComponent(propertyType));
