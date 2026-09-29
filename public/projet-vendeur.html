@@ -55,9 +55,7 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 .seller-chart{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff}
 .seller-chart-title{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;color:var(--green)}.seller-chart-title span{font-size:9px;color:var(--muted);font-weight:500}
 .seller-bars{display:grid;gap:9px;margin-top:11px}.seller-bar{display:grid;grid-template-columns:82px 1fr 66px;gap:8px;align-items:center;font-size:10px}.seller-bar i{height:9px;border-radius:99px;background:linear-gradient(90deg,#173f34,#b8944e);display:block}.seller-bar strong{text-align:right;font-size:11px}
-.seller-video{position:relative;overflow:hidden;margin-top:14px;min-height:145px;border-radius:16px;background:linear-gradient(120deg,rgba(20,59,49,.9),rgba(20,59,49,.52)),url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=78") center/cover;color:#fff;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:15px}
-.seller-video h4{margin:0 0 5px;font-size:18px}.seller-video p{margin:0;color:#e8eee9;font-size:11px;line-height:1.45;max-width:370px}.seller-play{width:58px;height:58px;border:2px solid #e0c17a;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#fff;font-size:24px;flex:0 0 58px}
-.seller-video-note{margin-top:7px;font-size:9px;color:rgba(255,255,255,.75)}
+.seller-advice-card{margin-top:14px;padding:17px;border:1px solid #d0b477;border-radius:15px;background:linear-gradient(145deg,#fffdf8,#f4eddf);min-height:170px;display:flex;flex-direction:column;justify-content:space-between}.seller-advice-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.seller-advice-category{font-size:9px;letter-spacing:.08em;font-weight:900;color:#8a6b2e}.seller-advice-counter{font-size:9px;color:var(--muted)}.seller-advice-card h5{margin:7px 0;color:#173b31;font-size:18px;line-height:1.18}.seller-advice-card p{margin:0;color:#505951;font-size:11.5px;line-height:1.5}.seller-advice-takeaway{margin-top:11px;padding:10px 11px;border-radius:10px;background:#173b31;color:#fff;font-size:10.5px;line-height:1.45}.seller-advice-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:11px}.seller-advice-source{font-size:9px;color:var(--muted);line-height:1.35}.seller-advice-link{font-size:9.5px;font-weight:900;color:#7b5e22;text-decoration:none;white-space:nowrap}.seller-advice-loading{color:var(--muted);font-size:11px}.seller-advice-dots{display:flex;gap:5px;margin-top:10px}.seller-advice-dots button{width:7px;height:7px;border:0;border-radius:50%;padding:0;background:#d9d2c4}.seller-advice-dots button.active{background:#b8944e}@media(max-width:600px){.seller-advice-card{min-height:185px}.seller-advice-card h5{font-size:17px}}
 .seller-advice{grid-template-columns:repeat(3,1fr)}
 .seller-advice a{min-height:82px}.seller-advice a span{font-size:10px}
 .seller-events{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin-top:14px}.seller-event-feature{min-height:150px;border-radius:16px;padding:18px;color:#fff;background:linear-gradient(145deg,rgba(18,58,48,.9),rgba(18,58,48,.55)),url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=78") center/cover}.seller-event-feature h4{font-size:18px;margin:0 0 6px}.seller-event-feature p{font-size:10.5px;line-height:1.45;color:#eef2ee}.seller-event-list{display:grid;gap:8px}.seller-event-mini{padding:11px;border:1px solid var(--line);border-radius:12px;background:#faf7ef}.seller-event-mini strong{font-size:11px;display:block}.seller-event-mini span{font-size:9.5px;color:var(--muted)}
@@ -339,12 +337,10 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
         <div class="seller-source" id="sellerMarketSource" aria-live="polite">Recherche d’un repère local uniquement lorsqu’une source exploitable et datée est disponible.</div>
       </section>
 
-      <section class="seller-panel seller-video-panel">
-        <div class="seller-video">
-          <div><div class="seller-kicker">Conseil JML</div><h4>Un conseil vendeur en 60 secondes</h4><p id="sellerVideoText">Préparez votre projet avec des conseils simples, directement depuis votre espace vendeur.</p></div>
-          <button class="seller-play" id="sellerVideoButton" type="button" aria-label="Ouvrir le conseil vendeur">▶</button>
-          <div class="seller-video-note">🎬 Cette zone est prête à recevoir une vraie vidéo JML.</div>
-        </div>
+      <section class="seller-panel seller-advice-panel">
+        <div class="seller-panel-head"><div><span class="seller-panel-kicker">🧭 CONSEIL VENDEUR DU MOMENT</span><h4>Une information utile, au bon moment</h4><p>Actualités, réglementation, financement et marché issus de sources professionnelles.</p></div><span class="seller-source-badge">Actualisé</span></div>
+        <div class="seller-advice-card" id="sellerAdviceCard" aria-live="polite"><div class="seller-advice-loading">Recherche des informations vérifiées…</div></div>
+        <div class="seller-advice-dots" id="sellerAdviceDots" aria-label="Conseils disponibles"></div>
       </section>
     </div>
 
@@ -540,8 +536,26 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  const horizonIndex={"0-3":0,"3-6":1,"6-12":2,"unknown":3};
  const activeIndex=horizonIndex[horizon] ?? 3;
  timelineSteps.forEach(function(step,index){step.classList.toggle("active",index<=activeIndex);});
- const videoButton=document.getElementById("sellerVideoButton");
- if(videoButton)videoButton.addEventListener("click",function(){const t=document.getElementById("sellerVideoText");if(t)t.textContent="Cette capsule sera bientôt disponible ici. En attendant, utilisez les guides ci-dessous ou demandez directement un rendez-vous.";videoButton.textContent="✓";videoButton.setAttribute("aria-label","Conseil affiché");});
+ async function loadSellerAdvice(cityValue){
+   const card=document.getElementById("sellerAdviceCard"),dots=document.getElementById("sellerAdviceDots");
+   if(!card)return;
+   try{
+     const response=await fetch("/api/seller-advice?city="+encodeURIComponent(cityValue||""),{cache:"no-store"});
+     const data=await response.json();
+     if(!response.ok||!data.ok||!Array.isArray(data.items)||!data.items.length)throw new Error("Conseils indisponibles");
+     const items=data.items;let current=0;
+     function renderAdvice(){
+       const item=items[current];
+       card.innerHTML='<div><div class="seller-advice-top"><span class="seller-advice-category">'+item.category+'</span><span class="seller-advice-counter">'+(current+1)+' / '+items.length+'</span></div><h5>'+item.title+'</h5><p>'+item.text+'</p><div class="seller-advice-takeaway"><strong>À retenir :</strong> '+item.takeaway+'</div></div><div class="seller-advice-foot"><span class="seller-advice-source">'+item.sourceName+'<br>'+item.publishedAt+'</span><a class="seller-advice-link" href="'+item.sourceUrl+'" target="_blank" rel="noopener noreferrer">Voir la source →</a></div>';
+       [...dots.children].forEach((b,i)=>b.classList.toggle("active",i===current));
+     }
+     dots.innerHTML=items.map((_,i)=>'<button type="button" aria-label="Afficher le conseil '+(i+1)+'"></button>').join("");
+     [...dots.children].forEach((b,i)=>b.addEventListener("click",()=>{current=i;renderAdvice();}));
+     renderAdvice();
+     if(window.__sellerAdviceTimer)clearInterval(window.__sellerAdviceTimer);
+     window.__sellerAdviceTimer=setInterval(()=>{current=(current+1)%items.length;renderAdvice();},10000);
+   }catch(err){card.innerHTML='<div class="seller-advice-loading">Les informations du moment ne sont pas disponibles. Les guides restent accessibles ci-dessous.</div>';if(dots)dots.innerHTML="";}
+ }
  const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>

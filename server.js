@@ -6,7 +6,7 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.2.0";
+const VERSION = "2.3.0";
 
 app.disable("x-powered-by");
 app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION }));
@@ -992,6 +992,19 @@ app.get("/api/mandat-intelligence", async (_req,res)=>{
       {key:"daily",label:"Priorités du jour",prompts:[37,39]}
     ]});
   }catch(e){unexpected(res,"JML-P015","Intelligence mandat indisponible.",e);}
+});
+
+app.get("/api/seller-advice",function(req,res){
+  const city=clean(req.query.city,100);
+  const isArdennes=/ardennes|charleville|sedan|rethel|revin|nouzon|givet|fumay/i.test(city||"");
+  const items=[
+    {category:"🏦 CRÉDIT",title:"Les taux immobiliers restent autour de 3,4 % sur 20 ans",text:"CAFPI relève au 25 septembre 2026 un taux moyen de 3,43 % sur 20 ans et 3,53 % sur 25 ans. Pour un vendeur, le financement des acquéreurs reste un élément important à surveiller.",takeaway:"Le budget des acheteurs dépend aussi de leurs conditions de financement.",sourceName:"CAFPI — baromètre des taux, 25/09/2026",sourceUrl:"https://www.cafpi.fr/credit-immobilier/barometre-taux/actualites-taux/analyse-taux-credit-immobilier-septembre-2026",publishedAt:"25/09/2026"},
+    {category:"⚡ DPE",title:"Le calcul du DPE évolue au 1er janvier 2027",text:"Le coefficient de conversion de l’électricité passera de 1,9 à 1,7. Certains logements chauffés à l’électricité pourront voir leur étiquette énergétique s’améliorer, mais ce n’est pas automatique.",takeaway:"Avant une vente, vérifiez la date et la situation exacte de votre DPE.",sourceName:"Service-Public.fr — information officielle, 01/09/2026",sourceUrl:"https://www.service-public.gouv.fr/particuliers/actualites/A18446",publishedAt:"01/09/2026"},
+    {category:"📊 MARCHÉ",title:"Les Notaires publient les repères de prix des Ardennes",text:"Les données immobilières notariales permettent de comparer les niveaux de prix à l’échelle du département et des territoires.",takeaway:"Une médiane départementale ne remplace jamais une analyse du bien et de son secteur précis.",sourceName:"Notaires de France — immobilier",sourceUrl:"https://www.immobilier.notaires.fr/fr/prix-immobilier",publishedAt:"Consulté le 29/09/2026"},
+    {category:"💡 CONSEIL",title:"Un prix de vente doit être comparé à des transactions réelles",text:"La base DVF permet de consulter les transactions immobilières intervenues en France au cours des cinq dernières années.",takeaway:"Avant de fixer un prix, croisez transactions, type de bien, surface, état et localisation.",sourceName:"Service-Public.fr — DVF",sourceUrl:"https://www.service-public.gouv.fr/particuliers/vosdroits/F16832",publishedAt:"Vérifié le 29/09/2026"}
+  ];
+  const filtered=isArdennes ? items : items.filter(function(x){return x.category!=="📊 MARCHÉ";});
+  res.json({ok:true,city:city||null,updatedAt:"29/09/2026",items:filtered});
 });
 
 app.get("/api/publication-ideas",(_req,res)=>res.json([
