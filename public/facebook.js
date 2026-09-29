@@ -5,7 +5,7 @@ window.jmlFacebook=function(){
   target.classList.add("active");
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view==="facebook"));
   const title=document.getElementById("pageTitle");if(title)title.textContent="Facebook";
-  const sub=document.getElementById("pageSubtitle");if(sub)sub.textContent="Transformer les demandes Facebook en prospects réellement traitables.";
+  const sub=document.getElementById("pageSubtitle");if(sub)sub.textContent="Chaque demande explicite entre automatiquement dans le CRM pour être traitée rapidement.";
   loadFacebookAcquisition();
 };
 async function loadFacebookAcquisition(){
@@ -27,7 +27,7 @@ async function loadFacebookAcquisition(){
   document.getElementById("fbConverted").textContent=converted.length;
   document.getElementById("fbRdv").textContent=rdv;
   document.getElementById("fbMandats").textContent=mandats;
-  status.textContent=fb.length+" lead(s) Facebook récupéré(s).";
+  status.textContent=fb.length+" lead(s) Facebook récupéré(s). Les nouvelles demandes sont automatiquement ajoutées au CRM.";
   let campaignBox=document.getElementById("facebookCampaigns");
   if(!campaignBox){
     campaignBox=document.createElement("div");
