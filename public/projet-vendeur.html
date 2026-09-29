@@ -78,16 +78,19 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
   <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">💬 Guide vendeur — Les questions à se poser</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Pour arriver au rendez-vous avec une vision plus claire de votre projet.</p><a class="secondary" href="/guide-questions-vente.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Ouvrir le guide →</a></div></div>
   <div class="fb-appointment">
 <h3>📅 Demander un rendez-vous</h3>
-<p>Choisissez un créneau souhaité. Votre demande sera transmise à JML Immobilier pour confirmation. <strong>Le créneau n’est pas confirmé tant que nous ne l’avons pas validé.</strong></p>
-<form id="fbAppointmentForm" class="fb-appointment-grid">
-<div><label for="fbApptDate">Date souhaitée</label><input id="fbApptDate" type="date" required></div>
-<div><label for="fbApptTime">Créneau souhaité</label><select id="fbApptTime" required><option value="">Choisir</option><option>09:00</option><option>10:00</option><option>11:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option></select></div>
+<p>Choisissez directement parmi les créneaux actuellement proposés. <strong>Le rendez-vous sera confirmé par JML Immobilier après vérification.</strong></p>
+<form id="fbAppointmentForm">
+<div class="fb-appointment-grid">
+<div><label for="fbApptDate">Date</label><select id="fbApptDate" required><option value="">Choisir une date</option></select></div>
+<div><label for="fbApptTime">Créneau</label><select id="fbApptTime" required><option value="">Choisir un créneau</option></select></div>
 <div><label for="fbApptLocation">Lieu souhaité</label><select id="fbApptLocation"><option>À votre domicile</option><option>Chez JML Immobilier</option><option>À définir ensemble</option></select></div>
 <div><label for="fbApptPhone">Téléphone</label><input id="fbApptPhone" type="tel" maxlength="40"></div>
 <div class="full"><label for="fbApptMessage">Message (facultatif)</label><textarea id="fbApptMessage" maxlength="1000" placeholder="Une précision concernant votre projet…"></textarea></div>
-<div class="full"><button class="primary" type="submit">Demander ce rendez-vous</button></div>
+<div class="full"><button class="primary" type="submit">Demander ce créneau</button></div>
+</div>
 </form>
 <div id="fbAppointmentMessage" class="fb-appointment-message"></div>
+</div>
 </div><div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">🧭 Préparer mon rendez-vous</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Une préparation personnalisée selon votre bien et votre calendrier.</p><a class="secondary" id="fbPrepareLink" href="/preparer-rdv.html" style="display:inline-block;text-decoration:none">Préparer mon rendez-vous →</a></div></div>\n  <div class="fb-back"><button type="button" class="secondary" id="fbNewRequest">Faire une nouvelle demande</button></div>
 </div>
 </section>
@@ -143,10 +146,34 @@ form.addEventListener("submit",async function(e){
   const r=await fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const d=await r.json();
   if(!r.ok)throw new Error(d.error||"Impossible d’enregistrer votre demande.");
-  form.reset();msg.style.display="none";form.style.display="none";window.jmlProspectId=d.prospectId||"";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
+  publicLead={name,city,phone,email};window.jmlProspectId=d.prospectId||"";form.reset();msg.style.display="none";form.style.display="none";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
  }catch(err){msg.style.display="block";msg.textContent=err.message}
 });
-const appointmentForm=document.getElementById("fbAppointmentForm");if(appointmentForm){const dateInput=document.getElementById("fbApptDate");const tomorrow=new Date(Date.now()+24*3600*1000);dateInput.min=tomorrow.toISOString().slice(0,10);appointmentForm.addEventListener("submit",async function(e){e.preventDefault();const appointmentMsg=document.getElementById("fbAppointmentMessage");const d=dateInput.value,t=document.getElementById("fbApptTime").value;if(!d||!t){appointmentMsg.style.display="block";appointmentMsg.textContent="Choisissez une date et un créneau.";return;}const requestedAt=d+"T"+t+":00";const apptPayload={prospectId:window.jmlProspectId||"",name:document.getElementById("fbName").value.trim(),email:document.getElementById("fbEmail").value.trim(),phone:document.getElementById("fbApptPhone").value.trim()||document.getElementById("fbPhone").value.trim(),city:document.getElementById("fbCity").value.trim(),requestedAt,requestedLocation:document.getElementById("fbApptLocation").value,message:document.getElementById("fbApptMessage").value.trim()};try{const rr=await fetch("/api/public-appointment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(apptPayload)});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||"Impossible d'envoyer la demande.");appointmentMsg.style.display="block";appointmentMsg.textContent="Votre demande de rendez-vous a bien été transmise. Nous allons confirmer le créneau avec vous.";appointmentForm.reset();}catch(err){appointmentMsg.style.display="block";appointmentMsg.textContent=err.message;}});}const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
+const appointmentForm=document.getElementById("fbAppointmentForm");
+let publicLead={name:"",email:"",phone:"",city:""};
+let appointmentSlots=[];
+async function loadAppointmentSlots(){
+ const dateEl=document.getElementById("fbApptDate"),timeEl=document.getElementById("fbApptTime"),msg=document.getElementById("fbAppointmentMessage");
+ if(!dateEl||!timeEl)return;
+ try{
+  const rr=await fetch("/api/appointment-slots");const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||"Créneaux indisponibles.");
+  appointmentSlots=dd.slots||[];
+  const groups={};
+  appointmentSlots.forEach(function(x){const d=new Date(x),key=d.toISOString().slice(0,10);if(!groups[key])groups[key]=[];groups[key].push(x);});
+  dateEl.innerHTML='<option value="">Choisir une date</option>'+Object.keys(groups).map(function(k){const d=new Date(groups[k][0]);return '<option value="'+k+'">'+d.toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long"})+'</option>';}).join("");
+  dateEl.onchange=function(){const key=this.value;timeEl.innerHTML='<option value="">Choisir un créneau</option>'+((groups[key]||[]).map(function(x){const d=new Date(x);return '<option value="'+x+'">'+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+'</option>';}).join(""));};
+ }catch(e){if(msg){msg.style.display="block";msg.textContent="Les créneaux ne sont pas disponibles pour le moment. Vous pouvez nous contacter directement.";}}
+}
+if(appointmentForm){
+ appointmentForm.addEventListener("submit",async function(e){
+  e.preventDefault();const msg=document.getElementById("fbAppointmentMessage"),requestedAt=document.getElementById("fbApptTime").value;
+  if(!requestedAt){msg.style.display="block";msg.textContent="Choisissez un créneau.";return;}
+  const payload={prospectId:window.jmlProspectId||"",name:publicLead.name,email:publicLead.email,phone:document.getElementById("fbApptPhone").value.trim()||publicLead.phone,city:publicLead.city,requestedAt,requestedLocation:document.getElementById("fbApptLocation").value,message:document.getElementById("fbApptMessage").value.trim()};
+  try{const rr=await fetch("/api/public-appointment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||"Impossible d'envoyer la demande.");msg.style.display="block";msg.textContent="Votre demande a bien été transmise. Nous allons confirmer ce créneau avec vous.";appointmentForm.reset();document.getElementById("fbApptDate").innerHTML='<option value="">Choisir une date</option>';document.getElementById("fbApptTime").innerHTML='<option value="">Choisir un créneau</option>';await loadAppointmentSlots();}catch(err){msg.style.display="block";msg.textContent=err.message;}
+ });
+ loadAppointmentSlots();
+}
+const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
 </body>
