@@ -28,6 +28,31 @@ async function loadFacebookAcquisition(){
   document.getElementById("fbRdv").textContent=rdv;
   document.getElementById("fbMandats").textContent=mandats;
   status.textContent=fb.length+" lead(s) Facebook récupéré(s).";
+  let campaignBox=document.getElementById("facebookCampaigns");
+  if(!campaignBox){
+    campaignBox=document.createElement("div");
+    campaignBox.id="facebookCampaigns";
+    campaignBox.className="notice";
+    status.parentNode.appendChild(campaignBox);
+  }
+  const campaigns={};
+  fb.forEach(l=>{
+    const source=String(l.source||"Facebook").replace(/^Facebook\s*·\s*/i,"");
+    const key=source||"organique";
+    if(!campaigns[key])campaigns[key]={leads:0,converted:0,rdv:0,mandats:0};
+    campaigns[key].leads++;
+    const p=prospects.find(p=>(l.email&&p.email&&l.email.toLowerCase()===p.email.toLowerCase())||(l.phone&&p.phone&&l.phone===p.phone));
+    if(p){
+      campaigns[key].converted++;
+      if(p.status==="RDV pris")campaigns[key].rdv++;
+      if(p.status==="Mandat")campaigns[key].mandats++;
+    }
+  });
+  const rows=Object.entries(campaigns).sort((a,b)=>b[1].leads-a[1].leads).map(([name,c])=>{
+    const rate=c.leads?Math.round(c.converted/c.leads*100):0;
+    return "<div style='padding:8px 0;border-bottom:1px solid var(--line)'><strong>"+esc(name)+"</strong><span class='muted'> · "+c.leads+" lead(s) · "+c.converted+" CRM · "+c.rdv+" RDV · "+c.mandats+" mandat(s) · "+rate+"% convertis</span></div>";
+  }).join("");
+  campaignBox.innerHTML=rows?"<strong>Suivi des campagnes</strong><div style='margin-top:6px'>"+rows+"</div>":"<strong>Suivi des campagnes</strong><div class='muted' style='margin-top:6px'>Aucune campagne Facebook enregistrée.</div>";
   box.innerHTML=fb.length?fb.slice(0,50).map(l=>{
     const p=prospects.find(p=>(l.email&&p.email&&l.email.toLowerCase()===p.email.toLowerCase())||(l.phone&&p.phone&&l.phone===p.phone));
     const already=!!p;
