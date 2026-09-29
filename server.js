@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.9.0";
+const VERSION = "2.0.0";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -78,6 +78,45 @@ function apiError(res, status, code, message, detail = null) {
 function unexpected(res, code, message, err) {
   console.error(code, err);
   return apiError(res, 503, code, message, err?.message);
+}
+
+async function sendAppointmentConfirmationEmail(prospect, note = "") {
+  if (!prospect.email) return { sent: false, reason: "no-email" };
+  const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+  const from = String(process.env.RESEND_FROM || "").trim();
+  if (!apiKey || !from) {
+    console.warn("JML email RDV non envoyé: RESEND_API_KEY ou RESEND_FROM manquant.");
+    return { sent: false, reason: "email-provider-not-configured" };
+  }
+  const firstName = clean(prospect.name, 120).split(/\s+/)[0] || "Bonjour";
+  const cleanNote = clean(note, 500);
+  const subject = "Confirmation de votre rendez-vous — JML Immobilier";
+  const text = "Bonjour " + firstName + ",\n\n" +
+    "Votre rendez-vous concernant votre projet immobilier a bien été enregistré avec JML Immobilier." +
+    (cleanNote ? "\n\nInformations indiquées : " + cleanNote : "") +
+    "\n\nNous pourrons échanger simplement sur votre bien, votre projet et les prochaines étapes.\n\n" +
+    "À bientôt,\nJML Immobilier\nVotre projet, notre engagement";
+  const safeName = firstName.replace(/[&<>"]/g, "");
+  const safeNote = cleanNote.replace(/[&<>"]/g, "");
+  const noteHtml = safeNote ? "<p><strong>Informations indiquées :</strong> " + safeNote + "</p>" : "";
+  const html = "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
+    "<body style=\"margin:0;background:#f5f1e8;font-family:Arial,sans-serif;color:#26352f\"><div style=\"max-width:620px;margin:30px auto;padding:0 16px\">" +
+    "<div style=\"background:#173b32;padding:22px 24px;border-radius:12px 12px 0 0;color:#fff\"><div style=\"font-size:22px;font-weight:700\">JML Immobilier</div><div style=\"margin-top:5px;color:#d9bd72;font-size:13px\">VOTRE PROJET, NOTRE ENGAGEMENT</div></div>" +
+    "<div style=\"background:#fff;padding:28px 24px;border-radius:0 0 12px 12px\"><p>Bonjour " + safeName + ",</p>" +
+    "<p><strong>Votre rendez-vous concernant votre projet immobilier a bien été enregistré.</strong></p>" + noteHtml +
+    "<p>Nous pourrons échanger simplement sur votre bien, votre projet et les prochaines étapes.</p>" +
+    "<p style=\"margin-top:28px\">À bientôt,<br><strong>JML Immobilier</strong><br><span style=\"color:#8c6d2d\">Votre projet, notre engagement</span></p></div></div></body></html>";
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: [prospect.email], subject, text, html })
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error("Resend " + response.status + ": " + detail.slice(0, 500));
+  }
+  const result = await response.json();
+  return { sent: true, id: result.id || null };
 }
 
 async function db(sql, params = []) {
@@ -452,15 +491,39 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
       if(["Appel","SMS","Email","RDV","Visite"].includes(type)){
         await db("UPDATE jml_prospects SET last_contact_at=$2,contact_count=contact_count+1,updated_at=NOW() WHERE id=$1",[req.params.id,t]);
       }
-      if(outcome==="RDV pris") await db("UPDATE jml_prospects SET status='RDV pris',next_action='Préparer et confirmer le rendez-vous.',next_action_at=NULL,updated_at=NOW() WHERE id=$1",[req.params.id]);
+      let emailConfirmation = { sent: false, reason: "not-applicable" };
+      if(outcome==="RDV pris") {
+        await db("UPDATE jml_prospects SET status='RDV pris',next_action='Préparer et confirmer le rendez-vous.',next_action_at=NULL,updated_at=NOW() WHERE id=$1",[req.params.id]);
+        const prospectResult = await db("SELECT * FROM jml_prospects WHERE id=$1",[req.params.id]);
+        if(prospectResult.rowCount) {
+          try {
+            emailConfirmation = await sendAppointmentConfirmationEmail(rowToProspect(prospectResult.rows[0]), note);
+          } catch (emailErr) {
+            console.error("JML appointment confirmation failed:", emailErr);
+            emailConfirmation = { sent: false, reason: "send-failed" };
+          }
+        }
+      }
       if(outcome==="Pas de projet"||outcome==="Refus") await db("UPDATE jml_prospects SET status='Pas de projet',next_action=NULL,next_action_at=NULL,updated_at=NOW() WHERE id=$1",[req.params.id]);
       if(outcome==="À rappeler") await db("UPDATE jml_prospects SET status='À relancer',next_action='Rappeler suite au dernier échange.',next_action_at=NOW()+INTERVAL '2 days',updated_at=NOW() WHERE id=$1",[req.params.id]);
       if(outcome==="Intéressé") await db("UPDATE jml_prospects SET status='Contacté',next_action='Proposer un rendez-vous vendeur.',next_action_at=NOW()+INTERVAL '1 day',updated_at=NOW() WHERE id=$1",[req.params.id]);
       if(outcome==="Pas de réponse") await db("UPDATE jml_prospects SET status='À relancer',next_action='Nouvelle tentative de contact.',next_action_at=NOW()+INTERVAL '3 days',updated_at=NOW() WHERE id=$1",[req.params.id]);
       if(!["Appel","SMS","Email","RDV","Visite"].includes(type) && !outcome) await db("UPDATE jml_prospects SET updated_at=NOW() WHERE id=$1",[req.params.id]);
-      return res.status(201).json({ok:true,activity:{id,type,note,outcome:outcome||null,created_at:t}});
+      return res.status(201).json({ok:true,activity:{id,type,note,outcome:outcome||null,created_at:t},emailConfirmation});
     }
-    res.status(201).json({ok:true,activity:{id:newId(),type,note,outcome:outcome||null,created_at:now()}});
+    let emailConfirmation = { sent: false, reason: "not-applicable" };
+    if(outcome==="RDV pris") {
+      const prospect = memory.prospects.get(req.params.id);
+      if(prospect) {
+        try {
+          emailConfirmation = await sendAppointmentConfirmationEmail(prospect, note);
+        } catch (emailErr) {
+          console.error("JML appointment confirmation failed:", emailErr);
+          emailConfirmation = { sent: false, reason: "send-failed" };
+        }
+      }
+    }
+    res.status(201).json({ok:true,activity:{id:newId(),type,note,outcome:outcome||null,created_at:now()},emailConfirmation});
   }catch(e){unexpected(res,"JML-P012","Enregistrement de l'action indisponible.",e);}
 });
 
