@@ -32,6 +32,7 @@ const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
 
 const communeMarketCache = new Map();
+
 const normalizeSearchCity = value => String(value || "")
   .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
   .toLowerCase().replace(/[^a-z0-9 -]/g,"").replace(/\s+/g," ").trim();
@@ -45,8 +46,67 @@ function decodeBasicEntities(value){
     .replace(/&ccedil;/gi,"ç");
 }
 
+function stripHtml(value){
+  return decodeBasicEntities(String(value || "")
+    .replace(/<script[\s\S]*?<\/script>/gi," ")
+    .replace(/<style[\s\S]*?<\/style>/gi," ")
+    .replace(/<[^>]+>/g," "))
+    .replace(/\s+/g," ").trim();
+}
+
+function parseEuroPerM2(value){
+  const match=String(value || "").match(/([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m²/i);
+  if(!match) return null;
+  const price=Number(match[1].replace(/\s/g,""));
+  return Number.isFinite(price) && price>=300 && price<=6000 ? price : null;
+}
+
+function findEstimusCommuneUrl(html, city){
+  const target=normalizeSearchCity(city).replace(/^\d{5}\s+/,"");
+  const re=/<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  let match;
+  while((match=re.exec(html))){
+    const href=String(match[1] || "");
+    if(!/\\/commune\\//i.test(href)) continue;
+    const label=stripHtml(match[2]).replace(/^\d{5}\s+/,"");
+    const normalized=normalizeSearchCity(label);
+    if(normalized===target || normalized.endsWith(" "+target)){
+      return new URL(href,"https://estimus.fr").toString();
+    }
+  }
+  return null;
+}
+
+function parseEstimusCommunePage(html, city){
+  const text=stripHtml(html);
+  const cityKey=normalizeSearchCity(city);
+  const medianMatch=text.match(/Le prix médian au m² à [^\.]+ est de ([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m²/i);
+  const median=parseEuroPerM2(medianMatch ? medianMatch[0] : "");
+  const houseMatch=text.match(/le prix médian est de ([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m² pour les maisons/i);
+  const apartmentMatch=text.match(/([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m² pour les appartements/i);
+  const housePrice=parseEuroPerM2(houseMatch ? houseMatch[0] : "");
+  const apartmentPrice=parseEuroPerM2(apartmentMatch ? apartmentMatch[0] : "");
+  const transactionsMatch=text.match(/basé sur ([0-9]{1,4}(?:\s[0-9]{3})?) transactions/i);
+  const transactions=transactionsMatch ? Number(transactionsMatch[1].replace(/\s/g,"")) : null;
+  if(!median) return null;
+  return {
+    city,
+    found:true,
+    price:median,
+    communalPrice:median,
+    housePrice,
+    apartmentPrice,
+    transactions:Number.isFinite(transactions) ? transactions : null,
+    source:"DVF — Estimus, commune",
+    sourceUrl:null,
+    period:"12 derniers mois disponibles, jusqu’au 31 décembre 2025",
+    message:"Repère communal issu des transactions DVF. Il sert à préparer notre échange et ne constitue pas une estimation du bien.",
+    caution:"Le prix communal est un repère. Le type de bien, la surface, l’état et la localisation précise peuvent modifier fortement la valeur."
+  };
+}
+
 app.get("/api/commune-market", async (req,res) => {
-  const city = clean(req.query.city,100);
+  const city=clean(req.query.city,100);
   if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
   const key=normalizeSearchCity(city);
   const cached=communeMarketCache.get(key);
@@ -56,48 +116,39 @@ app.get("/api/commune-market", async (req,res) => {
     city,found:false,source:"DVF / données départementales",
     sourceUrl:"https://estimus.fr/departement/08-ardennes",
     message:"Nous n’avons pas trouvé de médiane communale suffisamment fiable pour cette commune. Le rendez-vous peut s’appuyer sur les données du secteur et les ventes comparables.",
-    department:{median:1248,house:1308,apartment:1037,period:"12 derniers mois disponibles, jusqu’au 31 décembre 2025"},
-    caution:"Les données communales peuvent être absentes ou peu représentatives lorsque le nombre de ventes est faible."
+    department:{median:null,house:null,apartment:null,period:"Données communales indisponibles"},
+    caution:"Aucun prix communal n’est affiché lorsqu’il n’est pas identifié de façon suffisamment fiable."
   };
 
   try{
-    const response=await fetch("https://estimus.fr/departement/08-ardennes",{
+    const departmentResponse=await fetch("https://estimus.fr/departement/08-ardennes",{
       headers:{"User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(7000)
     });
-    if(!response.ok) throw new Error("Estimus HTTP "+response.status);
-    const html=await response.text();
-    const text=decodeBasicEntities(html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
-    const normalizedText=normalizeSearchCity(text);
-    // Le nom de la commune apparaît plusieurs fois sur la page Estimus.
-    // On retient une occurrence suivie rapidement d'un prix afin d'éviter
-    // de récupérer le prix d'une autre commune (ex. Fumay 786 €/m²).
-    let price=null;
-    let matchIndex=-1;
-    let from=0;
-    while((matchIndex=normalizedText.indexOf(key,from))>=0){
-      const windowText=normalizedText.slice(matchIndex,matchIndex+180);
-      const matches=[...windowText.matchAll(/([0-9]{3,5}(?:\s[0-9]{3})?)\s*€\s*\/\s*m²/g)];
-      const prices=matches.map(m=>Number(m[1].replace(/\s/g,""))).filter(p=>p>=500&&p<=5000);
-      if(prices.length){ price=prices[0]; break; }
-      from=matchIndex+key.length;
-    }
-    if(price!==null){
-          const data={
-            city,found:true,price,source:"DVF — médiane communale",
-            sourceUrl:"https://estimus.fr/departement/08-ardennes",
-            period:"12 derniers mois de données DVF disponibles, jusqu’au 31 décembre 2025",
-            message:"Repère communal issu des transactions DVF. Il sert à préparer notre échange et ne constitue pas une estimation du bien.",
-            caution:"Si la commune compte peu de ventes, la médiane doit être interprétée avec prudence."
-          };
-          communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});
-          return res.json({ok:true,...data,cache:false});
-        }
-      }
-  }catch(error){ console.warn("JML commune-market fallback:",error.message); }
+    if(!departmentResponse.ok) throw new Error("Estimus département HTTP "+departmentResponse.status);
+    const departmentHtml=await departmentResponse.text();
+    const communeUrl=findEstimusCommuneUrl(departmentHtml,city);
+    if(!communeUrl) throw new Error("Commune Estimus introuvable pour "+city);
+
+    const communeResponse=await fetch(communeUrl,{
+      headers:{"User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(7000)
+    });
+    if(!communeResponse.ok) throw new Error("Estimus commune HTTP "+communeResponse.status);
+    const communeHtml=await communeResponse.text();
+    const parsed=parseEstimusCommunePage(communeHtml,city);
+    if(!parsed) throw new Error("Médiane communale non trouvée pour "+city);
+
+    parsed.sourceUrl=communeUrl;
+    parsed.period="12 derniers mois disponibles, jusqu’au 31 décembre 2025";
+    communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
+    return res.json({ok:true,...parsed,cache:false});
+  }catch(error){
+    console.warn("JML commune-market fallback:",error.message);
+  }
 
   communeMarketCache.set(key,{expiresAt:Date.now()+60*60*1000,data:fallback});
   return res.json({ok:true,...fallback,cache:false});
 });
+
 const cleanEmail = v => String(v ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g,"").trim().slice(0,180);
 const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(v));
 const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
