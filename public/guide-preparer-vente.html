@@ -7,51 +7,19 @@
 <link rel="stylesheet" href="/styles.css?v=1.8.0">
 <style>
 body{min-height:100vh;background:var(--cream)}
-.guide{max-width:760px;margin:0 auto;padding:28px 18px 50px}
-.guide-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px}
-.guide-head{background:var(--green);color:#fff;border-radius:16px;padding:28px;margin-bottom:18px}
-.guide-head .eyebrow{color:#d8bb7a;font-size:12px;letter-spacing:.08em}
-.guide-head h1{margin:8px 0;font-size:30px}
-.guide-head p{color:#dce5df;line-height:1.6;margin-bottom:0}
-.guide-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
-.guide-meta span{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);border-radius:999px;padding:7px 10px;color:#f4efe4;font-size:12px}
-.guide-intro{margin:0 0 14px;color:#52635b;font-size:14px}
-.guide-topics{display:grid;gap:12px;margin-top:18px}
-.guide-topic{display:grid;grid-template-columns:92px 1fr;gap:16px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 5px 18px rgba(23,59,50,.05)}
-.guide-visual{height:88px;border-radius:13px;background:#f5f1e8;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
-.guide-visual img{width:82px;height:82px;object-fit:contain}
-.guide-topic h2{color:var(--green);font-size:17px;line-height:1.25;margin:0 0 6px}
-.guide-topic p{margin:0;color:#3c4b45;font-size:14px;line-height:1.55}
-.guide-section-title{font-size:19px!important;margin:28px 0 10px!important}
-.guide-check{background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-top:12px}
-.guide-check ul{list-style:none;padding:0;margin:0}
-.guide-check li{position:relative;padding:7px 0 7px 28px;margin:0;border-bottom:1px solid rgba(23,59,50,.08);font-size:14px}
-.guide-check li:last-child{border-bottom:0}
-.guide-check li::before{content:"✓";position:absolute;left:0;top:7px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;font-size:12px;font-weight:700}
-.guide-summary{background:var(--green);color:#fff;border-radius:16px;padding:18px;margin-top:12px}
-.guide-summary strong{display:block;color:#d8bb7a;margin-bottom:6px}
-.guide-summary p{color:#edf2ee;margin:0;font-size:14px}
-.guide-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
-.guide-actions a,.guide-actions button{flex:1;min-width:210px;text-align:center}
-@media(max-width:560px){
-  .guide{padding:16px 12px 36px}
-  .guide-card{padding:14px;border-radius:16px}
-  .guide-head{padding:22px 18px;margin-bottom:12px}
-  .guide-head h1{font-size:26px}
-  .guide-head p{font-size:14px}
-  .guide-topic{grid-template-columns:64px 1fr;gap:12px;padding:12px}
-  .guide-visual{height:64px;border-radius:11px}
-  .guide-visual img{width:58px;height:58px}
-  .guide-topic h2{font-size:15px}
-  .guide-topic p{font-size:13px;line-height:1.5}
-  .guide-section-title{font-size:18px!important}
-  .guide-check{padding:12px 14px}
-  .guide-check li{font-size:13px;padding-left:26px}
-  .guide-actions a,.guide-actions button{min-width:0;width:100%}
-}
-@media print{.guide-actions{display:none}.guide-topic{break-inside:avoid;box-shadow:none}.guide-summary{background:#fff;color:#000;border:1px solid #ccc}.guide-summary p{color:#000}}
-.guide-actions a,.guide-actions button{display:inline-block;padding:11px 15px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--green);font-weight:600;text-decoration:none;cursor:pointer}
-@media print{.guide-actions{display:none}body{background:#fff}.guide{padding:0}.guide-card{border:0}}
+.guide{max-width:760px;margin:0 auto;padding:22px 16px 50px}
+.guide-head{background:var(--green);color:#fff;border-radius:20px;padding:25px 22px;margin-bottom:14px;box-shadow:0 10px 28px rgba(23,59,50,.12)}
+.guide-head .eyebrow{color:#d8bb7a;font-size:11px;letter-spacing:.08em;font-weight:700}.guide-head h1{margin:7px 0 5px;font-size:29px}.guide-head p{color:#dce5df;line-height:1.5;margin:0;font-size:14px}
+.guide-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:15px}.guide-meta span{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);border-radius:999px;padding:6px 9px;color:#f4efe4;font-size:11px}
+.guide-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px}.guide-intro{margin:0 0 14px;color:#52635b;font-size:14px;line-height:1.5}
+.progress-box{background:#f5f1e8;border:1px solid var(--line);border-radius:15px;padding:13px 14px;margin-bottom:14px}.progress-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--green);font-weight:700}.progress-track{height:7px;background:#e2ddd1;border-radius:99px;overflow:hidden;margin-top:9px}.progress-fill{height:100%;width:0;background:#c9a85e;border-radius:99px;transition:width .3s ease}.progress-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px;color:#66746e;font-size:11px}.progress-actions button{border:0;background:none;color:#66746e;font-size:11px;text-decoration:underline;padding:0;cursor:pointer}
+.guide-topics{display:grid;gap:10px}.guide-topic{display:grid;grid-template-columns:76px 1fr;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 4px 15px rgba(23,59,50,.045);transition:.2s}.guide-topic.done{border-color:#c9a85e;background:#fffdf8}
+.guide-visual{height:76px;border-radius:12px;background:#f5f1e8;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}.guide-visual img{width:70px;height:70px;object-fit:contain}
+.guide-topic h2{color:var(--green);font-size:16px;line-height:1.25;margin:0 0 5px}.guide-topic p{margin:0;color:#3c4b45;font-size:13px;line-height:1.5}.guide-check-btn{margin-top:8px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;background:#fff;padding:6px 9px;color:var(--green);font-size:11px;font-weight:700;cursor:pointer}.guide-check-btn .mark{width:17px;height:17px;border:1px solid #b9c3bd;border-radius:50%;display:grid;place-items:center;font-size:11px}.guide-topic.done .guide-check-btn{background:var(--green);border-color:var(--green);color:#fff}.guide-topic.done .guide-check-btn .mark{border-color:#fff;background:#fff;color:var(--green)}
+.guide-section-title{font-size:19px!important;margin:24px 0 9px!important;color:var(--green)}.guide-check{background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:13px 15px}.guide-check ul{list-style:none;padding:0;margin:0}.guide-check li{position:relative;padding:7px 0 7px 27px;border-bottom:1px solid rgba(23,59,50,.08);font-size:13px;line-height:1.4}.guide-check li:last-child{border-bottom:0}.guide-check li::before{content:"✓";position:absolute;left:0;top:7px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;font-size:11px;font-weight:700}
+.guide-summary{background:var(--green);color:#fff;border-radius:16px;padding:17px;margin-top:9px}.guide-summary strong{display:block;color:#d8bb7a;margin-bottom:5px}.guide-summary p{color:#edf2ee;margin:0;font-size:13px;line-height:1.5}.guide-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.guide-actions a,.guide-actions button{flex:1;min-width:210px;text-align:center;display:inline-block;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--green);font-weight:700;text-decoration:none;cursor:pointer}
+@media(max-width:560px){.guide{padding:12px 10px 35px}.guide-head{padding:21px 17px;border-radius:17px}.guide-head h1{font-size:25px}.guide-head p{font-size:13px}.guide-card{padding:12px;border-radius:17px}.guide-topic{grid-template-columns:60px 1fr;gap:11px;padding:10px}.guide-visual{height:60px}.guide-visual img{width:55px;height:55px}.guide-topic h2{font-size:14px}.guide-topic p{font-size:12px;line-height:1.48}.guide-check-btn{font-size:10px;padding:5px 8px}.guide-section-title{font-size:18px!important}.guide-check{padding:11px 12px}.guide-check li{font-size:12px}.guide-actions a,.guide-actions button{min-width:0;width:100%}}
+@media print{.guide-actions,.progress-box,.guide-check-btn{display:none!important}body{background:#fff}.guide{padding:0}.guide-card{border:0}.guide-topic{break-inside:avoid;box-shadow:none}.guide-summary{background:#fff;color:#000;border:1px solid #ccc}.guide-summary p{color:#000}}
 </style>
 </head>
 <body>
@@ -63,44 +31,26 @@ body{min-height:100vh;background:var(--cream)}
 <div class="guide-meta"><span>6 étapes</span><span>À préparer en quelques minutes</span></div>
 </section>
 <section class="guide-card">
-<h2>1. Clarifier votre projet</h2>
-<p>Avant de parler de prix, prenez quelques minutes pour préciser votre projet : pourquoi souhaitez-vous vendre, dans quel délai et quelles sont les contraintes importantes pour vous ?</p>
-
-<h2>2. Réunir les informations sur le bien</h2>
-<p>Préparez, si vous les avez, les informations utiles : surface, nombre de pièces, année de construction, taxe foncière, travaux réalisés, équipements, dépendances et documents disponibles.</p>
-
-<h2>3. Faire le point sur les travaux</h2>
-<p>Notez les travaux déjà réalisés et ceux qui restent éventuellement à prévoir. Il n'est pas nécessaire de tout rénover avant notre échange : l'objectif est d'abord de distinguer les éléments importants pour le projet.</p>
-
-<h2>4. Le DPE et les documents</h2>
-<p>Si vous disposez d'un DPE ou d'autres diagnostics, gardez-les à portée de main. Ils pourront aider à préparer l'échange et à identifier les informations à vérifier.</p>
-
-<h2>5. Réfléchir au prix… sans se bloquer sur un chiffre</h2>
-<p>Vous pouvez bien sûr avoir un prix en tête. Gardez toutefois à l'esprit qu'un prix de vente se construit à partir de plusieurs éléments : secteur, caractéristiques du bien, état, prestations, contexte du marché et comparaison avec des biens réellement comparables.</p>
-
-<h2>6. Définir votre calendrier</h2>
-<p>Indiquez-vous une échéance idéale : vendre rapidement, dans quelques mois, ou simplement préparer le projet. Le calendrier peut évoluer ; il sert surtout à organiser les prochaines étapes.</p>
-
-<h2 class="guide-section-title">Checklist avant notre rendez-vous</h2>
-<div class="guide-check">
-<ul>
-<li>Les caractéristiques principales du bien</li>
-<li>Les travaux réalisés et ceux éventuellement à prévoir</li>
-<li>Le DPE et les diagnostics disponibles</li>
-<li>La taxe foncière si vous l'avez</li>
-<li>Le prix auquel vous pensez aujourd'hui, même s'il s'agit d'un ordre d'idée</li>
-<li>Votre calendrier idéal et les éléments qui pourraient modifier votre décision</li>
-</ul>
+<p class="guide-intro">Avancez étape par étape et cochez ce que vous avez préparé. Votre progression reste enregistrée sur cet appareil.</p>
+<div class="progress-box"><div class="progress-row"><span id="progressText">0 / 6 étapes préparées</span><span id="progressPercent">0 %</span></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="progress-actions"><span>Progression locale</span><button type="button" id="resetProgress">Réinitialiser</button></div></div>
+<div class="guide-topics">
+<article class="guide-topic" data-step="1"><div class="guide-visual"><img src="/assets/guide-project.svg" alt="" loading="lazy"></div><div><h2>1. Clarifier votre projet</h2><p>Pourquoi vendre ? Dans quel délai ? Quelles sont vos contraintes ou priorités ?</p><button class="guide-check-btn" type="button"><span class="mark">✓</span><span>J’ai préparé cette étape</span></button></div></article><article class="guide-topic" data-step="2"><div class="guide-visual"><img src="/assets/guide-documents.svg" alt="" loading="lazy"></div><div><h2>2. Réunir les informations sur le bien</h2><p>Surface, pièces, année de construction, taxe foncière, travaux, équipements, dépendances et documents disponibles.</p><button class="guide-check-btn" type="button"><span class="mark">✓</span><span>J’ai préparé cette étape</span></button></div></article><article class="guide-topic" data-step="3"><div class="guide-visual"><img src="/assets/guide-travaux.svg" alt="" loading="lazy"></div><div><h2>3. Faire le point sur les travaux</h2><p>Ce qui a été réalisé, ce qui reste à prévoir et les éléments importants pour le projet.</p><button class="guide-check-btn" type="button"><span class="mark">✓</span><span>J’ai préparé cette étape</span></button></div></article><article class="guide-topic" data-step="4"><div class="guide-visual"><img src="/assets/guide-dpe.svg" alt="" loading="lazy"></div><div><h2>4. Le DPE et les documents</h2><p>DPE et diagnostics disponibles : gardez-les à portée de main pour identifier les informations à vérifier.</p><button class="guide-check-btn" type="button"><span class="mark">✓</span><span>J’ai préparé cette étape</span></button></div></article><article class="guide-topic" data-step="5"><div class="guide-visual"><img src="/assets/guide-prix.svg" alt="" loading="lazy"></div><div><h2>5. Réfléchir au prix… sans se bloquer</h2><p>Gardez votre idée de prix en tête, sans vous y enfermer : secteur, bien, état, prestations et comparables comptent.</p><button class="guide-check-btn" type="button"><span class="mark">✓</span><span>J’ai préparé cette étape</span></button></div></article><article class="guide-topic" data-step="6"><div class="guide-visual"><img src="/assets/guide-calendar.svg" alt="" loading="lazy"></div><div><h2>6. Définir votre calendrier</h2><p>Vendre rapidement, dans quelques mois ou simplement préparer le projet : fixez une échéance indicative.</p><button class="guide-check-btn" type="button"><span class="mark">✓</span><span>J’ai préparé cette étape</span></button></div></article>
 </div>
-
-<h2 class="guide-section-title">À retenir</h2>
-<div class="guide-summary"><strong>Votre objectif</strong><p>Arriver au rendez-vous avec un projet plus clair et les informations utiles pour parler concrètement de votre bien. Ce guide ne remplace ni un avis professionnel ni une estimation.</p></div>
-
-<div class="guide-actions">
-<button type="button" onclick="window.print()">🖨️ Imprimer / enregistrer en PDF</button>
-<a href="/projet-vendeur">← Retour à votre espace vendeur</a>
-</div>
+<h2 class="guide-section-title">Checklist avant notre rendez-vous</h2><div class="guide-check"><ul><li>Les caractéristiques principales du bien</li><li>Les travaux réalisés et ceux éventuellement à prévoir</li><li>Le DPE et les diagnostics disponibles</li><li>La taxe foncière si vous l'avez</li><li>Le prix auquel vous pensez aujourd'hui, même s'il s'agit d'un ordre d'idée</li><li>Votre calendrier idéal et les éléments qui pourraient modifier votre décision</li></ul></div>
+<h2 class="guide-section-title">À retenir</h2><div class="guide-summary"><strong>Votre objectif</strong><p>Arriver au rendez-vous avec un projet plus clair et les informations utiles pour parler concrètement de votre bien. Ce guide ne remplace ni un avis professionnel ni une estimation.</p></div>
+<div class="guide-actions"><button type="button" onclick="window.print()">🖨️ Enregistrer en PDF</button><a href="/projet-vendeur">← Retour à votre espace vendeur</a></div>
 </section>
 </main>
+<script>
+(function(){
+const key="jml-guide-preparer-vente-v1",cards=[...document.querySelectorAll(".guide-topic")],fill=document.getElementById("progressFill"),txt=document.getElementById("progressText"),pct=document.getElementById("progressPercent");
+let done=[];try{done=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(done))done=[]}catch(e){}
+function render(){cards.forEach(c=>{const d=done.includes(Number(c.dataset.step));c.classList.toggle("done",d);c.querySelector(".guide-check-btn span:last-child").textContent=d?"Étape préparée ✓":"J’ai préparé cette étape";});const n=done.length,p=Math.round(n/6*100);fill.style.width=p+"%";txt.textContent=n+" / 6 étapes préparées";pct.textContent=p+" %"}
+function save(){try{localStorage.setItem(key,JSON.stringify(done))}catch(e){}}
+cards.forEach(c=>c.querySelector(".guide-check-btn").addEventListener("click",()=>{const s=Number(c.dataset.step);done=done.includes(s)?done.filter(x=>x!==s):[...done,s].sort((a,b)=>a-b);save();render()}));
+document.getElementById("resetProgress").addEventListener("click",()=>{done=[];save();render()});render();
+})();
+</script>
+
 </body>
 </html>
