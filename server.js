@@ -745,6 +745,7 @@ app.get("/api/mandat-intelligence", async (_req,res)=>{
   }catch(e){unexpected(res,"JML-P015","Intelligence mandat indisponible.",e);}
 });
 
+const EVENTS_SOURCE="https://www.ardennes.com/preparer-son-sejour/agenda/";
 app.get("/api/publication-ideas",(_req,res)=>res.json([
   {title:"Prix réel vs prix espéré",target:"vendeurs",hook:"Votre maison vaut-elle vraiment le prix que vous avez en tête ?"},
   {title:"Travaux avant vente",target:"vendeurs",hook:"Faut-il vraiment refaire sa maison avant de la vendre ?"},
