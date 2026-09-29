@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.7.0";
+const VERSION = "1.8.0";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -468,12 +468,87 @@ app.post("/api/leads", async (req,res) => {
   if(!lead.consent) return apiError(res,400,"JML-L006","Consentement requis.");
   try{
     if(pool){
-      await db(`INSERT INTO jml_leads (id,name,email,phone,city,property_type,horizon,source,consent,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [lead.id,lead.name,lead.email||null,lead.phone||null,lead.city||null,lead.propertyType||null,lead.horizon||null,lead.source,true,lead.createdAt]);
-      return res.status(201).json({ok:true,persisted:true,id:lead.id});
+      const client=await pool.connect();
+      try{
+        await client.query("BEGIN");
+        await client.query(
+          `INSERT INTO jml_leads (id,name,email,phone,city,property_type,horizon,source,consent,created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          [lead.id,lead.name,lead.email||null,lead.phone||null,lead.city||null,lead.propertyType||null,lead.horizon||null,lead.source,true,lead.createdAt]
+        );
+
+        // Une demande explicite devient immédiatement un prospect exploitable.
+        // Si le contact existe déjà, on réutilise la fiche au lieu de créer un doublon.
+        let existing=null;
+        if(lead.phone||lead.email){
+          const dup=await client.query(
+            `SELECT * FROM jml_prospects
+             WHERE (phone IS NOT NULL AND phone <> '' AND phone=$1)
+                OR (email IS NOT NULL AND email <> '' AND LOWER(email)=LOWER($2))
+             ORDER BY created_at ASC LIMIT 1`,
+            [lead.phone||null,lead.email||null]
+          );
+          if(dup.rowCount) existing=dup.rows[0];
+        }
+
+        let prospectId=existing?.id||newId();
+        if(!existing){
+          const p=normalizeProspect({
+            name:lead.name,
+            city:lead.city,
+            phone:lead.phone,
+            email:lead.email,
+            property_type:lead.propertyType||"Maison",
+            horizon:lead.horizon||"unknown",
+            source:lead.source||"Lead Magnet",
+            status:"À qualifier",
+            contact_basis:"Contact demandé par la personne",
+            contact_consent:true,
+            notes:"Demande captée via formulaire JML. Recontact autorisé."
+          });
+          p.id=prospectId;
+          const q=scoreProspect(p);
+          const nextAt=p.horizon==="0-3" ? new Date(Date.now()+24*3600*1000)
+            : p.horizon==="3-6" ? new Date(Date.now()+3*24*3600*1000) : null;
+          await client.query(
+            `INSERT INTO jml_prospects
+             (id,name,city,phone,email,property_type,horizon,source,status,contact_basis,contact_consent,consent_at,notes,score,priority,reasons,next_action,next_action_at,created_at,updated_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+            [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,true,lead.createdAt,p.notes||null,q.score,q.priority,JSON.stringify(q.reasons),q.nextAction,nextAt,lead.createdAt,lead.createdAt]
+          );
+        }
+        await client.query("COMMIT");
+        return res.status(201).json({ok:true,persisted:true,id:lead.id,prospectId,alreadyInCrm:!!existing});
+      }catch(txErr){
+        await client.query("ROLLBACK");
+        throw txErr;
+      }finally{
+        client.release();
+      }
     }
+
     memory.leads.set(lead.id,lead);
-    res.status(201).json({ok:true,persisted:false,id:lead.id});
+    const existing=[...memory.prospects.values()].find(p=>
+      (lead.phone&&p.phone&&lead.phone===p.phone) ||
+      (lead.email&&p.email&&lead.email.toLowerCase()===String(p.email).toLowerCase())
+    );
+    let prospectId=existing?.id;
+    if(!existing){
+      const p=normalizeProspect({
+        name:lead.name,city:lead.city,phone:lead.phone,email:lead.email,
+        property_type:lead.propertyType||"Maison",horizon:lead.horizon||"unknown",
+        source:lead.source||"Lead Magnet",status:"À qualifier",
+        contact_basis:"Contact demandé par la personne",contact_consent:true,
+        notes:"Demande captée via formulaire JML. Recontact autorisé."
+      });
+      const q=scoreProspect(p);
+      const nextAt=p.horizon==="0-3" ? new Date(Date.now()+24*3600*1000).toISOString()
+        : p.horizon==="3-6" ? new Date(Date.now()+3*24*3600*1000).toISOString() : null;
+      const out={...p,...q,nextActionAt:nextAt,createdAt:lead.createdAt,updatedAt:lead.createdAt};
+      memory.prospects.set(p.id,out);
+      prospectId=p.id;
+    }
+    res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing});
   }catch(e){unexpected(res,"JML-L001","Enregistrement du lead indisponible.",e);}
 });
 
