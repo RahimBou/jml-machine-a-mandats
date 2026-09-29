@@ -248,7 +248,7 @@ app.get("/api/health", async (_req,res) => {
     try { await db("SELECT 1"); database = "postgres"; }
     catch(e){ database = "postgres-error"; databaseError = e.message; }
   }
-  res.json({ok:true,app:"JML Machine à Mandats",version:VERSION,database, databaseError, region:"Ardennes",sector:"Charleville-Mézières"});
+  res.json({ok:true,app:"JML Projet Vendeur",version:VERSION,database, databaseError, region:"Ardennes",sector:"Charleville-Mézières"});
 });
 
 app.get("/api/diagnostic", async (_req,res) => {
@@ -400,7 +400,7 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
   const note=clean(req.body?.note,1000);
   const outcome=clean(req.body?.outcome,80);
   const allowedOutcomes=["Pas de réponse","Intéressé","À rappeler","RDV pris","Pas de projet","Refus"];
-  if(outcome && !allowedOutcomes.includes(outcome)) return res.status(400).json({ok:false,error:"Résultat d’action invalide."});
+  if(outcome && !allowedOutcomes.includes(outcome)) return res.status(400).json({ok:false,error:"Résultat d'action invalide."});
   const allowed=["Appel","SMS","Email","RDV","Visite","Note"];
   if(!allowed.includes(type)) return res.status(400).json({ok:false,error:"Type d'action invalide."});
   try{
@@ -550,13 +550,13 @@ app.get("*",(_req,res)=>res.sendFile(path.join(__dirname,"public","index.html"))
 async function start(){
   try{
     await initDb();
-    app.listen(PORT,()=>console.log(`JML Machine à Mandats v${VERSION} on ${PORT}`));
+    app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} on ${PORT}`));
   }catch(err){
     console.error("DB init failed:",err);
     if(hasDatabase){
-      app.listen(PORT,()=>console.log(`JML Machine à Mandats v${VERSION} started with DATABASE ERROR`));
+      app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} started with DATABASE ERROR`));
     }else{
-      app.listen(PORT,()=>console.log(`JML Machine à Mandats v${VERSION} without DATABASE_URL`));
+      app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} without DATABASE_URL`));
     }
   }
 }
