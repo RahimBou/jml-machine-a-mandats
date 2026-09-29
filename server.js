@@ -10,7 +10,11 @@ const VERSION = "1.7.0";
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
-app.get("/projet-vendeur", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));\napp.get("/facebook", (req, res) => {\n  const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";\n  res.redirect(302, `/projet-vendeur${qs}`);\n});
+app.get("/projet-vendeur", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
+app.get("/facebook", (req, res) => {
+  const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+  res.redirect(302, `/projet-vendeur${qs}`);
+});
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
