@@ -652,6 +652,44 @@ app.delete("/api/prospects/:id", async (req,res) => {
 });
 
 
+app.get("/api/appointment-requests", async (_req,res) => {
+  try{
+    if(!pool) return res.json({ok:true,requests:[]});
+    const q=await db("SELECT r.*, p.name AS prospect_name, p.status AS prospect_status FROM jml_appointment_requests r LEFT JOIN jml_prospects p ON p.id=r.prospect_id ORDER BY CASE WHEN r.status='À traiter' THEN 0 ELSE 1 END, r.created_at DESC");
+    return res.json({ok:true,requests:q.rows});
+  }catch(e){return unexpected(res,"JML-A011","Lecture des demandes de rendez-vous indisponible.",e);}
+});
+
+app.post("/api/appointment-requests/:id/confirm", async (req,res) => {
+  const id=clean(req.params.id,100);
+  try{
+    if(!pool) return apiError(res,503,"JML-A012","PostgreSQL n'est pas configuré.");
+    const q=await db("SELECT r.*, p.id AS pid, p.name AS pname, p.email AS pemail, p.phone AS pphone FROM jml_appointment_requests r LEFT JOIN jml_prospects p ON p.id=r.prospect_id WHERE r.id=$1",[id]);
+    if(!q.rowCount) return apiError(res,404,"JML-A013","Demande de rendez-vous introuvable.");
+    const r=q.rows[0];
+    if(r.status!=="À traiter") return apiError(res,409,"JML-A014","Cette demande a déjà été traitée.");
+    if(!r.pid) return apiError(res,409,"JML-A015","Cette demande n'est pas rattachée à un prospect.");
+    const note=clean(req.body?.note,500);
+    await db("INSERT INTO jml_activities (id,prospect_id,type,note,outcome,appointment_at,appointment_location,created_at) VALUES ($1,$2,'RDV',$3,'RDV pris',$4,$5,NOW())",[newId(),r.pid,"Rendez-vous confirmé depuis la demande vendeur."+(note?" "+note:""),r.requested_at,r.requested_location||null]);
+    await db("UPDATE jml_prospects SET status='RDV pris',next_action='Préparer et confirmer le rendez-vous.',next_action_at=$2,updated_at=NOW() WHERE id=$1",[r.pid,r.requested_at]);
+    await db("UPDATE jml_appointment_requests SET status='Confirmée' WHERE id=$1",[id]);
+    let email={sent:false};
+    try{email=await sendAppointmentConfirmationEmail({name:r.pname,email:r.pemail},note,r.requested_at,r.requested_location||"");}catch(e){console.warn("JML confirmation email demande RDV:",e);}
+    return res.json({ok:true,status:"Confirmée",emailSent:!!email.sent});
+  }catch(e){return unexpected(res,"JML-A016","Confirmation du rendez-vous indisponible.",e);}
+});
+
+app.post("/api/appointment-requests/:id/reject", async (req,res) => {
+  try{
+    if(!pool) return apiError(res,503,"JML-A017","PostgreSQL n'est pas configuré.");
+    const q=await db("SELECT id,status FROM jml_appointment_requests WHERE id=$1",[req.params.id]);
+    if(!q.rowCount) return apiError(res,404,"JML-A018","Demande de rendez-vous introuvable.");
+    if(q.rows[0].status!=="À traiter") return apiError(res,409,"JML-A019","Cette demande a déjà été traitée.");
+    await db("UPDATE jml_appointment_requests SET status='À revoir' WHERE id=$1",[req.params.id]);
+    return res.json({ok:true,status:"À revoir"});
+  }catch(e){return unexpected(res,"JML-A020","Traitement de la demande indisponible.",e);}
+});
+
 app.post("/api/public-appointment", async (req,res) => {
   const b=req.body||{};
   const prospectId=clean(b.prospectId,100);
