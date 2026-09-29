@@ -10,6 +10,7 @@ const VERSION = "1.7.0";
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
+app.get("/projet-vendeur", (req, res) => res.sendFile(path.join(__dirname, "public", "facebook.html")));
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
