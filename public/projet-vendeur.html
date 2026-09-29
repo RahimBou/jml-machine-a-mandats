@@ -35,8 +35,7 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 @media(max-width:600px){.seller-market,.seller-advice{grid-template-columns:1fr}.seller-section{padding:15px}.seller-hero{padding:18px}.seller-hero h3{font-size:22px}.seller-brand{padding:12px}}
 
 /* V1.6 — premium seller dashboard */
-.seller-brand-mark{width:66px;height:66px;border-radius:15px;margin-left:10px;display:grid;place-items:center;background:linear-gradient(145deg,#d8bb7a,#8f6c2e);color:#17332c;font-size:39px;font-family:Georgia,serif;font-weight:700;box-shadow:inset 0 0 0 2px rgba(255,255,255,.28)}
-.seller-brand-mark:after{content:"JML";font-size:13px;letter-spacing:.08em;margin-top:35px;position:absolute;color:#17332c}
+.seller-brand-mark{width:116px;height:66px;border-radius:13px;margin-left:10px;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7px;background:#06392f;color:#fff;border:1px solid #d8bb7a;box-shadow:inset 0 0 0 1px rgba(216,187,122,.35);overflow:hidden}.seller-brand-mark:before{content:"";position:absolute;left:25px;top:8px;width:52px;height:30px;border-top:5px solid #e5c77f;border-left:5px solid transparent;border-right:5px solid transparent;transform:skewX(-8deg)}.seller-brand-mark:after{content:"JML IMMOBILIER";font-family:Georgia,serif;font-size:14px;letter-spacing:.02em;color:#fff;white-space:nowrap}.seller-brand-mark span{display:none}
 .seller-brand{position:relative;overflow:hidden;min-height:76px;padding:0;background:#153b32;border-color:#b8944e}
 .seller-brand:after{content:"";position:absolute;right:-70px;top:-100px;width:230px;height:230px;border:24px solid rgba(216,187,122,.12);border-radius:50%}
 .seller-brand-logo{width:160px;height:76px;object-fit:contain;object-position:left center;filter:drop-shadow(0 4px 8px rgba(0,0,0,.16))}
@@ -59,7 +58,7 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 .seller-advice a{min-height:82px}.seller-advice a span{font-size:10px}
 .seller-events{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin-top:14px}.seller-event-feature{min-height:150px;border-radius:16px;padding:18px;color:#fff;background:linear-gradient(145deg,rgba(18,58,48,.9),rgba(18,58,48,.55)),url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=78") center/cover}.seller-event-feature h4{font-size:18px;margin:0 0 6px}.seller-event-feature p{font-size:10.5px;line-height:1.45;color:#eef2ee}.seller-event-list{display:grid;gap:8px}.seller-event-mini{padding:11px;border:1px solid var(--line);border-radius:12px;background:#faf7ef}.seller-event-mini strong{font-size:11px;display:block}.seller-event-mini span{font-size:9.5px;color:var(--muted)}
 .seller-cta{margin-top:14px;padding:20px;border-radius:18px;background:#153b32;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:15px}.seller-cta h4{margin:0 0 4px;font-size:19px}.seller-cta p{margin:0;color:#dce7e0;font-size:11px;line-height:1.45}.seller-cta .primary{white-space:nowrap;background:#d8bb7a;color:#17332c}
-@media(max-width:600px){.seller-brand-logo{width:135px}.seller-brand-copy{padding-right:10px}.seller-hero{min-height:285px}.seller-hero-content{padding:20px}.seller-market{grid-template-columns:1fr}.seller-bars .seller-bar{grid-template-columns:70px 1fr 58px}.seller-video{min-height:165px}.seller-events{grid-template-columns:1fr}.seller-advice{grid-template-columns:1fr}.seller-cta{flex-direction:column;align-items:stretch}.seller-cta .primary{width:100%}}
+@media(max-width:600px){.seller-brand-mark{width:105px}.seller-brand-logo{width:135px}.seller-brand-copy{padding-right:10px}.seller-hero{min-height:285px}.seller-hero-content{padding:20px}.seller-market{grid-template-columns:1fr}.seller-bars .seller-bar{grid-template-columns:70px 1fr 58px}.seller-video{min-height:165px}.seller-events{grid-template-columns:1fr}.seller-advice{grid-template-columns:1fr}.seller-cta{flex-direction:column;align-items:stretch}.seller-cta .primary{width:100%}}
 </style>
 </head>
 <body>
@@ -129,7 +128,7 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
           <div class="seller-bar"><span>Comparables</span><i style="width:42%"></i><strong>À préparer</strong></div>
         </div>
       </div>
-      <div class="seller-source" id="sellerMarketSource">Les valeurs seront remplacées par des données réellement disponibles et datées. Les barres ci-dessus sont des repères visuels, pas des prix.</div>
+      <div class="seller-source" id="sellerMarketSource" aria-live="polite">Recherche d’un repère local uniquement lorsqu’une source exploitable et datée est disponible.</div>
     </section>
 
     <section class="seller-section">
@@ -142,9 +141,9 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
       <div class="seller-timeline"><div class="seller-step active"><i></i>Aujourd’hui</div><div class="seller-step"><i></i>1 mois</div><div class="seller-step"><i></i>2 mois</div><div class="seller-step"><i></i>3 mois</div></div>
     </section>
 
-    <div class="seller-video">
-      <div><div class="seller-kicker">Conseil JML</div><h4>Un conseil vendeur en 60 secondes</h4><p>Préparez votre projet avec des conseils simples, directement depuis votre espace vendeur.</p><div class="seller-video-note">🎬 Emplacement vidéo JML — prêt à recevoir votre prochaine vidéo.</div></div>
-      <div class="seller-play" aria-hidden="true">▶</div>
+    <div class="seller-video" role="group" aria-label="Conseil vendeur JML">
+      <div><div class="seller-kicker">Conseil JML</div><h4>Un conseil vendeur en 60 secondes</h4><p id="sellerVideoText">Préparez votre projet avec des conseils simples, directement depuis votre espace vendeur.</p><div class="seller-video-note">🎬 Capsule vidéo JML — cette zone est prête à recevoir une vraie vidéo.</div></div>
+      <button class="seller-play" id="sellerVideoButton" type="button" aria-label="Ouvrir le conseil vendeur">▶</button>
     </div>
 
     <section class="seller-section">
@@ -221,12 +220,34 @@ form.addEventListener("submit",async function(e){
 
  const marketCards=document.getElementById("sellerMarketMetrics");
  const marketSource=document.getElementById("sellerMarketSource");
+ const chartBars=[...document.querySelectorAll(".seller-bar")];
+ async function loadSellerMarket(cityValue, typeValue){
+   if(!marketCards||!marketSource) return;
+   marketCards.innerHTML="<div class=\"seller-metric\"><span>Repère local</span><strong>Chargement…</strong><small>Recherche d’une source datée</small></div><div class=\"seller-metric\"><span>Ventes récentes</span><strong>À vérifier</strong><small>Selon le secteur</small></div><div class=\"seller-metric\"><span>Comparables</span><strong>À préparer</strong><small>Type + surface</small></div>";
+   if(!cityValue){marketSource.textContent="Indiquez votre commune pour rechercher un repère local. Aucun prix n’est inventé.";return;}
+   try{
+     const response=await fetch("/api/commune-market?city="+encodeURIComponent(cityValue),{cache:"no-store"});
+     const data=await response.json();
+     if(!response.ok) throw new Error(data.error||"Repère indisponible");
+     if(data.found && Number.isFinite(Number(data.price))){
+       const price=Number(data.price);
+       marketCards.innerHTML=[["Médiane communale",price.toLocaleString("fr-FR")+" €/m²",data.period||"Données disponibles"],["Source","DVF / Estimus","Repère, pas une estimation"],["Bien",""+typeValue,"Comparables à affiner"]].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
+       chartBars.forEach(function(bar,i){const widths=[Math.min(94,Math.max(35,price/30)),Math.min(88,Math.max(30,price/38)),Math.min(82,Math.max(25,price/45))];const fill=bar.querySelector("i"),value=bar.querySelector("strong");if(fill)fill.style.width=widths[i]+"%";if(value)value.textContent=i===0?price.toLocaleString("fr-FR")+" €/m²":i===1?"Repère local":"À comparer";});
+       marketSource.innerHTML="Source : <a href=\""+String(data.sourceUrl||"#").replace(/&/g,"&amp;").replace(/[\"<>]/g,"")+" \" target=\"_blank\" rel=\"noopener\">voir la source</a>. Période : "+String(data.period||"non précisée").replace(/[<>]/g,"")+". Ce repère ne constitue pas une estimation du bien.";
+     }else{
+       const d=data.department||{};
+       marketCards.innerHTML=[["Ardennes — médiane",Number(d.median||0).toLocaleString("fr-FR")+" €/m²",d.period||"Données disponibles"],["Maison",Number(d.house||0).toLocaleString("fr-FR")+" €/m²","Repère départemental"],["Appartement",Number(d.apartment||0).toLocaleString("fr-FR")+" €/m²","Repère départemental"]].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
+       marketSource.textContent=(data.message||"Repère communal indisponible.")+" Les chiffres affichés sont départementaux et ne remplacent pas une comparaison locale."; 
+     }
+   }catch(error){marketSource.textContent="Le repère local n’est pas disponible pour le moment. Les autres éléments de votre espace restent accessibles.";}
+ }
+ loadSellerMarket(city,propertyType);
  const cityNorm=city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
  const md=cityNorm==="charleville-mezieres"
    ? [["Repère maison","Données locales","À préciser selon les ventes comparables"],["Ventes récentes","Données DVF","Secteur à définir"],["Tendance","À calculer","Sur période comparable"]]
    : [["Repère local","Données disponibles","Votre commune"],["Ventes récentes","Données DVF","Secteur à définir"],["Comparables","À préparer","Type de bien + surface"]];
  if(marketCards){marketCards.innerHTML=md.map(function(x){return '<div class="seller-metric"><span>'+x[0]+'</span><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div>';}).join("");}
- if(marketSource)marketSource.textContent="Les chiffres précis seront affichés uniquement lorsqu’une source exploitable et datée est disponible. Aucun chiffre d’exemple n’est présenté comme une valeur réelle.";
+ if(marketSource)marketSource.textContent="Préparation du repère local…";
  const eventsGrid=document.getElementById("fbEventsGrid"),eventsIntro=document.getElementById("fbEventsIntro");
  try{
    const er=await fetch("/api/public-events?city="+encodeURIComponent(city)+"&propertyType="+encodeURIComponent(propertyType));
@@ -272,7 +293,13 @@ if(appointmentForm){
  });
  loadAppointmentSlots();
 }
-const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
+const timelineSteps=[...document.querySelectorAll(".seller-step")];
+ const horizonIndex={"0-3":0,"3-6":1,"6-12":2,"unknown":3};
+ const activeIndex=horizonIndex[horizon] ?? 3;
+ timelineSteps.forEach(function(step,index){step.classList.toggle("active",index<=activeIndex);});
+ const videoButton=document.getElementById("sellerVideoButton");
+ if(videoButton)videoButton.addEventListener("click",function(){const t=document.getElementById("sellerVideoText");if(t)t.textContent="Cette capsule sera bientôt disponible ici. En attendant, utilisez les guides ci-dessous ou demandez directement un rendez-vous.";videoButton.textContent="✓";videoButton.setAttribute("aria-label","Conseil affiché");});
+ const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
 </body>
