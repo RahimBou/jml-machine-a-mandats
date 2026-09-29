@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="/styles.css?v=1.4.0">
 <style>
 body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 auto;padding:28px 18px 50px}.fb-hero{background:var(--green);color:#fff;border-radius:18px;padding:32px;margin-bottom:18px}.fb-hero .eyebrow{color:#d8bb7a}.fb-hero h1{font-size:34px;line-height:1.12;margin:8px 0 12px}.fb-hero p{color:#dce5df;line-height:1.6}.fb-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}.fb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fb-grid .full{grid-column:1/-1}.fb-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:15px}.fb-small{font-size:11px;color:var(--muted);line-height:1.5}@media(max-width:600px){.fb-grid{grid-template-columns:1fr}.fb-grid .full{grid-column:auto}.fb-actions{flex-direction:column;align-items:stretch}}
-</style>
+.fb-success{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:18px}.fb-success h2{margin-top:0}.fb-success-head{background:var(--green);color:#fff;border-radius:14px;padding:20px;margin-bottom:18px}.fb-success-head strong{color:#d8bb7a}.fb-success-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.fb-success-item{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:15px}.fb-success-item h3{font-size:15px;margin:0 0 7px}.fb-success-item p{font-size:13px;line-height:1.5;margin:0;color:var(--muted)}.fb-success-note{margin-top:16px;padding:14px;border-left:3px solid #d8bb7a;background:var(--cream);line-height:1.5}.fb-back{margin-top:16px;text-align:center}@media(max-width:600px){.fb-success-grid{grid-template-columns:1fr}}</style>
 </head>
 <body>
 <div class="fb-wrap">
@@ -35,6 +35,25 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 <div class="full fb-actions"><span class="fb-small">Vos informations sont transmises à JML Immobilier uniquement pour le suivi de votre demande. Vous pouvez demander à tout moment que votre demande ne soit plus suivie.</span><button class="primary" type="submit">Échanger sur mon projet</button></div>
 </form>
 <div id="fbMessage" class="notice" style="margin-top:14px;display:none"></div>
+<div id="fbSuccess" class="fb-success" style="display:none">
+  <div class="fb-success-head">
+    <div class="eyebrow">JML IMMOBILIER · DEMANDE ENREGISTRÉE</div>
+    <h2 style="margin:7px 0">Merci, votre demande est bien prise en compte.</h2>
+    <div>Votre projet est maintenant enregistré. Vous gardez la main sur la suite.</div>
+  </div>
+  <div class="fb-success-grid">
+    <div class="fb-success-item"><h3>✓ Votre demande</h3><p>Elle a été enregistrée et transmise à JML Immobilier pour son suivi.</p></div>
+    <div class="fb-success-item"><h3>✉ Confirmation</h3><p>Si vous avez indiqué un e-mail, un message de confirmation vous est envoyé.</p></div>
+    <div class="fb-success-item"><h3>🤝 Prochaine étape</h3><p>Un échange pourra être organisé pour parler de votre bien, de votre projet et de votre calendrier.</p></div>
+  </div>
+  <div class="fb-success-note"><strong>En attendant, voici déjà quelques repères utiles pour votre projet de vente.</strong><br>Les conseils et informations présentés ici sont fournis à titre informatif. Les données de marché doivent être vérifiées et datées avant toute utilisation dans une décision de vente.</div>
+  <div class="fb-success-grid" style="margin-top:12px">
+    <div class="fb-success-item"><h3>Conseil vendeur #1</h3><p>Avant de fixer un prix, regardez les ventes réellement réalisées dans votre secteur et comparez des biens réellement comparables.</p></div>
+    <div class="fb-success-item"><h3>Conseil vendeur #2</h3><p>Préparez les informations essentielles du bien : surface, travaux, taxe foncière, DPE et principaux équipements.</p></div>
+    <div class="fb-success-item"><h3>Conseil vendeur #3</h3><p>Le bon prix dépend du secteur, du type de bien, de son état et du contexte du marché au moment de la mise en vente.</p></div>
+  </div>
+  <div class="fb-back"><button type="button" class="secondary" id="fbNewRequest">Faire une nouvelle demande</button></div>
+</div>
 </section>
 </div>
 <script>
@@ -64,9 +83,10 @@ form.addEventListener("submit",async function(e){
   const r=await fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const d=await r.json();
   if(!r.ok)throw new Error(d.error||"Impossible d’enregistrer votre demande.");
-  form.reset();msg.style.display="block";msg.textContent="Merci. Votre demande est bien enregistrée. Un e-mail de confirmation vous sera envoyé si vous avez indiqué une adresse e-mail. JML Immobilier pourra ensuite vous recontacter au sujet de votre projet.";
+  form.reset();msg.style.display="none";form.style.display="none";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
  }catch(err){msg.style.display="block";msg.textContent=err.message}
 });
+const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
 </body>
