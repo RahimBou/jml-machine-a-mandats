@@ -74,7 +74,14 @@ app.get("/api/commune-market", async (req,res) => {
       const prices=matches.map(m=>Number(m[1].replace(/[\s ]/g,""))).filter(p=>p>=700&&p<=5000);
       const price=prices.length?prices[0]:null;
       if(price){
-          const data={          communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});
+          const data={
+            city,found:true,price,source:"DVF — médiane communale",
+            sourceUrl:"https://estimus.fr/departement/08-ardennes",
+            period:"12 derniers mois de données DVF disponibles, jusqu’au 31 décembre 2025",
+            message:"Repère communal issu des transactions DVF. Il sert à préparer notre échange et ne constitue pas une estimation du bien.",
+            caution:"Si la commune compte peu de ventes, la médiane doit être interprétée avec prudence."
+          };
+          communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});,{expiresAt:Date.now()+6*60*60*1000,data});
           return res.json({ok:true,...data,cache:false});
         }
       }
