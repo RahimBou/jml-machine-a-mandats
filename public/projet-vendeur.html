@@ -7,7 +7,14 @@
 <link rel="stylesheet" href="/styles.css?v=1.4.0">
 <style>
 body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 auto;padding:28px 18px 50px}.fb-hero{background:var(--green);color:#fff;border-radius:18px;padding:32px;margin-bottom:18px}.fb-hero .eyebrow{color:#d8bb7a}.fb-hero h1{font-size:34px;line-height:1.12;margin:8px 0 12px}.fb-hero p{color:#dce5df;line-height:1.6}.fb-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}.fb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fb-grid .full{grid-column:1/-1}.fb-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:15px}.fb-small{font-size:11px;color:var(--muted);line-height:1.5}@media(max-width:600px){.fb-grid{grid-template-columns:1fr}.fb-grid .full{grid-column:auto}.fb-actions{flex-direction:column;align-items:stretch}}
-.fb-success{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:18px}.fb-success h2{margin-top:0}.fb-success-head{background:var(--green);color:#fff;border-radius:14px;padding:20px;margin-bottom:18px}.fb-success-head strong{color:#d8bb7a}.fb-success-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.fb-success-item{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:15px}.fb-success-item h3{font-size:15px;margin:0 0 7px}.fb-success-item p{font-size:13px;line-height:1.5;margin:0;color:var(--muted)}.fb-success-note{margin-top:16px;padding:14px;border-left:3px solid #d8bb7a;background:var(--cream);line-height:1.5}.fb-back{margin-top:16px;text-align:center}@media(max-width:600px){.fb-success-grid{grid-template-columns:1fr}}</style>
+.fb-success{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:18px}.fb-success h2{margin-top:0}.fb-success-head{background:var(--green);color:#fff;border-radius:14px;padding:20px;margin-bottom:18px}.fb-success-head strong{color:#d8bb7a}.fb-success-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.fb-success-item{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:15px}.fb-success-item h3{font-size:15px;margin:0 0 7px}.fb-success-item p{font-size:13px;line-height:1.5;margin:0;color:var(--muted)}.fb-success-note{margin-top:16px;padding:14px;border-left:3px solid #d8bb7a;background:var(--cream);line-height:1.5}.fb-space{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--card),var(--cream))}
+.fb-space-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.fb-space-title h3{margin:0 0 5px;font-size:20px}.fb-space-title p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.fb-space-badge{font-size:11px;padding:6px 9px;border-radius:999px;background:#efe4c8;color:#6f592b;white-space:nowrap}
+.fb-space-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.fb-space-item{background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:11px;padding:13px}
+.fb-space-item h4{margin:0 0 5px;font-size:14px}.fb-space-item p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.5}
+.fb-back{margin-top:16px;text-align:center}@media(max-width:600px){.fb-success-grid{grid-template-columns:1fr}.fb-space-grid{grid-template-columns:1fr}.fb-space-title{flex-direction:column}.fb-space-badge{align-self:flex-start}}</style>
 </head>
 <body>
 <div class="fb-wrap">
@@ -46,6 +53,18 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
     <div class="fb-success-item"><h3>✉ Confirmation</h3><p>Si vous avez indiqué un e-mail, un message de confirmation vous est envoyé.</p></div>
     <div class="fb-success-item"><h3>🤝 Prochaine étape</h3><p>Un échange pourra être organisé pour parler de votre bien, de votre projet et de votre calendrier.</p></div>
   </div>
+  <div class="fb-space">
+    <div class="fb-space-title">
+      <div><h3>Votre espace vendeur</h3><p id="fbPersonalIntro">Un premier espace préparé à partir des informations de votre projet.</p></div>
+      <span class="fb-space-badge">JML · Votre projet</span>
+    </div>
+    <div class="fb-space-grid">
+      <div class="fb-space-item"><h4>📍 Votre secteur</h4><p id="fbSectorText">Nous préparerons les informations locales disponibles pour votre commune.</p></div>
+      <div class="fb-space-item"><h4>🏠 Votre bien</h4><p id="fbPropertyText">Quelques repères adaptés à votre type de bien vous seront proposés ici.</p></div>
+      <div class="fb-space-item"><h4>🗓 Votre calendrier</h4><p id="fbHorizonText">Votre calendrier de vente sera pris en compte pour la suite de l’échange.</p></div>
+      <div class="fb-space-item"><h4>📚 Conseils vendeurs</h4><p>Retrouvez ci-dessous des conseils simples pour préparer votre projet avant notre échange.</p></div>
+    </div>
+  </div>
   <div class="fb-success-note"><strong>En attendant, voici déjà quelques repères utiles pour votre projet de vente.</strong><br>Les conseils et informations présentés ici sont fournis à titre informatif. Les données de marché doivent être vérifiées et datées avant toute utilisation dans une décision de vente.</div>
   <div class="fb-success-grid" style="margin-top:12px">
     <div class="fb-success-item"><h3>Conseil vendeur #1</h3><p>Avant de fixer un prix, regardez les ventes réellement réalisées dans votre secteur et comparez des biens réellement comparables.</p></div>
@@ -73,10 +92,21 @@ form.addEventListener("submit",async function(e){
  if(!name){msg.style.display="block";msg.textContent="Merci d’indiquer votre nom.";return}
  if(!email&&!phone){msg.style.display="block";msg.textContent="Indiquez au moins un téléphone ou un email.";return}
  if(!document.getElementById("fbConsent").checked){msg.style.display="block";msg.textContent="Votre autorisation est nécessaire pour être recontacté.";return}
+ const city=document.getElementById("fbCity").value.trim();
+ const propertyType=document.getElementById("fbType").value;
+ const horizon=document.getElementById("fbHorizon").value;
+ const horizonLabel={"0-3":"dans les 3 mois","3-6":"dans 3 à 6 mois","6-12":"dans 6 à 12 mois","unknown":"sans calendrier défini pour le moment"}[horizon]||horizon;
+ const propertyAdvice={"Maison":"Pour une maison, les surfaces, les extérieurs, les travaux récents et les équipements seront particulièrement utiles à préparer.","Appartement":"Pour un appartement, préparez notamment la surface, l’étage, les charges, le DPE et les informations disponibles sur la copropriété.","Immeuble":"Pour un immeuble, les surfaces, la composition des lots, les loyers éventuels et les informations techniques seront utiles.","Terrain":"Pour un terrain, préparez notamment la surface, la localisation et les informations d’urbanisme dont vous disposez.","Commerce":"Pour un commerce, préparez notamment la surface, la destination du local et les informations disponibles sur le bail.","Autre":"Nous adapterons les premiers échanges aux caractéristiques particulières de votre bien."};
+ const personalIntro=document.getElementById("fbPersonalIntro"),sectorText=document.getElementById("fbSectorText"),propertyText=document.getElementById("fbPropertyText"),horizonText=document.getElementById("fbHorizonText");
+ const safeCity=city.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+ if(personalIntro)personalIntro.innerHTML="Votre projet"+(city?" à <strong>"+safeCity+"</strong>":"")+" · "+propertyType+" · projet "+horizonLabel+".";
+ if(sectorText)sectorText.textContent=city?"Nous préparerons les informations locales disponibles pour "+city+".":"Votre commune sera utilisée pour préparer les informations locales disponibles.";
+ if(propertyText)propertyText.textContent=propertyAdvice[propertyType]||propertyAdvice["Autre"];
+ if(horizonText)horizonText.textContent="Vous envisagez votre projet "+horizonLabel+". Nous garderons ce calendrier comme repère pour la suite.";
  const payload={
-  name,city:document.getElementById("fbCity").value.trim(),phone,email,
-  propertyType:document.getElementById("fbType").value,
-  horizon:document.getElementById("fbHorizon").value,
+  name,city,phone,email,
+  propertyType,
+  horizon,
   source:sourceLabel,consent:true
  };
  try{
