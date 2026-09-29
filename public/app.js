@@ -120,11 +120,11 @@ function openNextWorkProspect(currentId){
 function openDetails(id){
   const p=state.prospects.find(x=>x.id===id);if(!p)return;
   $("#detailTitle").textContent=p.name;
-  const contact=p.phone||p.email||"Aucun contact renseigné";
+  const contact=p.phone||p.email||"Aucun contact renseigné"; const contactAction=p.phone?`<a class="primary link-button" href="tel:${esc(p.phone)}">📞 Appeler</a>`:(p.email?`<a class="primary link-button" href="mailto:${esc(p.email)}">✉️ Email</a>`:"");
   const next=p.nextAction||"Aucune prochaine action programmée";
   const ap=actionPriority(p);
   $("#detailBody").innerHTML='<div class="notice"><strong>Action recommandée</strong><br><b>'+esc(recommendedAction(p).title)+'</b><br><span class="muted">'+esc(recommendedAction(p).detail)+'</span><br><br><strong>Priorité :</strong> '+esc(ap.level)+' · '+esc(ap.reason)+(p.nextActionAt?' · '+new Date(p.nextActionAt).toLocaleString("fr-FR"):'')+'<br><strong>Action programmée :</strong> '+esc(next)+'</div>'+
-  '<div class="form-actions" style="margin-top:12px;flex-wrap:wrap">'+
+  '<div class="form-actions" style="margin-top:12px;flex-wrap:wrap">'+contactAction+''+
   '<button class="secondary" type="button" data-action="set-status" data-status="Contacté" data-id="'+esc(id)+'">Contacté</button>'+
   '<button class="secondary" type="button" data-action="set-status" data-status="À relancer" data-id="'+esc(id)+'">À relancer</button>'+
   '<button class="secondary" type="button" data-action="set-status" data-status="RDV pris" data-id="'+esc(id)+'">RDV pris</button>'+
@@ -172,7 +172,7 @@ async function load(){const errors=[];try{await loadProspects();await loadMandat
 window.jmlAction=async function(a,id,b){
   try{
     if(a==="delete"){if(!confirm("Supprimer ce prospect ?"))return;await api("/api/prospects/"+encodeURIComponent(id),{method:"DELETE"});toast("Prospect supprimé.");await load();return}
-    if(a==="qualify"){const q=await api("/api/prospects/"+encodeURIComponent(id)+"/qualify",{method:"POST"});toast("Priorité "+q.priority+" · "+q.score+"/100");await load();return}
+    if(a==="qualify"){const q=await api("/api/prospects/"+encodeURIComponent(id)+"/qualify",{method:"POST"});toast("Priorité "+q.priority+" · "+q.score+"/100");await loadMandatIntelligence();return}
     if(a==="details"){openDetails(id);return}
     if(a==="set-status"){const status=b?.dataset?.status;await api("/api/prospects/"+encodeURIComponent(id)+"/status",{method:"PUT",body:JSON.stringify({status})});toast("Statut mis à jour : "+status);await load();openDetails(id);return}
     if(a==="save-activity"){const type=$("#activityType").value,outcome=$("#activityOutcome")?.value||"",note=$("#activityNote").value;await api("/api/prospects/"+encodeURIComponent(id)+"/activity",{method:"POST",body:JSON.stringify({type,outcome,note})});toast("Action enregistrée.");await load();openDetails(id);return}
