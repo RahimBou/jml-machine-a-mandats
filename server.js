@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "1.8.0";
+const VERSION = "1.9.0";
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -32,6 +32,42 @@ const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(v));
 const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
 const newId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
+
+async function sendLeadConfirmationEmail(lead) {
+  if (!lead.email) return { sent: false, reason: "no-email" };
+  const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+  const from = String(process.env.RESEND_FROM || "").trim();
+  if (!apiKey || !from) {
+    console.warn("JML email confirmation non envoyée: RESEND_API_KEY ou RESEND_FROM manquant.");
+    return { sent: false, reason: "email-provider-not-configured" };
+  }
+  const firstName = clean(lead.name, 120).split(/\s+/)[0] || "Bonjour";
+  const subject = "Votre demande concernant votre projet immobilier";
+  const text = "Bonjour " + firstName + ",\n\n" +
+    "Nous avons bien reçu votre demande concernant votre projet immobilier dans les Ardennes.\n\n" +
+    "Merci pour votre confiance. Votre demande a bien été prise en compte. Nous reviendrons vers vous afin d’échanger simplement sur votre projet, votre bien et le calendrier que vous avez en tête.\n\n" +
+    "À bientôt,\nJML Immobilier\nVotre projet, notre engagement";
+  const safeName = firstName.replace(/[&<>"]/g, "");
+  const html = "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
+    "<body style=\"margin:0;background:#f5f1e8;font-family:Arial,sans-serif;color:#26352f\">" +
+    "<div style=\"max-width:620px;margin:30px auto;padding:0 16px\">" +
+    "<div style=\"background:#173b32;padding:22px 24px;border-radius:12px 12px 0 0;color:#fff\"><div style=\"font-size:22px;font-weight:700\">JML Immobilier</div><div style=\"margin-top:5px;color:#d9bd72;font-size:13px\">VOTRE PROJET, NOTRE ENGAGEMENT</div></div>" +
+    "<div style=\"background:#fff;padding:28px 24px;border-radius:0 0 12px 12px\"><p>Bonjour " + safeName + ",</p>" +
+    "<p>Nous avons bien reçu votre demande concernant votre projet immobilier dans les Ardennes.</p>" +
+    "<p>Merci pour votre confiance. Votre demande a bien été prise en compte. Nous reviendrons vers vous afin d’échanger simplement sur votre projet, votre bien et le calendrier que vous avez en tête.</p>" +
+    "<p style=\"margin-top:28px\">À bientôt,<br><strong>JML Immobilier</strong><br><span style=\"color:#8c6d2d\">Votre projet, notre engagement</span></p></div></div></body></html>";
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: [lead.email], subject, text, html })
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error("Resend " + response.status + ": " + detail.slice(0, 500));
+  }
+  const result = await response.json();
+  return { sent: true, id: result.id || null };
+}
 const STATUS_VALUES = ["À qualifier","Contacté","À relancer","RDV pris","Estimation","Mandat","Pas de projet"];
 
 function apiError(res, status, code, message, detail = null) {
@@ -518,7 +554,16 @@ app.post("/api/leads", async (req,res) => {
           );
         }
         await client.query("COMMIT");
-        return res.status(201).json({ok:true,persisted:true,id:lead.id,prospectId,alreadyInCrm:!!existing});
+
+        let emailConfirmation = { sent: false, reason: "no-email" };
+        try {
+          emailConfirmation = await sendLeadConfirmationEmail(lead);
+        } catch (emailErr) {
+          console.error("JML email confirmation failed:", emailErr);
+          emailConfirmation = { sent: false, reason: "send-failed" };
+        }
+
+        return res.status(201).json({ok:true,persisted:true,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation});
       }catch(txErr){
         await client.query("ROLLBACK");
         throw txErr;
@@ -548,7 +593,15 @@ app.post("/api/leads", async (req,res) => {
       memory.prospects.set(p.id,out);
       prospectId=p.id;
     }
-    res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing});
+    let emailConfirmation = { sent: false, reason: "no-email" };
+    try {
+      emailConfirmation = await sendLeadConfirmationEmail(lead);
+    } catch (emailErr) {
+      console.error("JML email confirmation failed:", emailErr);
+      emailConfirmation = { sent: false, reason: "send-failed" };
+    }
+
+    res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation});
   }catch(e){unexpected(res,"JML-L001","Enregistrement du lead indisponible.",e);}
 });
 
