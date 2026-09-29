@@ -86,7 +86,6 @@ app.get("/api/commune-market", async (req,res) => {
           return res.json({ok:true,...data,cache:false});
         }
       }
-    }
   }catch(error){ console.warn("JML commune-market fallback:",error.message); }
 
   communeMarketCache.set(key,{expiresAt:Date.now()+60*60*1000,data:fallback});
