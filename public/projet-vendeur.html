@@ -539,11 +539,15 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  async function loadSellerAdvice(cityValue){
    const card=document.getElementById("sellerAdviceCard"),dots=document.getElementById("sellerAdviceDots");
    if(!card)return;
-   try{
-     const response=await fetch("/api/seller-advice?city="+encodeURIComponent(cityValue||""),{cache:"no-store"});
-     const data=await response.json();
-     if(!response.ok||!data.ok||!Array.isArray(data.items)||!data.items.length)throw new Error("Conseils indisponibles");
-     const items=data.items;let current=0;
+   const fallbackItems=[
+     {category:"🏦 CRÉDIT",title:"Les taux immobiliers restent autour de 3,4 % sur 20 ans",text:"CAFPI relève au 25 septembre 2026 un taux moyen de 3,43 % sur 20 ans et 3,53 % sur 25 ans.",takeaway:"Le budget des acheteurs dépend aussi de leurs conditions de financement.",sourceName:"CAFPI — baromètre des taux, 25/09/2026",sourceUrl:"https://www.cafpi.fr/credit-immobilier/barometre-taux/actualites-taux/analyse-taux-credit-immobilier-septembre-2026",publishedAt:"25/09/2026"},
+     {category:"⚡ DPE",title:"Le calcul du DPE évolue au 1er janvier 2027",text:"Le coefficient de conversion de l’électricité passera de 1,9 à 1,7. Certains logements chauffés à l’électricité pourront voir leur étiquette évoluer.",takeaway:"Avant une vente, vérifiez la date et la situation exacte de votre DPE.",sourceName:"Service-Public.fr — information officielle, 01/09/2026",sourceUrl:"https://www.service-public.gouv.fr/particuliers/actualites/A18446",publishedAt:"01/09/2026"},
+     {category:"📊 MARCHÉ",title:"Les Notaires publient les repères de prix",text:"Les données immobilières notariales permettent de comparer les niveaux de prix à l’échelle des territoires.",takeaway:"Une médiane départementale ne remplace jamais une analyse du bien et de son secteur précis.",sourceName:"Notaires de France — immobilier",sourceUrl:"https://www.immobilier.notaires.fr/fr/prix-immobilier",publishedAt:"Consulté le 29/09/2026"},
+     {category:"💡 CONSEIL",title:"Un prix de vente doit être comparé à des transactions réelles",text:"La base DVF permet de consulter les transactions immobilières intervenues en France au cours des cinq dernières années.",takeaway:"Avant de fixer un prix, croisez transactions, type de bien, surface, état et localisation.",sourceName:"Service-Public.fr — DVF",sourceUrl:"https://www.service-public.gouv.fr/particuliers/vosdroits/F16832",publishedAt:"Vérifié le 29/09/2026"}
+   ];
+   function renderAdviceItems(items){
+     if(!Array.isArray(items)||!items.length)return;
+     let current=0;
      function renderAdvice(){
        const item=items[current];
        card.innerHTML='<div><div class="seller-advice-top"><span class="seller-advice-category">'+item.category+'</span><span class="seller-advice-counter">'+(current+1)+' / '+items.length+'</span></div><h5>'+item.title+'</h5><p>'+item.text+'</p><div class="seller-advice-takeaway"><strong>À retenir :</strong> '+item.takeaway+'</div></div><div class="seller-advice-foot"><span class="seller-advice-source">'+item.sourceName+'<br>'+item.publishedAt+'</span><a class="seller-advice-link" href="'+item.sourceUrl+'" target="_blank" rel="noopener noreferrer">Voir la source →</a></div>';
@@ -554,7 +558,19 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
      renderAdvice();
      if(window.__sellerAdviceTimer)clearInterval(window.__sellerAdviceTimer);
      window.__sellerAdviceTimer=setInterval(()=>{current=(current+1)%items.length;renderAdvice();},10000);
-   }catch(err){card.innerHTML='<div class="seller-advice-loading">Les informations du moment ne sont pas disponibles. Les guides restent accessibles ci-dessous.</div>';if(dots)dots.innerHTML="";}
+   }
+   try{
+     const controller=new AbortController();
+     const timeout=setTimeout(()=>controller.abort(),5000);
+     const response=await fetch("/api/seller-advice?city="+encodeURIComponent(cityValue||""),{cache:"no-store",signal:controller.signal});
+     clearTimeout(timeout);
+     const data=await response.json();
+     if(!response.ok||!data.ok||!Array.isArray(data.items)||!data.items.length)throw new Error("Conseils indisponibles");
+     renderAdviceItems(data.items);
+   }catch(err){
+     console.warn("JML seller advice fallback:",err);
+     renderAdviceItems(fallbackItems);
+   }
  }
  const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
