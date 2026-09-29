@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JML Immobilier — Votre projet de vente</title>
+<title>JML Immobilier — Parlons de votre projet de vente</title>
 <link rel="stylesheet" href="/styles.css?v=1.4.0">
 <style>
 body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 auto;padding:28px 18px 50px}.fb-hero{background:var(--green);color:#fff;border-radius:18px;padding:32px;margin-bottom:18px}.fb-hero .eyebrow{color:#d8bb7a}.fb-hero h1{font-size:34px;line-height:1.12;margin:8px 0 12px}.fb-hero p{color:#dce5df;line-height:1.6}.fb-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}.fb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fb-grid .full{grid-column:1/-1}.fb-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:15px}.fb-small{font-size:11px;color:var(--muted);line-height:1.5}@media(max-width:600px){.fb-grid{grid-template-columns:1fr}.fb-grid .full{grid-column:auto}.fb-actions{flex-direction:column;align-items:stretch}}
@@ -14,11 +14,11 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 <section class="fb-hero">
 <div class="eyebrow">JML IMMOBILIER · ARDENNES</div>
 <h1>Vous pensez vendre votre bien ?</h1>
-<p>Avant de fixer un prix, obtenez un premier échange sur votre projet et les éléments qui peuvent influencer la vente dans votre secteur.</p>
+<p>Vous envisagez une vente dans les prochains mois ? Parlez-nous de votre projet avant de fixer votre prix. Quelques informations suffisent pour préparer un premier échange sur votre secteur.</p>
 </section>
 <section class="fb-card">
 <h2>Parlons de votre projet</h2>
-<p class="muted">Quelques informations suffisent pour que JML Immobilier puisse vous recontacter.</p>
+<p class="muted">Sans engagement : indiquez simplement vos coordonnées et votre horizon de vente.</p>
 <form id="fbLeadForm" class="fb-grid" novalidate>
 <div><label for="fbName">Nom / prénom *</label><input id="fbName" required maxlength="120"></div>
 <div><label for="fbCity">Commune</label><input id="fbCity" maxlength="100" placeholder="Charleville-Mézières"></div>
@@ -27,7 +27,7 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 <div><label for="fbType">Type de bien</label><select id="fbType"><option>Maison</option><option>Appartement</option><option>Immeuble</option><option>Terrain</option><option>Commerce</option><option>Autre</option></select></div>
 <div><label for="fbHorizon">Projet de vente</label><select id="fbHorizon"><option value="0-3">Dans les 3 mois</option><option value="3-6">Dans 3 à 6 mois</option><option value="6-12">Dans 6 à 12 mois</option><option value="unknown">Je ne sais pas encore</option></select></div>
 <div class="full"><label><input id="fbConsent" type="checkbox" style="width:auto" required> J’accepte que JML Immobilier utilise ces informations pour me recontacter au sujet de mon projet immobilier.</label></div>
-<div class="full fb-actions"><span class="fb-small">Vos informations sont transmises au CRM JML pour le suivi de votre demande. Aucun message automatique n’est envoyé depuis cette page.</span><button class="primary" type="submit">Être recontacté</button></div>
+<div class="full fb-actions"><span class="fb-small">Vos informations sont transmises à JML Immobilier pour le suivi de votre demande. Votre demande ne déclenche aucun message automatique.</span><button class="primary" type="submit">Parler de mon projet</button></div>
 </form>
 <div id="fbMessage" class="notice" style="margin-top:14px;display:none"></div>
 </section>
@@ -35,7 +35,11 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 <script>
 (function(){
 const params=new URLSearchParams(location.search);
-const campaign=(params.get("campaign")||"organique").trim().slice(0,50);
+const rawCampaign=params.get("campaign")||params.get("utm_campaign")||"organique";
+const rawContent=params.get("utm_content")||"";
+const campaign=rawCampaign.trim().slice(0,50);
+const content=rawContent.trim().slice(0,50);
+const sourceLabel=content?("Facebook · "+campaign+" · "+content):("Facebook · "+campaign);
 const form=document.getElementById("fbLeadForm"),msg=document.getElementById("fbMessage");
 form.addEventListener("submit",async function(e){
  e.preventDefault();
@@ -49,7 +53,7 @@ form.addEventListener("submit",async function(e){
   name,city:document.getElementById("fbCity").value.trim(),phone,email,
   propertyType:document.getElementById("fbType").value,
   horizon:document.getElementById("fbHorizon").value,
-  source:"Facebook · "+campaign,consent:true
+  source:sourceLabel,consent:true
  };
  try{
   const r=await fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
