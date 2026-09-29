@@ -68,13 +68,20 @@ app.get("/api/commune-market", async (req,res) => {
     const html=await response.text();
     const text=decodeBasicEntities(html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
     const normalizedText=normalizeSearchCity(text);
-    const idx=normalizedText.indexOf(key);
-    if(idx>=0){
-      const windowText=text.slice(idx,idx+500);
-      const matches=[...windowText.matchAll(/([0-9]{3,5}(?:[\s ][0-9]{3})?)\s*€\s*\/\s*m²/g)];
-      const prices=matches.map(m=>Number(m[1].replace(/[\s ]/g,""))).filter(p=>p>=700&&p<=5000);
-      const price=prices.length?prices[0]:null;
-      if(price){
+    // Le nom de la commune apparaît plusieurs fois sur la page Estimus.
+    // On retient une occurrence suivie rapidement d'un prix afin d'éviter
+    // de récupérer le prix d'une autre commune (ex. Fumay 786 €/m²).
+    let price=null;
+    let matchIndex=-1;
+    let from=0;
+    while((matchIndex=normalizedText.indexOf(key,from))>=0){
+      const windowText=normalizedText.slice(matchIndex,matchIndex+180);
+      const matches=[...windowText.matchAll(/([0-9]{3,5}(?:\s[0-9]{3})?)\s*€\s*\/\s*m²/g)];
+      const prices=matches.map(m=>Number(m[1].replace(/\s/g,""))).filter(p=>p>=500&&p<=5000);
+      if(prices.length){ price=prices[0]; break; }
+      from=matchIndex+key.length;
+    }
+    if(price!==null){
           const data={
             city,found:true,price,source:"DVF — médiane communale",
             sourceUrl:"https://estimus.fr/departement/08-ardennes",
