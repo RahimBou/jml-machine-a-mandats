@@ -13,10 +13,43 @@ body{min-height:100vh;background:var(--cream)}
 .guide-head .eyebrow{color:#d8bb7a;font-size:12px;letter-spacing:.08em}
 .guide-head h1{margin:8px 0;font-size:30px}
 .guide-head p{color:#dce5df;line-height:1.6;margin-bottom:0}
-.guide h2{color:var(--green);font-size:18px;margin:24px 0 8px}
-.guide p,.guide li{color:#26352f;line-height:1.65}
-.guide-check{background:#f5f1e8;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:18px}
-.guide-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.guide-topic{display:grid;grid-template-columns:110px 1fr;gap:18px;align-items:center;margin-top:24px}.guide-topic h2{margin:0 0 8px}.guide-visual{height:96px;border-radius:16px;background:#f5f1e8;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}.guide-visual img{width:88px;height:88px;object-fit:contain}.guide-topic p{margin:0}@media(max-width:560px){.guide-topic{grid-template-columns:78px 1fr;gap:12px}.guide-visual{height:78px}.guide-visual img{width:70px;height:70px}.guide-topic h2{font-size:16px}.guide-topic p{font-size:14px}}
+.guide-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.guide-meta span{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);border-radius:999px;padding:7px 10px;color:#f4efe4;font-size:12px}
+.guide-intro{margin:0 0 14px;color:#52635b;font-size:14px}
+.guide-topics{display:grid;gap:12px;margin-top:18px}
+.guide-topic{display:grid;grid-template-columns:92px 1fr;gap:16px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 5px 18px rgba(23,59,50,.05)}
+.guide-visual{height:88px;border-radius:13px;background:#f5f1e8;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.guide-visual img{width:82px;height:82px;object-fit:contain}
+.guide-topic h2{color:var(--green);font-size:17px;line-height:1.25;margin:0 0 6px}
+.guide-topic p{margin:0;color:#3c4b45;font-size:14px;line-height:1.55}
+.guide-section-title{font-size:19px!important;margin:28px 0 10px!important}
+.guide-check{background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-top:12px}
+.guide-check ul{list-style:none;padding:0;margin:0}
+.guide-check li{position:relative;padding:7px 0 7px 28px;margin:0;border-bottom:1px solid rgba(23,59,50,.08);font-size:14px}
+.guide-check li:last-child{border-bottom:0}
+.guide-check li::before{content:"✓";position:absolute;left:0;top:7px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;font-size:12px;font-weight:700}
+.guide-summary{background:var(--green);color:#fff;border-radius:16px;padding:18px;margin-top:12px}
+.guide-summary strong{display:block;color:#d8bb7a;margin-bottom:6px}
+.guide-summary p{color:#edf2ee;margin:0;font-size:14px}
+.guide-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.guide-actions a,.guide-actions button{flex:1;min-width:210px;text-align:center}
+@media(max-width:560px){
+  .guide{padding:16px 12px 36px}
+  .guide-card{padding:14px;border-radius:16px}
+  .guide-head{padding:22px 18px;margin-bottom:12px}
+  .guide-head h1{font-size:26px}
+  .guide-head p{font-size:14px}
+  .guide-topic{grid-template-columns:64px 1fr;gap:12px;padding:12px}
+  .guide-visual{height:64px;border-radius:11px}
+  .guide-visual img{width:58px;height:58px}
+  .guide-topic h2{font-size:15px}
+  .guide-topic p{font-size:13px;line-height:1.5}
+  .guide-section-title{font-size:18px!important}
+  .guide-check{padding:12px 14px}
+  .guide-check li{font-size:13px;padding-left:26px}
+  .guide-actions a,.guide-actions button{min-width:0;width:100%}
+}
+@media print{.guide-actions{display:none}.guide-topic{break-inside:avoid;box-shadow:none}.guide-summary{background:#fff;color:#000;border:1px solid #ccc}.guide-summary p{color:#000}}
 .guide-actions a,.guide-actions button{display:inline-block;padding:11px 15px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--green);font-weight:600;text-decoration:none;cursor:pointer}
 @media print{.guide-actions{display:none}body{background:#fff}.guide{padding:0}.guide-card{border:0}}
 </style>
@@ -26,22 +59,29 @@ body{min-height:100vh;background:var(--cream)}
 <section class="guide-head">
 <div class="eyebrow">JML IMMOBILIER · GUIDE VENDEUR</div>
 <h1>Préparer sa vente</h1>
-<p>Un guide simple pour préparer votre projet avant notre échange.</p>
+<p>Les 6 étapes utiles pour arriver au rendez-vous avec un projet clair et les bonnes informations.</p>
+<div class="guide-meta"><span>6 étapes</span><span>À préparer en quelques minutes</span></div>
 </section>
 <section class="guide-card">
-<div class="guide-topic"><div class="guide-visual"><img src="/assets/guide-project.svg" alt="" loading="lazy"></div><div><h2>1. Clarifier votre projet</h2><p>Avant de parler de prix, prenez quelques minutes pour préciser votre projet : pourquoi souhaitez-vous vendre, dans quel délai et quelles sont les contraintes importantes pour vous ?</p></div></div>
+<h2>1. Clarifier votre projet</h2>
+<p>Avant de parler de prix, prenez quelques minutes pour préciser votre projet : pourquoi souhaitez-vous vendre, dans quel délai et quelles sont les contraintes importantes pour vous ?</p>
 
-<div class="guide-topic"><div class="guide-visual"><img src="/assets/guide-documents.svg" alt="" loading="lazy"></div><div><h2>2. Réunir les informations sur le bien</h2><p>Préparez, si vous les avez, les informations utiles : surface, nombre de pièces, année de construction, taxe foncière, travaux réalisés, équipements, dépendances et documents disponibles.</p></div></div>
+<h2>2. Réunir les informations sur le bien</h2>
+<p>Préparez, si vous les avez, les informations utiles : surface, nombre de pièces, année de construction, taxe foncière, travaux réalisés, équipements, dépendances et documents disponibles.</p>
 
-<div class="guide-topic"><div class="guide-visual"><img src="/assets/guide-travaux.svg" alt="" loading="lazy"></div><div><h2>3. Faire le point sur les travaux</h2><p>Notez les travaux déjà réalisés et ceux qui restent éventuellement à prévoir. Il n'est pas nécessaire de tout rénover avant notre échange : l'objectif est d'abord de distinguer les éléments importants pour le projet.</p></div></div>
+<h2>3. Faire le point sur les travaux</h2>
+<p>Notez les travaux déjà réalisés et ceux qui restent éventuellement à prévoir. Il n'est pas nécessaire de tout rénover avant notre échange : l'objectif est d'abord de distinguer les éléments importants pour le projet.</p>
 
-<div class="guide-topic"><div class="guide-visual"><img src="/assets/guide-dpe.svg" alt="" loading="lazy"></div><div><h2>4. Le DPE et les documents</h2><p>Si vous disposez d'un DPE ou d'autres diagnostics, gardez-les à portée de main. Ils pourront aider à préparer l'échange et à identifier les informations à vérifier.</p></div></div>
+<h2>4. Le DPE et les documents</h2>
+<p>Si vous disposez d'un DPE ou d'autres diagnostics, gardez-les à portée de main. Ils pourront aider à préparer l'échange et à identifier les informations à vérifier.</p>
 
-<div class="guide-topic"><div class="guide-visual"><img src="/assets/guide-prix.svg" alt="" loading="lazy"></div><div><h2>5. Réfléchir au prix… sans se bloquer sur un chiffre</h2><p>Vous pouvez bien sûr avoir un prix en tête. Gardez toutefois à l'esprit qu'un prix de vente se construit à partir de plusieurs éléments : secteur, caractéristiques du bien, état, prestations, contexte du marché et comparaison avec des biens réellement comparables.</p></div></div>
+<h2>5. Réfléchir au prix… sans se bloquer sur un chiffre</h2>
+<p>Vous pouvez bien sûr avoir un prix en tête. Gardez toutefois à l'esprit qu'un prix de vente se construit à partir de plusieurs éléments : secteur, caractéristiques du bien, état, prestations, contexte du marché et comparaison avec des biens réellement comparables.</p>
 
-<div class="guide-topic"><div class="guide-visual"><img src="/assets/guide-calendar.svg" alt="" loading="lazy"></div><div><h2>6. Définir votre calendrier</h2><p>Indiquez-vous une échéance idéale : vendre rapidement, dans quelques mois, ou simplement préparer le projet. Le calendrier peut évoluer ; il sert surtout à organiser les prochaines étapes.</p></div></div>
+<h2>6. Définir votre calendrier</h2>
+<p>Indiquez-vous une échéance idéale : vendre rapidement, dans quelques mois, ou simplement préparer le projet. Le calendrier peut évoluer ; il sert surtout à organiser les prochaines étapes.</p>
 
-<h2>Checklist avant notre rendez-vous</h2>
+<h2 class="guide-section-title">Checklist avant notre rendez-vous</h2>
 <div class="guide-check">
 <ul>
 <li>Les caractéristiques principales du bien</li>
@@ -53,8 +93,8 @@ body{min-height:100vh;background:var(--cream)}
 </ul>
 </div>
 
-<h2>À retenir</h2>
-<p>Ce guide ne remplace pas un avis professionnel ni une estimation. Il vous aide simplement à arriver au rendez-vous avec les informations utiles pour parler concrètement de votre projet.</p>
+<h2 class="guide-section-title">À retenir</h2>
+<div class="guide-summary"><strong>Votre objectif</strong><p>Arriver au rendez-vous avec un projet plus clair et les informations utiles pour parler concrètement de votre bien. Ce guide ne remplace ni un avis professionnel ni une estimation.</p></div>
 
 <div class="guide-actions">
 <button type="button" onclick="window.print()">🖨️ Imprimer / enregistrer en PDF</button>
