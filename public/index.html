@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JML — Projet Vendeur</title><link rel="stylesheet" href="/styles.css?v=1.7.0"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JML — Projet Vendeur</title><link rel="stylesheet" href="/styles.css?v=1.8.0"></head>
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><span>JML IMMOBILIER · ARDENNES</span><strong>Projet Vendeur</strong><small>V1.7 — Acquisition Facebook</small></div>
+<div class="brand"><span>JML IMMOBILIER · ARDENNES</span><strong>Projet Vendeur</strong><small>V1.8 — Acquisition Facebook</small></div>
 <nav id="mainNav" aria-label="Navigation principale">
 <button type="button" class="nav-btn active" data-view="dashboard" onclick="window.jmlNav('dashboard');return false;">⌂ <span>Tableau de bord</span></button>
 <button type="button" class="nav-btn" data-view="prospects" onclick="window.jmlNav('prospects');return false;">◎ <span>Prospects</span></button>
@@ -58,7 +58,7 @@
 <section class="view" id="view-leadmagnet"><div class="card"><div class="card-head"><div><h2>Lead Magnet</h2><p class="muted">Capture publique avec consentement explicite.</p></div><a class="primary link-button" href="/guide" target="_blank" rel="noopener">Ouvrir la page</a></div><div id="leadStatus" class="notice">Chargement…</div><div id="leadList"></div></div></section>
 <section class="view" id="view-relances"><div class="card"><h2>Relances</h2><p class="muted">Les prochaines actions sont classées automatiquement. Aucun message n'est envoyé automatiquement.</p><div class="columns"><div><h3>🔴 En retard</h3><div id="relanceLate"></div></div><div><h3>🟠 Aujourd’hui</h3><div id="relanceToday"></div></div><div><h3>🟢 À venir</h3><div id="relanceUpcoming"></div></div></div><div style="margin-top:18px"><h3>⚪ À planifier</h3><div id="relanceUnplanned"></div></div></div></section>
 <section class="view" id="view-kpi"><div class="card"><h2>KPI commerciaux</h2><p class="muted">Mesurer le volume, le suivi et les conversions de la prospection.</p><div class="stats"><div class="stat"><span>Prospects</span><strong id="kProspects">0</strong></div><div class="stat"><span>Projet ≤ 6 mois</span><strong id="kHot">0</strong></div><div class="stat"><span>RDV pris</span><strong id="kRdv">0</strong></div><div class="stat"><span>Mandats</span><strong id="kMandats">0</strong></div><div class="stat"><span>Taux RDV / prospects</span><strong id="kRate">0%</strong></div><div class="stat"><span>Taux mandat / prospects</span><strong id="kMandatRate">0%</strong></div></div><div class="columns" style="margin-top:18px"><article class="card"><h3>Pipeline</h3><div id="kpiPipeline"></div></article><article class="card"><h3>Qualité du fichier</h3><div id="kpiQuality"></div></article></div></div></section>
-<footer>JML Projet Vendeur · V1.7.0 · Acquisition Facebook · PostgreSQL</footer>
+<footer>JML Projet Vendeur · V1.8.0 · Acquisition Facebook · PostgreSQL</footer>
 </main></div>
 <script>
 window.jmlNewProspect=function(){
@@ -83,8 +83,8 @@ window.__JML_FRONTEND_ERROR=null;
 window.addEventListener("error",function(e){window.__JML_FRONTEND_ERROR=(e.message||"Erreur JavaScript")+" · "+(e.filename||"")+" :"+(e.lineno||"");});
 window.addEventListener("unhandledrejection",function(e){window.__JML_FRONTEND_ERROR="Promise: "+(e.reason&&e.reason.message?e.reason.message:String(e.reason||"Erreur inconnue"));});
 </script>
-<script src="/app.js?v=1.7.0" defer></script>
-<script src="/facebook.js?v=1.7.0" defer></script>
+<script src="/app.js?v=1.8.0" defer></script>
+<script src="/facebook.js?v=1.8.0" defer></script>
 <script defer>
 window.addEventListener("load",function(){
  setTimeout(async function(){
