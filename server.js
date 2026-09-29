@@ -29,6 +29,68 @@ const pool = hasDatabase ? new Pool({
 const memory = { prospects: new Map(), leads: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
+
+const communeMarketCache = new Map();
+const normalizeSearchCity = value => String(value || "")
+  .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+  .toLowerCase().replace(/[^a-z0-9 -]/g,"").replace(/\s+/g," ").trim();
+
+function decodeBasicEntities(value){
+  return String(value || "")
+    .replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&#39;|&apos;/gi,"'")
+    .replace(/&quot;/gi,'"').replace(/&eacute;/gi,"é").replace(/&egrave;/gi,"è")
+    .replace(/&ecirc;/gi,"ê").replace(/&agrave;/gi,"à").replace(/&acirc;/gi,"â")
+    .replace(/&ocirc;/gi,"ô").replace(/&ugrave;/gi,"ù").replace(/&ucirc;/gi,"û")
+    .replace(/&ccedil;/gi,"ç");
+}
+
+app.get("/api/commune-market", async (req,res) => {
+  const city = clean(req.query.city,100);
+  if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
+  const key=normalizeSearchCity(city);
+  const cached=communeMarketCache.get(key);
+  if(cached && cached.expiresAt>Date.now()) return res.json({ok:true,...cached.data,cache:true});
+
+  const fallback={
+    city,found:false,source:"DVF / données départementales",
+    sourceUrl:"https://estimus.fr/departement/08-ardennes",
+    message:"Nous n’avons pas trouvé de médiane communale suffisamment fiable pour cette commune. Le rendez-vous peut s’appuyer sur les données du secteur et les ventes comparables.",
+    department:{median:1248,house:1308,apartment:1037,period:"12 derniers mois disponibles, jusqu’au 31 décembre 2025"},
+    caution:"Les données communales peuvent être absentes ou peu représentatives lorsque le nombre de ventes est faible."
+  };
+
+  try{
+    const response=await fetch("https://estimus.fr/departement/08-ardennes",{
+      headers:{"User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(7000)
+    });
+    if(!response.ok) throw new Error("Estimus HTTP "+response.status);
+    const html=await response.text();
+    const text=decodeBasicEntities(html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
+    const normalizedText=normalizeSearchCity(text);
+    const idx=normalizedText.indexOf(key);
+    if(idx>=0){
+      const windowText=text.slice(Math.max(0,idx-20),idx+220);
+      const match=windowText.match(/([0-9]{3,5}(?:[\s ][0-9]{3})?)\s*€\s*\/\s*m²/);
+      if(match){
+        const price=Number(match[1].replace(/[\s ]/g,""));
+        if(price>100){
+          const data={
+            city,found:true,price,source:"DVF — médiane communale",
+            sourceUrl:"https://estimus.fr/departement/08-ardennes",
+            period:"12 derniers mois de données DVF disponibles, jusqu’au 31 décembre 2025",
+            message:"Repère communal issu des transactions DVF. Il sert à préparer notre échange et ne constitue pas une estimation du bien.",
+            caution:"Si la commune compte peu de ventes, la médiane doit être interprétée avec prudence."
+          };
+          communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});
+          return res.json({ok:true,...data,cache:false});
+        }
+      }
+    }
+  }catch(error){ console.warn("JML commune-market fallback:",error.message); }
+
+  communeMarketCache.set(key,{expiresAt:Date.now()+60*60*1000,data:fallback});
+  return res.json({ok:true,...fallback,cache:false});
+});
 const cleanEmail = v => String(v ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g,"").trim().slice(0,180);
 const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(v));
 const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
