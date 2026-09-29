@@ -242,6 +242,20 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS jml_appointment_requests (
+      id TEXT PRIMARY KEY,
+      prospect_id TEXT REFERENCES jml_prospects(id) ON DELETE SET NULL,
+      name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      city TEXT,
+      requested_at TIMESTAMPTZ NOT NULL,
+      requested_location TEXT,
+      message TEXT,
+      status TEXT NOT NULL DEFAULT 'À traiter',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS jml_leads (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -635,6 +649,45 @@ app.delete("/api/prospects/:id", async (req,res) => {
     memory.prospects.delete(req.params.id);
     res.json({ok:true,persisted:false});
   }catch(e){unexpected(res,"JML-P014","Suppression indisponible.",e);}
+});
+
+
+app.post("/api/public-appointment", async (req,res) => {
+  const b=req.body||{};
+  const prospectId=clean(b.prospectId,100);
+  const name=clean(b.name,120);
+  const email=cleanEmail(b.email);
+  const phone=clean(b.phone,40);
+  const city=clean(b.city,100);
+  const requestedAtRaw=clean(b.requestedAt,60);
+  const requestedLocation=clean(b.requestedLocation,250);
+  const message=clean(b.message,1000);
+  if(!name) return apiError(res,400,"JML-A001","Nom requis.");
+  if(!email&&!phone) return apiError(res,400,"JML-A002","Email ou téléphone requis.");
+  if(!validEmail(email)) return apiError(res,400,"JML-A003","Email invalide.");
+  if(!requestedAtRaw) return apiError(res,400,"JML-A004","Date et créneau souhaités requis.");
+  const requestedAt=new Date(requestedAtRaw);
+  if(Number.isNaN(requestedAt.getTime())) return apiError(res,400,"JML-A005","Date du rendez-vous invalide.");
+  if(requestedAt.getTime()<Date.now()-5*60*1000) return apiError(res,400,"JML-A006","Le créneau demandé est déjà passé.");
+  try{
+    if(pool){
+      const exists=prospectId?await db("SELECT id FROM jml_prospects WHERE id=$1",[prospectId]):{rowCount:0};
+      const id=newId();
+      await db(
+        "INSERT INTO jml_appointment_requests (id,prospect_id,name,email,phone,city,requested_at,requested_location,message,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'À traiter')",
+        [id,exists.rowCount?prospectId:null,name,email||null,phone||null,city||null,requestedAt,requestedLocation||null,message||null]
+      );
+      if(exists.rowCount){
+        await db(
+          "INSERT INTO jml_activities (id,prospect_id,type,note,outcome,created_at) VALUES ($1,$2,'RDV',$3,'À rappeler',$4)",
+          [newId(),prospectId,"Demande de rendez-vous vendeur · "+requestedAt.toLocaleString("fr-FR",{dateStyle:"full",timeStyle:"short",timeZone:"Europe/Paris"})+(requestedLocation?" · "+requestedLocation:"")+(message?" · "+message:""),now()]
+        );
+        await db("UPDATE jml_prospects SET status='À relancer',next_action='Traiter la demande de rendez-vous vendeur.',next_action_at=NOW(),updated_at=NOW() WHERE id=$1",[prospectId]);
+      }
+      return res.status(201).json({ok:true,id,linkedToProspect:!!exists.rowCount,status:"À traiter"});
+    }
+    return res.status(503).json({ok:false,error:"Le stockage des demandes de rendez-vous n'est pas disponible."});
+  }catch(e){return unexpected(res,"JML-A010","Enregistrement de la demande de rendez-vous indisponible.",e);}
 });
 
 app.post("/api/leads", async (req,res) => {
