@@ -17,7 +17,6 @@ app.get("/facebook", (req, res) => {
   res.redirect(302, `/projet-vendeur${qs}`);
 });
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
-registerPublicEventsRoute(app, clean);
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const pool = hasDatabase ? new Pool({
@@ -29,6 +28,7 @@ const pool = hasDatabase ? new Pool({
 
 const memory = { prospects: new Map(), leads: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
+registerPublicEventsRoute(app, clean);
 const cleanEmail = v => String(v ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g,"").trim().slice(0,180);
 const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(v));
 const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
