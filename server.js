@@ -950,16 +950,15 @@ app.get("/guide",(_req,res)=>res.sendFile(path.join(__dirname,"public","guide.ht
 app.get("*",(_req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 
 async function start(){
+  // Render doit pouvoir valider le port/health check immédiatement.
+  // L'initialisation PostgreSQL se fait ensuite sans bloquer le démarrage HTTP.
+  app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} HTTP listening on ${PORT}`));
   try{
     await initDb();
-    app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} on ${PORT}`));
+    console.log(`JML Projet Vendeur v${VERSION} database ready`);
   }catch(err){
     console.error("DB init failed:",err);
-    if(hasDatabase){
-      app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} started with DATABASE ERROR`));
-    }else{
-      app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} without DATABASE_URL`));
-    }
+    console.error("JML Projet Vendeur continue en mode dégradé tant que PostgreSQL n'est pas disponible.");
   }
 }
 start();
