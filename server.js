@@ -690,6 +690,40 @@ app.post("/api/appointment-requests/:id/reject", async (req,res) => {
   }catch(e){return unexpected(res,"JML-A020","Traitement de la demande indisponible.",e);}
 });
 
+function buildAppointmentSlots(days=21){
+  const slots=[]; const nowMs=Date.now(); const blocked=[];
+  return {slots,blocked,nowMs,days};
+}
+async function getBookedAppointmentTimes(){
+  if(!pool) return [];
+  const q=await db("SELECT requested_at FROM jml_appointment_requests WHERE status='À traiter' UNION ALL SELECT appointment_at AS requested_at FROM jml_activities WHERE outcome='RDV pris' AND appointment_at IS NOT NULL");
+  return q.rows.map(r=>new Date(r.requested_at).getTime()).filter(Number.isFinite);
+}
+function availableSlotList(booked=[]){
+  const out=[], set=new Set(booked);
+  const start=new Date(); start.setHours(0,0,0,0);
+  for(let d=1;d<=21;d++){
+    const day=new Date(start); day.setDate(start.getDate()+d);
+    const dow=day.getDay();
+    if(dow===0) continue;
+    const endHour=dow===6?13:18;
+    for(let h=9;h<endHour;h++){
+      const dt=new Date(day); dt.setHours(h,0,0,0);
+      if(dt.getTime()<=Date.now()) continue;
+      if(!set.has(dt.getTime())) out.push(dt.toISOString());
+    }
+  }
+  return out;
+}
+
+app.get("/api/appointment-slots", async (_req,res) => {
+  try{
+    const booked=await getBookedAppointmentTimes();
+    const slots=availableSlotList(booked);
+    return res.json({ok:true,slots,timezone:"Europe/Paris",rules:"Du lundi au vendredi de 9h à 18h, samedi de 9h à 13h. Les créneaux déjà demandés ou confirmés sont masqués."});
+  }catch(e){return unexpected(res,"JML-A021","Lecture des créneaux disponibles indisponible.",e);}
+});
+
 app.post("/api/public-appointment", async (req,res) => {
   const b=req.body||{};
   const prospectId=clean(b.prospectId,100);
@@ -707,6 +741,8 @@ app.post("/api/public-appointment", async (req,res) => {
   const requestedAt=new Date(requestedAtRaw);
   if(Number.isNaN(requestedAt.getTime())) return apiError(res,400,"JML-A005","Date du rendez-vous invalide.");
   if(requestedAt.getTime()<Date.now()-5*60*1000) return apiError(res,400,"JML-A006","Le créneau demandé est déjà passé.");
+  const requestedSlots=availableSlotList(await getBookedAppointmentTimes());
+  if(!requestedSlots.includes(requestedAt.toISOString())) return apiError(res,409,"JML-A007","Ce créneau n’est plus disponible. Choisissez-en un autre.");
   try{
     if(pool){
       const exists=prospectId?await db("SELECT id FROM jml_prospects WHERE id=$1",[prospectId]):{rowCount:0};
