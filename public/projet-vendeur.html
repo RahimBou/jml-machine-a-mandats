@@ -33,6 +33,33 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 .seller-advice{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.seller-advice a{display:block;text-decoration:none;color:var(--green);padding:13px;border:1px solid var(--line);border-radius:12px;background:#faf7ef;font-weight:800;font-size:12px}.seller-advice a span{display:block;color:var(--muted);font-weight:500;font-size:10.5px;line-height:1.4;margin-top:5px}
 .seller-source{margin-top:10px;color:var(--muted);font-size:10px;line-height:1.45}
 @media(max-width:600px){.seller-market,.seller-advice{grid-template-columns:1fr}.seller-section{padding:15px}.seller-hero{padding:18px}.seller-hero h3{font-size:22px}.seller-brand{padding:12px}}
+
+/* V1.6 — premium seller dashboard */
+.seller-brand-mark{width:66px;height:66px;border-radius:15px;margin-left:10px;display:grid;place-items:center;background:linear-gradient(145deg,#d8bb7a,#8f6c2e);color:#17332c;font-size:39px;font-family:Georgia,serif;font-weight:700;box-shadow:inset 0 0 0 2px rgba(255,255,255,.28)}
+.seller-brand-mark:after{content:"JML";font-size:13px;letter-spacing:.08em;margin-top:35px;position:absolute;color:#17332c}
+.seller-brand{position:relative;overflow:hidden;min-height:76px;padding:0;background:#153b32;border-color:#b8944e}
+.seller-brand:after{content:"";position:absolute;right:-70px;top:-100px;width:230px;height:230px;border:24px solid rgba(216,187,122,.12);border-radius:50%}
+.seller-brand-logo{width:160px;height:76px;object-fit:contain;object-position:left center;filter:drop-shadow(0 4px 8px rgba(0,0,0,.16))}
+.seller-brand-copy{padding-right:18px}.seller-brand-copy strong{font-size:16px}.seller-brand-copy span{font-size:8px}
+.seller-hero{min-height:250px;padding:0;display:flex;align-items:flex-end;background:linear-gradient(180deg,rgba(12,44,37,.08),rgba(12,44,37,.78)),url("https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=82") center/cover;border-color:#b8944e}
+.seller-hero-content{position:relative;z-index:2;width:100%;padding:26px;color:#fff}.seller-hero-content h3{font-size:29px;text-shadow:0 2px 8px rgba(0,0,0,.28)}.seller-hero-content p{color:#f2f1ea;max-width:560px}.seller-hero .seller-meta{margin-top:16px}.seller-hero .seller-pill{background:rgba(255,255,255,.92);color:#17332c}
+.seller-kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(184,148,78,.94);color:#17332c;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.seller-section{position:relative}.seller-section-head>div:nth-child(2){flex:1}.seller-section-head .seller-arrow{cursor:pointer;transition:.2s}.seller-section-head .seller-arrow:hover{transform:translateX(2px);background:#c8aa6d}
+.seller-section.featured{border-color:#d0b477;background:linear-gradient(145deg,#fffdf8,#f3eddf)}
+.seller-section.featured .seller-icon{background:#173f34;color:#e1c17a}
+.seller-market{grid-template-columns:repeat(3,1fr)}
+.seller-metric strong{font-size:16px}.seller-metric small{min-height:25px}
+.seller-chart{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.seller-chart-title{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;color:var(--green)}.seller-chart-title span{font-size:9px;color:var(--muted);font-weight:500}
+.seller-bars{display:grid;gap:9px;margin-top:11px}.seller-bar{display:grid;grid-template-columns:82px 1fr 66px;gap:8px;align-items:center;font-size:10px}.seller-bar i{height:9px;border-radius:99px;background:linear-gradient(90deg,#173f34,#b8944e);display:block}.seller-bar strong{text-align:right;font-size:11px}
+.seller-video{position:relative;overflow:hidden;margin-top:14px;min-height:145px;border-radius:16px;background:linear-gradient(120deg,rgba(20,59,49,.9),rgba(20,59,49,.52)),url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=78") center/cover;color:#fff;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.seller-video h4{margin:0 0 5px;font-size:18px}.seller-video p{margin:0;color:#e8eee9;font-size:11px;line-height:1.45;max-width:370px}.seller-play{width:58px;height:58px;border:2px solid #e0c17a;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#fff;font-size:24px;flex:0 0 58px}
+.seller-video-note{margin-top:7px;font-size:9px;color:rgba(255,255,255,.75)}
+.seller-advice{grid-template-columns:repeat(3,1fr)}
+.seller-advice a{min-height:82px}.seller-advice a span{font-size:10px}
+.seller-events{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin-top:14px}.seller-event-feature{min-height:150px;border-radius:16px;padding:18px;color:#fff;background:linear-gradient(145deg,rgba(18,58,48,.9),rgba(18,58,48,.55)),url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=78") center/cover}.seller-event-feature h4{font-size:18px;margin:0 0 6px}.seller-event-feature p{font-size:10.5px;line-height:1.45;color:#eef2ee}.seller-event-list{display:grid;gap:8px}.seller-event-mini{padding:11px;border:1px solid var(--line);border-radius:12px;background:#faf7ef}.seller-event-mini strong{font-size:11px;display:block}.seller-event-mini span{font-size:9.5px;color:var(--muted)}
+.seller-cta{margin-top:14px;padding:20px;border-radius:18px;background:#153b32;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:15px}.seller-cta h4{margin:0 0 4px;font-size:19px}.seller-cta p{margin:0;color:#dce7e0;font-size:11px;line-height:1.45}.seller-cta .primary{white-space:nowrap;background:#d8bb7a;color:#17332c}
+@media(max-width:600px){.seller-brand-logo{width:135px}.seller-brand-copy{padding-right:10px}.seller-hero{min-height:285px}.seller-hero-content{padding:20px}.seller-market{grid-template-columns:1fr}.seller-bars .seller-bar{grid-template-columns:70px 1fr 58px}.seller-video{min-height:165px}.seller-events{grid-template-columns:1fr}.seller-advice{grid-template-columns:1fr}.seller-cta{flex-direction:column;align-items:stretch}.seller-cta .primary{width:100%}}
 </style>
 </head>
 <body>
@@ -73,44 +100,76 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
     <div class="fb-success-item"><h3>🤝 Prochaine étape</h3><p>Un échange pourra être organisé pour parler de votre bien, de votre projet et de votre calendrier.</p></div>
   </div>
 
+
   <div class="seller-space">
-    <div class="seller-brand"><div class="seller-mark" aria-hidden="true"></div><div><strong>JML Immobilier</strong><span>VOTRE PROJET, NOTRE ENGAGEMENT</span></div></div>
-    <div class="seller-hero">
-      <h3>Votre espace vendeur</h3>
-      <p id="fbPersonalIntro">Votre projet immobilier, préparé à partir des informations que vous nous avez confiées.</p>
-      <div class="seller-meta"><span class="seller-pill" id="fbCityPill">Votre secteur</span><span class="seller-pill" id="fbTypePill">Votre bien</span><span class="seller-pill" id="fbHorizonPill">Votre calendrier</span></div>
+    <div class="seller-brand">
+      <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:2">
+        <div class="seller-brand-mark" aria-hidden="true"><span>⌂</span></div>
+        <div class="seller-brand-copy"><strong>JML Immobilier</strong><span>VOTRE PROJET, NOTRE ENGAGEMENT</span></div>
+      </div>
     </div>
-    <section class="seller-section">
+
+    <div class="seller-hero">
+      <div class="seller-hero-content">
+        <div class="seller-kicker">JML Immobilier · Ardennes</div>
+        <h3>Votre espace vendeur</h3>
+        <p id="fbPersonalIntro">Votre projet immobilier, préparé à partir des informations que vous nous avez confiées.</p>
+        <div class="seller-meta"><span class="seller-pill" id="fbCityPill">Votre secteur</span><span class="seller-pill" id="fbTypePill">Votre bien</span><span class="seller-pill" id="fbHorizonPill">Votre calendrier</span></div>
+      </div>
+    </div>
+
+    <section class="seller-section featured">
       <div class="seller-section-head"><div class="seller-icon">📍</div><div><h4>Votre secteur</h4><p id="fbSectorText">Nous préparerons les informations locales disponibles afin de situer votre bien sur le marché local.</p></div><button class="seller-arrow" type="button" aria-label="Voir les détails du secteur">›</button></div>
       <div class="seller-market" id="sellerMarketMetrics"></div>
-      <div class="seller-source" id="sellerMarketSource">Les chiffres précis seront affichés uniquement lorsqu’une source exploitable et datée est disponible.</div>
+      <div class="seller-chart">
+        <div class="seller-chart-title"><span>Repères de prix — lecture indicative</span><span>Données datées uniquement</span></div>
+        <div class="seller-bars">
+          <div class="seller-bar"><span>Maison</span><i style="width:78%"></i><strong>À calculer</strong></div>
+          <div class="seller-bar"><span>Appartement</span><i style="width:58%"></i><strong>À calculer</strong></div>
+          <div class="seller-bar"><span>Comparables</span><i style="width:42%"></i><strong>À préparer</strong></div>
+        </div>
+      </div>
+      <div class="seller-source" id="sellerMarketSource">Les valeurs seront remplacées par des données réellement disponibles et datées. Les barres ci-dessus sont des repères visuels, pas des prix.</div>
     </section>
+
     <section class="seller-section">
       <div class="seller-section-head"><div class="seller-icon">🏠</div><div><h4>Votre bien</h4><p id="fbPropertyText">Quelques informations permettront de mieux comprendre ce qui rend votre bien particulier.</p></div><button class="seller-arrow" type="button" aria-label="Voir les détails du bien">›</button></div>
       <div class="seller-tags"><span class="seller-tag">Surface</span><span class="seller-tag">Terrain</span><span class="seller-tag">État du bien</span><span class="seller-tag">Travaux</span><span class="seller-tag">Équipements</span></div>
     </section>
+
     <section class="seller-section">
       <div class="seller-section-head"><div class="seller-icon">🗓</div><div><h4>Votre calendrier</h4><p id="fbHorizonText">Votre calendrier sera pris en compte pour préparer la suite au bon moment, sans précipiter votre décision.</p></div><button class="seller-arrow" type="button" aria-label="Voir le calendrier">›</button></div>
-      <div class="seller-timeline"><div class="seller-step active"><i></i>Aujourd’hui</div><div class="seller-step"><i></i>1 mois</div><div class="seller-step"><i></i>2 mois</div><div class="seller-step active"><i></i>3 mois</div></div>
+      <div class="seller-timeline"><div class="seller-step active"><i></i>Aujourd’hui</div><div class="seller-step"><i></i>1 mois</div><div class="seller-step"><i></i>2 mois</div><div class="seller-step"><i></i>3 mois</div></div>
     </section>
+
+    <div class="seller-video">
+      <div><div class="seller-kicker">Conseil JML</div><h4>Un conseil vendeur en 60 secondes</h4><p>Préparez votre projet avec des conseils simples, directement depuis votre espace vendeur.</p><div class="seller-video-note">🎬 Emplacement vidéo JML — prêt à recevoir votre prochaine vidéo.</div></div>
+      <div class="seller-play" aria-hidden="true">▶</div>
+    </div>
+
     <section class="seller-section">
-      <div class="seller-section-head"><div class="seller-icon">📚</div><div><h4>Préparer votre vente</h4><p>Retrouvez ici des conseils simples pour préparer votre bien, éviter les erreurs courantes et aborder votre projet sereinement.</p></div><button class="seller-arrow" type="button" aria-label="Voir les conseils vendeurs">›</button></div>
-      <div class="seller-advice"><a href="/guide-preparer-vente.html" target="_blank" rel="noopener">💡 Valoriser votre bien<span>Les gestes utiles avant une mise en vente.</span></a><a href="/guide-documents-vente.html" target="_blank" rel="noopener">📄 Documents à préparer<span>La checklist des informations utiles.</span></a><a href="/guide-erreurs-vente.html" target="_blank" rel="noopener">🛠 Les erreurs à éviter<span>Les points à vérifier avant de décider.</span></a></div>
-      <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">🧭 Préparer mon rendez-vous</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Une préparation personnalisée selon votre bien et votre calendrier.</p><a class="secondary" id="fbPrepareLink" href="/preparer-rdv.html" style="display:inline-block;text-decoration:none">Préparer mon rendez-vous →</a></div></div>
+      <div class="seller-section-head"><div class="seller-icon">📚</div><div><h4>Préparer votre vente</h4><p>Trois ressources utiles, sans vous noyer sous les informations.</p></div><button class="seller-arrow" type="button" aria-label="Voir les conseils vendeurs">›</button></div>
+      <div class="seller-advice">
+        <a href="/guide-preparer-vente.html">💡 Préparer mon bien<span>Les gestes utiles avant une mise en vente.</span></a>
+        <a href="/guide-documents-vente.html">📄 Documents<span>La checklist des informations utiles.</span></a>
+        <a href="/guide-rdv-estimation.html">🤝 Préparer mon rendez-vous<span>Les questions et éléments à prévoir.</span></a>
+      </div>
     </section>
+
+    <div class="seller-events">
+      <div class="seller-event-feature"><div class="seller-kicker">Ancrage local</div><h4>📍 La vie dans les Ardennes</h4><p>Quelques rendez-vous et informations locales peuvent être affichés ici pour rendre votre espace vraiment utile au quotidien.</p></div>
+      <div class="seller-event-list" id="sellerEventMiniList"><div class="seller-event-mini"><strong>Événements locaux</strong><span>Chargement selon votre secteur…</span></div><div class="seller-event-mini"><strong>Vie du quartier</strong><span>Informations locales à venir.</span></div><div class="seller-event-mini"><strong>Marché immobilier</strong><span>Données actualisées selon les sources disponibles.</span></div></div>
+    </div>
+
+    <div class="seller-cta">
+      <div><h4>🧭 Préparer mon rendez-vous</h4><p>Une préparation personnalisée selon votre bien et votre calendrier.</p></div>
+      <a class="primary" id="fbPrepareLink" href="/preparer-rdv.html" style="text-decoration:none">Préparer mon rendez-vous →</a>
+    </div>
   </div>
-  <div class="fb-success-note"><strong>En attendant, voici déjà quelques repères utiles pour votre projet de vente.</strong><br>Les conseils et informations présentés ici sont fournis à titre informatif. Les données de marché doivent être vérifiées et datées avant toute utilisation dans une décision de vente.</div>  <div class="fb-market" id="fbMarket" style="display:none"><div class="fb-market-head"><div><h3>📊 Quelques repères de marché</h3><p id="fbMarketIntro">Des chiffres pour nourrir notre échange, pas pour remplacer une estimation.</p></div><span class="fb-market-badge">Sources croisées</span></div><div class="fb-market-main" id="fbMarketCards"></div><div class="fb-market-note" id="fbMarketNote"></div></div><div class="fb-events" id="fbEvents"><div class="fb-events-head"><div><h3>📍 À suivre dans les Ardennes</h3><p id="fbEventsIntro">Quelques rendez-vous locaux sélectionnés pour nourrir notre échange.</p></div><span class="fb-market-badge">Sélection locale</span></div><div class="fb-events-grid" id="fbEventsGrid"></div><div class="fb-market-note">Une sélection d’événements locaux, régulièrement actualisée.</div></div><div class="fb-prepare"><h4>💬 Pour préparer notre rendez-vous</h4><ul><li>Le prix auquel vous pensez aujourd’hui, même s’il s’agit simplement d’un ordre d’idée.</li><li>Les travaux réalisés récemment et ceux éventuellement à prévoir.</li><li>Les éléments que vous souhaitez absolument prendre en compte dans votre projet.</li><li>Votre calendrier idéal : quand vendre, et ce qui pourrait déclencher ou retarder la décision.</li></ul></div>
-  <div class="fb-success-grid" style="margin-top:12px">
-    <div class="fb-success-item"><h3>Conseil vendeur #1</h3><p>Avant de fixer un prix, regardez les ventes réellement réalisées dans votre secteur et comparez des biens réellement comparables.</p></div>
-    <div class="fb-success-item"><h3>Conseil vendeur #2</h3><p>Préparez les informations essentielles du bien : surface, travaux, taxe foncière, DPE et principaux équipements.</p></div>
-    <div class="fb-success-item"><h3>Conseil vendeur #3</h3><p>Le bon prix dépend du secteur, du type de bien, de son état et du contexte du marché au moment de la mise en vente.</p></div>
-  </div>
-  <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">📘 Guide vendeur — Préparer sa vente</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Un guide pratique pour préparer les informations utiles avant notre échange.</p><a class="secondary" href="/guide-preparer-vente.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Télécharger le guide PDF →</a></div></div>
-  <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">📄 Guide vendeur — Documents à préparer</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">La checklist des documents et informations utiles avant notre échange.</p><a class="secondary" href="/guide-documents-vente.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Ouvrir le guide →</a></div></div>
-  <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">⚠️ Guide vendeur — Les erreurs à éviter</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Quelques points à vérifier avant de prendre une décision de vente.</p><a class="secondary" href="/guide-erreurs-vente.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Ouvrir le guide →</a></div></div>
-  <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">📋 Guide vendeur — Comprendre le DPE</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Les points essentiels à préparer avant votre projet de vente.</p><a class="secondary" href="/guide-dpe-vente.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Ouvrir le guide →</a></div></div>
-  <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">🤝 Guide vendeur — Préparer son rendez-vous</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Les informations et questions utiles à préparer avant notre échange.</p><a class="secondary" href="/guide-rdv-estimation.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Ouvrir le guide →</a></div></div>
-  <div class="fb-guide-card" style="margin-top:14px;background:#f5f1e8;border:1px solid var(--line);border-radius:16px;padding:18px 20px"><div><h3 style="margin:0 0 6px;color:var(--green)">💬 Guide vendeur — Les questions à se poser</h3><p style="margin:0 0 12px;color:var(--muted);line-height:1.5">Pour arriver au rendez-vous avec une vision plus claire de votre projet.</p><a class="secondary" href="/guide-questions-vente.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Ouvrir le guide →</a></div></div>
+
+  <div class="fb-success-note"><strong>Les premiers repères pour votre projet</strong><br>Les informations présentées ici sont indicatives. Les données de marché doivent être vérifiées, datées et comparées avant toute décision.</div>
+  <div class="fb-market" id="fbMarket" style="display:none"><div class="fb-market-head"><div><h3>📊 Quelques repères de marché</h3><p id="fbMarketIntro">Des chiffres pour nourrir notre échange, pas pour remplacer une estimation.</p></div><span class="fb-market-badge">Sources croisées</span></div><div class="fb-market-main" id="fbMarketCards"></div><div class="fb-market-note" id="fbMarketNote"></div></div>
+  <div class="fb-events" id="fbEvents"><div class="fb-events-head"><div><h3>📍 À suivre dans les Ardennes</h3><p id="fbEventsIntro">Quelques rendez-vous locaux sélectionnés pour votre secteur.</p></div><span class="fb-market-badge">Sélection locale</span></div><div class="fb-events-grid" id="fbEventsGrid"></div><div class="fb-market-note">Une sélection d’événements locaux, régulièrement actualisée.</div></div>
   <div class="fb-appointment">
 <h3>📅 Demander un rendez-vous</h3>
 <p>Choisissez directement parmi les créneaux actuellement proposés. <strong>Le rendez-vous sera confirmé par JML Immobilier après vérification.</strong></p>
