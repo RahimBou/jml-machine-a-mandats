@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.3.1";
-const BUILD_MARKER = "territory-unblock-dvf-ready";
+const VERSION = "3.3.2";
+const BUILD_MARKER = "dvf-local-official-08";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -73,32 +73,58 @@ const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
 
 const communeMarketCache = new Map();
-const DVF_LOCAL_PATH = String(process.env.DVF_LOCAL_PATH || "").trim();
+const DVF_YEARS_LOCAL = String(process.env.DVF_YEARS_LOCAL || "2025,2024,2023,2022")
+  .split(",").map(x=>Number(x.trim())).filter(y=>Number.isInteger(y)&&y>=2022&&y<=2025);
 let dvfLocalLoadPromise = null;
+function parseDvfCsvLine(line){
+  const out=[]; let cur="", quoted=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==="\\""){ if(quoted && line[i+1]==="\\""){cur+="\\"";i++;} else quoted=!quoted; }
+    else if(ch===","&&!quoted){out.push(cur);cur="";}
+    else cur+=ch;
+  }
+  out.push(cur); return out;
+}
 async function loadLocalDvfSales(){
-  if(!DVF_LOCAL_PATH) return [];
   if(dvfLocalLoadPromise) return dvfLocalLoadPromise;
   dvfLocalLoadPromise=(async()=>{
-    const fs=require("fs");
-    const raw=await fs.promises.readFile(DVF_LOCAL_PATH,"utf8");
-    const lines=raw.split(/\r?\n/).filter(Boolean);
-    if(!lines.length) return [];
-    const header=lines[0].split(",").map(v=>v.trim().replace(/^"|"$/g,""));
-    const idx=Object.fromEntries(header.map((v,i)=>[v,i]));
-    const out=[];
-    for(let i=1;i<lines.length;i++){
-      const row=lines[i].split(",").map(v=>v.trim().replace(/^"|"$/g,""));
-      const type=row[idx.type_local];
-      if(type!=="Maison"&&type!=="Appartement") continue;
-      const price=Number(row[idx.valeur_fonciere]), surface=Number(row[idx.surface_reelle_bati]);
-      const lat=Number(row[idx.latitude]),lon=Number(row[idx.longitude]);
-      if(!Number.isFinite(price)||price<=0||!Number.isFinite(surface)||surface<=0||!Number.isFinite(lat)||!Number.isFinite(lon)) continue;
-      out.push({type,address:[row[idx.adresse_numero],row[idx.adresse_suffixe],row[idx.adresse_nom_voie]].filter(Boolean).join(" "),date:row[idx.date_mutation]||null,surface,rooms:Number(row[idx.nombre_pieces_principales])||null,land:Number(row[idx.surface_terrain])||null,price,pricePerM2:price/surface,lat,lon,code:row[idx.code_commune]||"",city:row[idx.nom_commune]||"",source:"DVF local JML"});
+    const all=[];
+    for(const year of DVF_YEARS_LOCAL){
+      const url="https://files.data.gouv.fr/geo-dvf/latest/csv/"+year+"/departements/08.csv.gz";
+      const response=await fetch(url,{headers:{"Accept":"application/gzip","User-Agent":"JML-Projet-Vendeur/3.3.2"},signal:AbortSignal.timeout(30000)});
+      if(!response.ok) throw new Error("DVF "+year+" HTTP "+response.status);
+      const buffer=Buffer.from(await response.arrayBuffer());
+      const raw=zlib.gunzipSync(buffer).toString("utf8");
+      const lines=raw.split(/\\r?\\n/).filter(Boolean);
+      if(!lines.length) continue;
+      const header=parseDvfCsvLine(lines[0]).map(v=>v.trim());
+      const idx=Object.fromEntries(header.map((v,i)=>[v,i]));
+      const groups=new Map();
+      for(let i=1;i<lines.length;i++){
+        const row=parseDvfCsvLine(lines[i]);
+        if(row[0]==="id_mutation" || row[idx.nature_mutation]!=="Vente") continue;
+        const type=row[idx.type_local];
+        if(type!=="Maison"&&type!=="Appartement") continue;
+        const price=Number(row[idx.valeur_fonciere]), surface=Number(row[idx.surface_reelle_bati]);
+        const lat=Number(row[idx.latitude]), lon=Number(row[idx.longitude]);
+        if(!(price>0&&surface>0&&Number.isFinite(lat)&&Number.isFinite(lon))) continue;
+        const id=row[idx.id_mutation]||[row[idx.date_mutation],row[idx.adresse_numero],row[idx.adresse_nom_voie],row[idx.id_parcelle]].join("|");
+        if(!groups.has(id)) groups.set(id,[]);
+        groups.get(id).push({id,date:row[idx.date_mutation],type,price,surface,rooms:Number(row[idx.nombre_pieces_principales])||null,land:Number(row[idx.surface_terrain])||null,lat,lon,number:row[idx.adresse_numero]||"",suffix:row[idx.adresse_suffixe]||"",street:row[idx.adresse_nom_voie]||"",postal:row[idx.code_postal]||"",code:row[idx.code_commune]||"",city:row[idx.nom_commune]||""});
+      }
+      for(const rows of groups.values()){
+        if(rows.length!==1) continue;
+        const x=rows[0];
+        all.push({...x,address:[x.number,x.suffix,x.street].filter(Boolean).join(" "),pricePerM2:x.price/x.surface,source:"DVF local JML"});
+      }
+      console.log("JML DVF local "+year+": "+all.length+" ventes résidentielles exploitables cumulées");
     }
-    return out;
+    return all;
   })().catch(e=>{dvfLocalLoadPromise=null;console.warn("JML DVF local:",e.message);return [];});
   return dvfLocalLoadPromise;
 }
+
 
 
 const IMMO_DATA_API_BASE_URL = String(process.env.IMMO_DATA_API_BASE_URL || "https://api.immo-data.fr").replace(/\/+$/,"");
