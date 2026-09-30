@@ -156,7 +156,7 @@ const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
 const newId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
-async function sendLeadConfirmationEmail(lead) {
+async function sendLeadConfirmationEmail(lead, sellerSpaceUrl = "") {
   if (!lead.email) return { sent: false, reason: "no-email" };
   const apiKey = String(process.env.RESEND_API_KEY || "").trim();
   const from = String(process.env.RESEND_FROM || "").trim();
@@ -168,7 +168,7 @@ async function sendLeadConfirmationEmail(lead) {
   const subject = "Votre demande concernant votre projet immobilier";
   const text = "Bonjour " + firstName + ",\n\n" +
     "Nous avons bien reçu votre demande concernant votre projet immobilier dans les Ardennes.\n\n" +
-    "Merci pour votre confiance. Votre demande a bien été prise en compte. Nous reviendrons vers vous afin d’échanger simplement sur votre projet, votre bien et le calendrier que vous avez en tête.\n\n" +
+    "Merci pour votre confiance. Votre demande a bien été prise en compte. Nous reviendrons vers vous afin d’échanger simplement sur votre projet, votre bien et le calendrier que vous avez en tête.\n\n" + (sellerSpaceUrl ? "Votre espace vendeur personnel : " + sellerSpaceUrl + "\n\n" : "") +
     "À bientôt,\nJML Immobilier\nVotre projet, notre engagement";
   const safeName = firstName.replace(/[&<>"]/g, "");
   const html = "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
@@ -177,7 +177,7 @@ async function sendLeadConfirmationEmail(lead) {
     "<div style=\"background:#173b32;padding:22px 24px;border-radius:12px 12px 0 0;color:#fff\"><div style=\"font-size:22px;font-weight:700\">JML Immobilier</div><div style=\"margin-top:5px;color:#d9bd72;font-size:13px\">VOTRE PROJET, NOTRE ENGAGEMENT</div></div>" +
     "<div style=\"background:#fff;padding:28px 24px;border-radius:0 0 12px 12px\"><p>Bonjour " + safeName + ",</p>" +
     "<p>Nous avons bien reçu votre demande concernant votre projet immobilier dans les Ardennes.</p>" +
-    "<p>Merci pour votre confiance. Votre demande a bien été prise en compte. Nous reviendrons vers vous afin d’échanger simplement sur votre projet, votre bien et le calendrier que vous avez en tête.</p>" +
+    "<p>Merci pour votre confiance. Votre demande a bien été prise en compte. Nous reviendrons vers vous afin d’échanger simplement sur votre projet, votre bien et le calendrier que vous avez en tête.</p>" + (sellerSpaceUrl ? "<p style="margin:22px 0"><a href="" + sellerSpaceUrl.replace(/[&<>"]/g,"") + "" style="display:inline-block;padding:12px 18px;background:#d8bb7a;color:#173b32;text-decoration:none;border-radius:8px;font-weight:700">Ouvrir mon espace vendeur →</a></p>" : "") +
     "<p style=\"margin-top:28px\">À bientôt,<br><strong>JML Immobilier</strong><br><span style=\"color:#8c6d2d\">Votre projet, notre engagement</span></p></div></div></body></html>";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -968,18 +968,16 @@ app.post("/api/leads", async (req,res) => {
         }
         await client.query("COMMIT");
 
+        const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
+        const sellerSpaceUrl=req.protocol+"://"+req.get("host")+"/espace-vendeur/"+sellerSpace.accessToken;
         let emailConfirmation = { sent: false, reason: "no-email" };
         try {
-          emailConfirmation = await sendLeadConfirmationEmail(lead);
+          emailConfirmation = await sendLeadConfirmationEmail(lead,sellerSpaceUrl);
         } catch (emailErr) {
           console.error("JML email confirmation failed:", emailErr);
           emailConfirmation = { sent: false, reason: "send-failed" };
         }
-
-        const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
-        const sellerSpaceUrl=`${String(process.env.PUBLIC_BASE_URL||"").replace(/\/$/,"")||""}/espace-vendeur/${sellerSpace.accessToken}`;
-        if(emailConfirmation.sent){ /* confirmation email already sent below; access link is also returned for the browser */ }
-        return res.status(201).json({ok:true,persisted:true,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation,spaceToken:sellerSpace.accessToken,spaceUrl:sellerSpaceUrl||(`/espace-vendeur/${sellerSpace.accessToken}`)});
+        return res.status(201).json({ok:true,persisted:true,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation,spaceToken:sellerSpace.accessToken,spaceUrl:sellerSpaceUrl});
       }catch(txErr){
         await client.query("ROLLBACK");
         throw txErr;
@@ -1009,16 +1007,16 @@ app.post("/api/leads", async (req,res) => {
       memory.prospects.set(p.id,out);
       prospectId=p.id;
     }
+    const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
+    const sellerSpaceUrl=req.protocol+"://"+req.get("host")+"/espace-vendeur/"+sellerSpace.accessToken;
     let emailConfirmation = { sent: false, reason: "no-email" };
     try {
-      emailConfirmation = await sendLeadConfirmationEmail(lead);
+      emailConfirmation = await sendLeadConfirmationEmail(lead,sellerSpaceUrl);
     } catch (emailErr) {
       console.error("JML email confirmation failed:", emailErr);
       emailConfirmation = { sent: false, reason: "send-failed" };
     }
-
-    const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
-    return res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation,spaceToken:sellerSpace.accessToken,spaceUrl:`/espace-vendeur/${sellerSpace.accessToken}`});
+    return res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation,spaceToken:sellerSpace.accessToken,spaceUrl:sellerSpaceUrl});
   }catch(e){unexpected(res,"JML-L001","Enregistrement du lead indisponible.",e);}
 });
 
