@@ -199,8 +199,10 @@ app.get("/api/territory-summary", async (req,res) => {
     const commune=candidates[0];
     let market={ok:false};
     try{
-      const marketResponse=await fetch((req.headers["x-forwarded-proto"]==="https"?"https":"http")+"://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(commune.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(8000)});
+      const baseUrl=process.env.RENDER_EXTERNAL_URL || ("https://"+req.get("host"));
+      const marketResponse=await fetch(baseUrl+"/api/commune-market?city="+encodeURIComponent(commune.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(15000)});
       if(marketResponse.ok) market=await marketResponse.json();
+      else console.warn("JML territory market HTTP:",marketResponse.status);
     }catch(error){
       console.warn("JML territory market:",error.message);
     }
@@ -217,7 +219,8 @@ app.get("/api/territory-summary", async (req,res) => {
         }).filter(x=>Number.isFinite(x.distanceKm)).sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,4):[];
         nearby=await Promise.all(ranked.map(async x=>{
           try{
-            const m=await fetch((req.headers["x-forwarded-proto"]==="https"?"https":"http")+"://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(x.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(5000)});
+            const baseUrl=process.env.RENDER_EXTERNAL_URL || ("https://"+req.get("host"));
+            const m=await fetch(baseUrl+"/api/commune-market?city="+encodeURIComponent(x.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(10000)});
             const md=m.ok?await m.json():null;
             return {nom:x.nom,code:x.code,population:x.population,distanceKm:Number(x.distanceKm.toFixed(1)),price:md?.communalPrice||md?.price||null,housePrice:md?.housePrice||null,apartmentPrice:md?.apartmentPrice||null,transactions:md?.transactions||null,source:md?.source||null};
           }catch(_){return {nom:x.nom,code:x.code,population:x.population,distanceKm:Number(x.distanceKm.toFixed(1)),price:null};}
