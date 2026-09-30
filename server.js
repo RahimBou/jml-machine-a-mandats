@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.3.0";
-const BUILD_MARKER = "immo-data-api-test";
+const VERSION = "3.3.1";
+const BUILD_MARKER = "territory-unblock-dvf-ready";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -73,6 +73,33 @@ const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
 
 const communeMarketCache = new Map();
+const DVF_LOCAL_PATH = String(process.env.DVF_LOCAL_PATH || "").trim();
+let dvfLocalLoadPromise = null;
+async function loadLocalDvfSales(){
+  if(!DVF_LOCAL_PATH) return [];
+  if(dvfLocalLoadPromise) return dvfLocalLoadPromise;
+  dvfLocalLoadPromise=(async()=>{
+    const fs=require("fs");
+    const raw=await fs.promises.readFile(DVF_LOCAL_PATH,"utf8");
+    const lines=raw.split(/\r?\n/).filter(Boolean);
+    if(!lines.length) return [];
+    const header=lines[0].split(",").map(v=>v.trim().replace(/^"|"$/g,""));
+    const idx=Object.fromEntries(header.map((v,i)=>[v,i]));
+    const out=[];
+    for(let i=1;i<lines.length;i++){
+      const row=lines[i].split(",").map(v=>v.trim().replace(/^"|"$/g,""));
+      const type=row[idx.type_local];
+      if(type!=="Maison"&&type!=="Appartement") continue;
+      const price=Number(row[idx.valeur_fonciere]), surface=Number(row[idx.surface_reelle_bati]);
+      const lat=Number(row[idx.latitude]),lon=Number(row[idx.longitude]);
+      if(!Number.isFinite(price)||price<=0||!Number.isFinite(surface)||surface<=0||!Number.isFinite(lat)||!Number.isFinite(lon)) continue;
+      out.push({type,address:[row[idx.adresse_numero],row[idx.adresse_suffixe],row[idx.adresse_nom_voie]].filter(Boolean).join(" "),date:row[idx.date_mutation]||null,surface,rooms:Number(row[idx.nombre_pieces_principales])||null,land:Number(row[idx.surface_terrain])||null,price,pricePerM2:price/surface,lat,lon,code:row[idx.code_commune]||"",city:row[idx.nom_commune]||"",source:"DVF local JML"});
+    }
+    return out;
+  })().catch(e=>{dvfLocalLoadPromise=null;console.warn("JML DVF local:",e.message);return [];});
+  return dvfLocalLoadPromise;
+}
+
 
 const IMMO_DATA_API_BASE_URL = String(process.env.IMMO_DATA_API_BASE_URL || "https://api.immo-data.fr").replace(/\/+$/,"");
 
@@ -813,22 +840,36 @@ async function buildComparableSales(market,property){
   // Les données communales peuvent ne pas fournir de coordonnées. On les géocode
   // ponctuellement afin de conserver le même calcul de distance que l'estimateur.
   const enrichDistances=async (rows)=>{
-    const list=Array.isArray(rows)?rows:[];
-    return (await Promise.all(list.map(async sale=>{
-      if(Number.isFinite(Number(sale?.distanceKm))) return sale;
-      const label=String(sale?.address||"").trim();
-      if(!label||/commune|adresse cadastrale non renseignée|adresse non renseignée/i.test(label)) return sale;
-      const point=await geocodeAddress(label,city);
-      if(!point) return sale;
-      const distanceKm=haversineKm(origin,point);
-      return distanceKm!=null?{...sale,distanceKm:Number(distanceKm.toFixed(3))}:sale;
-    }))).filter(Boolean);
+    const list=(Array.isArray(rows)?rows:[]).slice(0,12);
+    const out=[];
+    for(let i=0;i<list.length;i+=4){
+      const batch=list.slice(i,i+4);
+      const values=await Promise.all(batch.map(async sale=>{
+        if(Number.isFinite(Number(sale?.distanceKm))) return sale;
+        const label=String(sale?.address||"").trim();
+        if(!label||/commune|adresse cadastrale non renseignée|adresse non renseignée/i.test(label)) return sale;
+        const point=await geocodeAddress(label,city);
+        if(!point) return sale;
+        const distanceKm=haversineKm(origin,point);
+        return distanceKm!=null?{...sale,distanceKm:Number(distanceKm.toFixed(3))}:sale;
+      }));
+      out.push(...values.filter(Boolean));
+    }
+    return out;
   };
   // Les données Estimus sont testées d'abord, puis DVF+ complète la recherche.
   const estimus=await enrichDistances(Array.isArray(market?.recentSales)?market.recentSales:[]);
-  const diagnostics={origin:true,estimusRows:estimus.length,candidatesBeforeExternal:0,externalByTier:[],cquestFallbackRows:0,candidatesAfterExternal:0};
+  let localWithDistance=[];
+  try{
+    const local=await Promise.race([loadLocalDvfSales(),new Promise(resolve=>setTimeout(()=>resolve([]),3500))]);
+    localWithDistance=(local||[]).filter(s=>!property?.city||normalizeSearchCity(s.city)===normalizeSearchCity(property.city)).slice(0,500).map(s=>{
+      const distanceKm=haversineKm(origin,{lat:Number(s.lat),lon:Number(s.lon)});
+      return distanceKm!=null?{...s,distanceKm:Number(distanceKm.toFixed(3))}:s;
+    });
+  }catch(_){}
+  const diagnostics={origin:true,estimusRows:estimus.length,localDvfRows:localWithDistance.length,candidatesBeforeExternal:0,externalByTier:[],cquestFallbackRows:0,candidatesAfterExternal:0};
   for(const tier of tiers){
-    for(const sale of estimus){
+    for(const sale of [...estimus,...localWithDistance]){
       const x=scoreSale(sale,tier);
       if(x){
         const key=[sale.date,sale.address,sale.price,sale.surface].join("|");
@@ -1143,10 +1184,14 @@ app.get("/api/territory-summary", async (req,res) => {
       message:"Les comparables seront recherchés dès que l'adresse pourra être géolocalisée."
     };
     try{
-      comparable=await buildComparableSales(
-        market,
-        {address,propertyType,surface,rooms,city:commune.nom}
-      );
+      comparable=await Promise.race([
+        buildComparableSales(market,{address,propertyType,surface,rooms,city:commune.nom}),
+        new Promise(resolve=>setTimeout(()=>resolve({
+          sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,
+          radiusKm:null,searchScope:"Recherche trop lente — données communales conservées",origin:null,
+          message:"La recherche fine autour de l’adresse a dépassé le délai. Les données communales restent disponibles."
+        }),12000))
+      ]);
     }catch(error){
       console.warn("JML comparables isolated:",error.message);
       comparable.message="La recherche de comparables est temporairement indisponible.";
@@ -1229,9 +1274,9 @@ app.get("/api/territory-enrichment", async (req,res) => {
   try{
     const commune={code,centre:{coordinates:[lon,lat]}};
     const [security,risks,environment]=await Promise.all([
-      Promise.race([getSecurityData(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données SSMSI prennent trop de temps à répondre.",year:2025}),20000))]),
-      Promise.race([getGeoRisks(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données Géorisques sont temporairement indisponibles."}),6000))]),
-      Promise.race([getLocalEnvironment(commune),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les services locaux sont temporairement indisponibles."}),10000))])
+      Promise.race([getSecurityData(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données SSMSI prennent trop de temps à répondre.",year:2025}),9000))]),
+      Promise.race([getGeoRisks(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données Géorisques sont temporairement indisponibles."}),5000))]),
+      Promise.race([getLocalEnvironment(commune),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les services locaux sont temporairement indisponibles."}),5000))])
     ]);
     return res.json({ok:true,security,risks,environment});
   }catch(error){
