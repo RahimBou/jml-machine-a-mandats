@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.0.0";
-const BUILD_MARKER = "seller-reference-v3";
+const VERSION = "2.8.0";
+const BUILD_MARKER = "seller-patch-v3";
 
 app.disable("x-powered-by");
 app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION, build:BUILD_MARKER, sellerSpace:true, persistentDashboard:true }));
@@ -359,6 +359,7 @@ function parseEstimusCommunePage(html, city){
     evolution:evolutionMatch?{from:2014,to:2025,start:Number(evolutionMatch[1].replace(/\s/g,"")),end:Number(evolutionMatch[2].replace(/\s/g,"")),percent:Number(evolutionMatch[3].replace(",","."))}:null,
     recentSales:parseEstimusTransactions(text),
     nearby:parseEstimusNearby(text),
+    history:parseEstimusHistory(html,text),
     source:"DVF+ / Cerema (d’après DVF, DGFiP) — via Estimus",
     sourceUrl:null,
     message:"Repère communal issu des transactions DVF. Il prépare la lecture du marché et ne constitue pas une estimation du bien.",
@@ -374,7 +375,7 @@ async function getCommuneMarketData(city,code){
   const fallback={
     city:cleanCity,found:false,source:"DVF+ / données publiques",sourceUrl:"https://www.data.gouv.fr/datasets/dvf-open-data",
     message:"Aucune médiane communale suffisamment fiable n’a été récupérée. Aucun chiffre estimé n’est affiché.",
-    recentSales:[],nearby:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null
+    recentSales:[],nearby:[],history:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null
   };
   try{
     let communeUrl=null;
