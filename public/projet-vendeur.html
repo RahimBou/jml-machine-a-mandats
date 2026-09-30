@@ -847,5 +847,31 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
     <div id="sellerModalBody"></div>
   </div>
 </div>
+<script>
+(function(){
+  const key="jml-seller-space-v1";
+  function read(){try{return JSON.parse(localStorage.getItem(key)||"{}")}catch(_e){return {}}}
+  function esc(v){return String(v??"").replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]})}
+  async function refresh(){
+    const d=read(); if(!d.submitted)return;
+    const city=d.city||"",type=d.propertyType||"Bien";
+    try{
+      const r=await fetch("/api/commune-market?city="+encodeURIComponent(city),{cache:"no-store"}),x=await r.json();
+      const cards=document.getElementById("sellerMarketMetrics"),src=document.getElementById("sellerMarketSource");
+      if(cards&&x.found){
+        const fmt=v=>Number(v)>0?Number(v).toLocaleString("fr-FR")+" €/m²":"Non disponible";
+        const p=type==="Maison"?x.housePrice:type==="Appartement"?x.apartmentPrice:x.communalPrice;
+        cards.innerHTML=[[type,fmt(p),"Repère du type de bien"],["Médiane communale",fmt(x.communalPrice),"Données disponibles"],["Transactions",x.transactions?Number(x.transactions).toLocaleString("fr-FR"):"Non disponible","12 derniers mois"]].map(a=>"<div class='seller-metric'><span>"+esc(a[0])+"</span><strong>"+esc(a[1])+"</strong><small>"+esc(a[2])+"</small></div>").join("");
+        if(src)src.textContent=(x.message||"Repère communal issu des transactions DVF.")+" Source : Estimus / DVF.";
+      }
+    }catch(_e){}
+    try{
+      const r=await fetch("/api/seller-advice?city="+encodeURIComponent(city),{cache:"no-store"}),x=await r.json(),i=x.items&&x.items[0],card=document.getElementById("sellerAdviceCard");
+      if(i&&card)card.innerHTML="<div><div class='seller-advice-top'><span class='seller-advice-category'>"+esc(i.category)+"</span><span class='seller-advice-counter'>1 / "+x.items.length+"</span></div><h5>"+esc(i.title)+"</h5><p>"+esc(i.text)+"</p><div class='seller-advice-takeaway'><strong>À retenir :</strong> "+esc(i.takeaway)+"</div></div><div class='seller-advice-foot'><span class='seller-advice-source'>"+esc(i.sourceName)+"<br>"+esc(i.publishedAt)+"</span><a class='seller-advice-link' target='_blank' rel='noopener' href='"+esc(i.sourceUrl)+"'>Voir la source →</a></div>";
+    }catch(_e){}
+  }
+  refresh();
+})();
+</script>
 </body>
 </html>
