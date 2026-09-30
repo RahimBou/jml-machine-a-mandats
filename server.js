@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.9.1";
-const BUILD_MARKER = "seller-patch-v5-cerema-fallback";
+const VERSION = "2.9.2";
+const BUILD_MARKER = "seller-patch-v6-dvf-direct-fallback";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -409,8 +409,45 @@ async function getCommuneMarketData(city,code){
     return {...parsed,cache:false};
   }catch(error){
     console.warn("JML commune-market fallback:",error.message);
-    communeMarketCache.set(key,{expiresAt:Date.now()+30*60*1000,data:fallback});
-    return {...fallback,cache:false};
+    // Secours direct DVF+ : le rapport reste alimenté même si Estimus est indisponible.
+    try{
+      const rows=await fetchCeremaRecentSales(code);
+      const medianOf=list=>{
+        const v=list.map(x=>Number(x.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
+        if(!v.length) return null;
+        const m=Math.floor(v.length/2);
+        return v.length%2?v[m]:Math.round((v[m-1]+v[m])/2);
+      };
+      const houses=rows.filter(x=>classifyDvfType(x.type,x.codtypbien)==="Maison");
+      const apartments=rows.filter(x=>classifyDvfType(x.type,x.codtypbien)==="Appartement");
+      const years=new Map();
+      for(const row of rows){
+        const m=String(row.date||"").match(/^(20\d{2})/);
+        if(!m) continue;
+        const y=Number(m[1]);
+        if(!years.has(y)) years.set(y,[]);
+        years.get(y).push(row);
+      }
+      const history=[...years.entries()].sort((a,b)=>a[0]-b[0])
+        .map(([year,list])=>({year,value:medianOf(list)})).filter(x=>x.value!=null);
+      const data={
+        city:cleanCity,found:rows.length>0,source:"DVF+ / Cerema — secours direct",
+        sourceUrl:"https://apidf.cerema.fr/dvf_opendata/geomutations/",
+        message:rows.length
+          ?"Repère communal construit directement à partir des ventes DVF+. La source secondaire n'a pas répondu."
+          :"Aucune vente DVF+ exploitable n’a été récupérée. Aucun chiffre estimé n’est affiché.",
+        recentSales:rows.slice(0,12),recentSalesSource:"DVF+ / Cerema",
+        nearby:[],history,transactions:rows.length||null,
+        communalPrice:medianOf(rows),housePrice:medianOf(houses),apartmentPrice:medianOf(apartments),
+        period:"DVF+ / 2023–2025"
+      };
+      communeMarketCache.set(key,{expiresAt:Date.now()+30*60*1000,data});
+      return {...data,cache:false};
+    }catch(fallbackError){
+      console.warn("JML DVF+ direct fallback:",fallbackError.message);
+      communeMarketCache.set(key,{expiresAt:Date.now()+30*60*1000,data:fallback});
+      return {...fallback,cache:false};
+    }
   }
 }
 
@@ -476,27 +513,34 @@ async function geocodeAddress(address,city){
 
 async function fetchCeremaRecentSales(code){
   if(!/^\d{5}$/.test(String(code||""))) return [];
-  try{
-    const params=new URLSearchParams({code_insee:String(code),codtypbien:"111,121",anneemut_min:"2023",fields:"all",page_size:"500"});
-    const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
-    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(9000)});
+  const load=async(codtypbien)=>{
+    const params=new URLSearchParams({
+      code_insee:String(code),
+      anneemut_min:String(Math.max(2023,DVF_LATEST_YEAR-2)),
+      anneemut_max:String(DVF_LATEST_YEAR),
+      fields:"all",page_size:"1000"
+    });
+    if(codtypbien) params.set("codtypbien",codtypbien);
+    const response=await fetch("https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString(),{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.9"},signal:AbortSignal.timeout(9000)});
     if(!response.ok) throw new Error("Cerema recent DVF HTTP "+response.status);
-    const payload=await response.json(),features=Array.isArray(payload?.features)?payload.features:[];
+    const payload=await response.json();
+    return Array.isArray(payload?.features)?payload.features:[];
+  };
+  try{
+    let features=await load("111,121");
+    if(!features.length) features=await load("");
     return features.map(f=>{
-      const p=f?.properties||{};
-      const price=Number(p.valeurfonc??p.valeur_fonciere);
-      const surface=Number(p.sbati??p.surface_reelle_bati??p.surface);
-      const psm=price>0&&surface>0?price/surface:null;
+      const p=f?.properties||{}, codeType=p.codtypbien??p.cod_typ_bien??"", typeValue=p.libtypbien??p.type_local??p.type??"";
+      const price=Number(p.valeurfonc??p.valeur_fonciere??p.valeur_fonc??p.price);
+      const surface=Number(p.sbati??p.surface_reelle_bati??p.surface_batie??p.surface);
       return {
-        type:classifyDvfType(p.libtypbien||p.type_local,p.codtypbien)||p.libtypbien||p.type_local||"",
-        codtypbien:p.codtypbien||"",
-        address:p.adresse||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
-        date:p.datemut||p.date_mutation||null,
-        surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales)||null,
-        price,pricePerM2:psm,source:"DVF+ / Cerema"
+        type:classifyDvfType(typeValue,codeType)||typeValue,codtypbien:codeType,
+        address:p.adresse||p.adresse_nom_voie||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
+        date:p.datemut||p.date_mutation||null,surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales??p.nb_pieces)||null,
+        price,pricePerM2:price>0&&surface>0?price/surface:null,source:"DVF+ / Cerema"
       };
     }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000)
-      .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,12);
+      .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,1000);
   }catch(error){console.warn("JML Cerema recent sales:",error.message);return [];}
 }
 
