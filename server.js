@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.9.0";
-const BUILD_MARKER = "seller-patch-v4-comparables";
+const VERSION = "2.9.1";
+const BUILD_MARKER = "seller-patch-v5-cerema-fallback";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -522,23 +522,42 @@ async function fetchImmoDvfRecentSales(city,code){
 async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
   if(!origin) return [];
   const type=String(property?.propertyType||"").toLowerCase();
-  const codtypbien=/appartement|studio|duplex|loft/i.test(type)?"121":/maison/i.test(type)?"111":"111,121";
+  const wantedCode=/appartement|studio|duplex|loft/i.test(type)?"121":/maison/i.test(type)?"111":"111,121";
   const r=Math.max(500,Number(radiusMeters)||500);
   const latDelta=r/111320;
   const lonDelta=r/(111320*Math.max(0.2,Math.cos(origin.lat*Math.PI/180)));
   const bbox=[origin.lon-lonDelta,origin.lat-latDelta,origin.lon+lonDelta,origin.lat+latDelta]
     .map(v=>Number(v.toFixed(6))).join(",");
-  try{
-    const params=new URLSearchParams({in_bbox:bbox,codtypbien,page_size:"1000",fields:"all",anneemut_min:String(Math.max(2023,DVF_LATEST_YEAR-2)),anneemut_max:String(DVF_LATEST_YEAR)});
+
+  const load=async(codtypbien)=>{
+    const params=new URLSearchParams({
+      in_bbox:bbox,
+      fields:"all",
+      anneemut_min:String(Math.max(2023,DVF_LATEST_YEAR-2)),
+      anneemut_max:String(DVF_LATEST_YEAR),
+      page_size:"1000"
+    });
+    if(codtypbien) params.set("codtypbien",codtypbien);
     const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
-    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(10000)});
+    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.9"},signal:AbortSignal.timeout(10000)});
     if(!response.ok) throw new Error("Cerema DVF HTTP "+response.status);
     const payload=await response.json();
-    const features=Array.isArray(payload?.features)?payload.features:[];
+    return Array.isArray(payload?.features)?payload.features:[];
+  };
+
+  try{
+    // 1) Requête typée, comme dans la documentation Cerema (111 = maisons, 121 = appartements).
+    let features=await load(wantedCode);
+
+    // 2) Secours : certaines réponses DVF+ peuvent être trop restrictives selon
+    // le millésime / l'API. On recharge alors sans filtre de typologie et on
+    // laisse le moteur JML appliquer le type strict ensuite.
+    if(!features.length) features=await load("");
+
     return features.map(f=>{
       const p=f?.properties||{}, geom=f?.geometry;
       const coords=Array.isArray(geom?.coordinates)?geom.coordinates:[];
-      let lon=Number(p.lon??p.longitude),lat=Number(p.lat??p.latitude);
+      let lon=Number(p.lon??p.longitude??p.geom_x??p.x),lat=Number(p.lat??p.latitude??p.geom_y??p.y);
       if(!Number.isFinite(lon)||!Number.isFinite(lat)){
         const flat=[];
         const walk=v=>{
@@ -552,17 +571,19 @@ async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
           lat=flat.reduce((s,v)=>s+v[1],0)/flat.length;
         }
       }
-      const price=Number(p.valeurfonc??p.valeur_fonciere);
-      const surface=Number(p.sbati??p.surface_reelle_bati??p.surface);
+      const code=p.codtypbien??p.cod_typ_bien??"";
+      const typeValue=p.libtypbien??p.type_local??p.type??"";
+      const price=Number(p.valeurfonc??p.valeur_fonciere??p.valeur_fonc??p.price);
+      const surface=Number(p.sbati??p.surface_reelle_bati??p.surface_batie??p.surface);
       const distanceKm=Number.isFinite(lat)&&Number.isFinite(lon)?haversineKm(origin,{lat,lon}):null;
       const psm=price>0&&surface>0?price/surface:null;
       return {
-        type:classifyDvfType(p.libtypbien||p.type_local,p.codtypbien)||p.libtypbien||p.type_local||"",
-        codtypbien:p.codtypbien||"",
-        address:p.adresse||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
-        date:p.datemut||p.date_mutation||null,
-        surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales)||null,
-        land:Number(p.sbati_terrain??p.surface_terrain??p.terrain)||null,
+        type:classifyDvfType(typeValue,code)||typeValue,
+        codtypbien:code,
+        address:p.adresse||p.adresse_nom_voie||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
+        date:p.datemut||p.date_mutation||p.anneemut||null,
+        surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales??p.nb_pieces)||null,
+        land:Number(p.sbati_terrain??p.surface_terrain??p.sterr??p.terrain)||null,
         price,pricePerM2:psm,
         distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,
         source:"DVF+ / Cerema"
@@ -576,49 +597,6 @@ async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
     return [];
   }
 }
-
-async function fetchDvfRadiusSales(origin,property,cityCode){
-  if(!origin) return [];
-  const type=String(property?.propertyType||"").toLowerCase();
-  const typeLocal=/appartement|studio|duplex|loft/i.test(type)?"Appartement":/maison/i.test(type)?"Maison":"";
-  const params=new URLSearchParams({
-    lat:String(origin.lat),lon:String(origin.lon),dist:"3000",
-    nature_mutation:"Vente"
-  });
-  if(typeLocal) params.set("type_local",typeLocal);
-  try{
-    const url="https://api.cquest.org/dvf?"+params.toString();
-    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
-    if(!response.ok) throw new Error("CQuest DVF HTTP "+response.status);
-    const payload=await response.json();
-    const rows=Array.isArray(payload?.resultats)?payload.resultats:
-      Array.isArray(payload?.data)?payload.data:
-      Array.isArray(payload?.features)?payload.features.map(f=>f.properties||{}):[];
-    const surface=Number(property?.surface);
-    return rows.map(s=>{
-      const lat=Number(s.lat??s.latitude??s.geometry?.coordinates?.[1]);
-      const lon=Number(s.lon??s.longitude??s.geometry?.coordinates?.[0]);
-      const saleSurface=Number(s.surface_relle_bati??s.surface_reelle_bati??s.surface);
-      const price=Number(s.valeur_fonciere??s.price);
-      const distanceKm=haversineKm(origin,{lat,lon});
-      const psm=Number(s.prix_m2??s.pricePerM2) || (price>0&&saleSurface>0?price/saleSurface:null);
-      return {
-        type:s.type_local||s.type||typeLocal,
-        address:[s.adresse_numero,s.adresse_nom_voie].filter(Boolean).join(" ")||s.address||"Adresse non renseignée",
-        date:s.date_mutation||s.date||null,
-        surface:saleSurface,rooms:Number(s.nombre_pieces_principales??s.rooms)||null,
-        price,pricePerM2:psm,
-        distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,
-        source:"DVF / CQuest"
-      };
-    }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=3)
-      .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3));
-  }catch(error){
-    console.warn("JML DVF CQuest:",error.message);
-    return [];
-  }
-}
-
 
 function haversineKm(a,b){
   if(!a||!b) return null;
