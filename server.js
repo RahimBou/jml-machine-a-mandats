@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.8.0";
-const BUILD_MARKER = "market-v2";
+const VERSION = "3.0.0";
+const BUILD_MARKER = "seller-reference-v3";
 
 app.disable("x-powered-by");
 app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION, build:BUILD_MARKER, sellerSpace:true, persistentDashboard:true }));
@@ -311,6 +311,23 @@ function parseEstimusNearby(text){
   return out;
 }
 
+function parseEstimusHistory(html,text){
+  const out=new Map();
+  const source=String(html||"");
+  const patterns=[
+    /["']?(20(?:1[4-9]|2[0-5]))["']?\\s*[:=,]\\s*["']?([0-9]{3,5}(?:[.,][0-9]+)?)["']?/g,
+    /["']?year["']?\\s*[:=]\\s*(20(?:1[4-9]|2[0-5]))[\\s\\S]{0,80}?["']?(?:value|price|median|pricePerM2)["']?\\s*[:=]\\s*["']?([0-9]{3,5}(?:[.,][0-9]+)?)/gi,
+    /(?:20(?:1[4-9]|2[0-5]))\\s*[-–:]\\s*([0-9]{3,5}(?:[.,][0-9]+)?)\\s*€\\s*\\/\\s*m²/gi
+  ];
+  for(const re of patterns){ let m; while((m=re.exec(source))){ const year=Number(m[1]); const value=Number(String(m[2]).replace(/\\s/g,"").replace(",",".")); if(year>=2014&&year<=2025&&value>=300&&value<=6000) out.set(year,Math.round(value)); } }
+  if(out.size<4){
+    const textSource=String(text||"");
+    const evolution=textSource.match(/Entre\\s+2014\\s+et\\s+2025,?[^.]*?passé de\\s+([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\/m² à\\s+([0-9]{1,3}(?:\\s[0-9]{3})?)/i);
+    if(evolution){out.set(2014,Number(evolution[1].replace(/\\s/g,"")));out.set(2025,Number(evolution[2].replace(/\\s/g,"")));}
+  }
+  return [...out.entries()].sort((a,b)=>a[0]-b[0]).map(([year,value])=>({year,value}));
+}
+
 function parseEstimusCommunePage(html, city){
   const text=stripHtml(html);
   const medianMatch=text.match(/Le prix médian au m² à [^\.]+ est de ([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m²/i);
@@ -412,6 +429,34 @@ app.get("/api/commune-market", async (req,res) => {
   const data=await getCommuneMarketData(city);
   return res.json({ok:true,...data});
 });
+
+function buildSellerReference(market,property){
+  const type=String(property?.propertyType||"").toLowerCase();
+  const isApartment=/appartement|studio|duplex|loft/i.test(type);
+  const isHouse=/maison/i.test(type);
+  const typeLabel=isApartment?"Appartement":isHouse?"Maison":"Tous biens";
+  const base= isApartment?Number(market?.apartmentPrice):isHouse?Number(market?.housePrice):Number(market?.communalPrice||market?.price);
+  const surface=Number(property?.surface);
+  const hasBase=Number.isFinite(base)&&base>0;
+  const hasSurface=Number.isFinite(surface)&&surface>0;
+  const raw=hasBase&&hasSurface?Math.round(base*surface):null;
+  const low=raw!==null?Math.round(raw*0.85):null;
+  const high=raw!==null?Math.round(raw*1.15):null;
+  return {
+    available:hasBase,
+    type:typeLabel,
+    basePriceM2:hasBase?base:null,
+    surface:hasSurface?surface:null,
+    referenceValue:raw,
+    range:{low,high,marginPct:15},
+    transactions:Number.isFinite(Number(market?.transactions))?Number(market.transactions):null,
+    history:Array.isArray(market?.history)?market.history:[],
+    comparables:market?.comparables||{sales:[],sameStreet:[],median:null,matchCount:0},
+    explanation:hasBase&&hasSurface
+      ? "Repère mathématique construit à partir du prix médian du type de bien et de la surface renseignée. La fourchette de ±15 % sert à matérialiser l’écart possible autour du repère ; elle ne constitue pas une estimation certifiée."
+      : "Le repère sera calculé dès que le type de bien et la surface seront suffisamment renseignés."
+  };
+}
 
 app.get("/api/territory-summary", async (req,res) => {
   const city=clean(req.query.city,100);
