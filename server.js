@@ -6,13 +6,14 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.3.0";
+const VERSION = "2.4.0";
 
 app.disable("x-powered-by");
 app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION }));
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.get("/projet-vendeur", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
+app.get("/espace-vendeur/:token", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
 app.get("/facebook", (req, res) => {
   const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
   res.redirect(302, `/projet-vendeur${qs}`);
@@ -27,7 +28,7 @@ const pool = hasDatabase ? new Pool({
   connectionTimeoutMillis: 10000
 }) : null;
 
-const memory = { prospects: new Map(), leads: new Map() };
+const memory = { prospects: new Map(), leads: new Map(), sellerSpaces: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
 
@@ -314,6 +315,24 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+
+    CREATE TABLE IF NOT EXISTS jml_seller_spaces (
+      id TEXT PRIMARY KEY,
+      access_token TEXT NOT NULL UNIQUE,
+      prospect_id TEXT REFERENCES jml_prospects(id) ON DELETE SET NULL,
+      city TEXT,
+      address TEXT,
+      property_type TEXT,
+      horizon TEXT,
+      surface TEXT,
+      rooms TEXT,
+      dpe TEXT,
+      terrain TEXT,
+      checklist JSONB NOT NULL DEFAULT '[]'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS jml_leads (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -393,6 +412,8 @@ async function initDb() {
   await db("CREATE INDEX IF NOT EXISTS idx_jml_prospects_next_action ON jml_prospects(next_action_at)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_activities_prospect ON jml_activities(prospect_id,created_at DESC)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_leads_created ON jml_leads(created_at DESC)");
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_seller_spaces_prospect ON jml_seller_spaces(prospect_id)");
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_seller_spaces_updated ON jml_seller_spaces(updated_at DESC)");
   await db("CREATE UNIQUE INDEX IF NOT EXISTS uq_jml_prospects_phone ON jml_prospects(phone) WHERE phone IS NOT NULL AND phone <> ''");
   await db("CREATE UNIQUE INDEX IF NOT EXISTS uq_jml_prospects_email ON jml_prospects(LOWER(email)) WHERE email IS NOT NULL AND email <> ''");
 }
@@ -822,6 +843,71 @@ app.post("/api/public-appointment", async (req,res) => {
   }catch(e){return unexpected(res,"JML-A010","Enregistrement de la demande de rendez-vous indisponible.",e);}
 });
 
+
+function newSellerSpaceToken(){ return crypto.randomBytes(32).toString("hex"); }
+
+async function createSellerSpace(data, prospectId){
+  const space={
+    id:newId(), accessToken:newSellerSpaceToken(), prospectId:prospectId||null,
+    city:clean(data.city,100), address:clean(data.address,180), propertyType:clean(data.propertyType,60),
+    horizon:clean(data.horizon,20), surface:clean(data.surface,40), rooms:clean(data.rooms,40),
+    dpe:clean(data.dpe,10), terrain:clean(data.terrain,40), checklist:[], createdAt:now(), updatedAt:now()
+  };
+  if(pool){
+    await db(
+      `INSERT INTO jml_seller_spaces
+       (id,access_token,prospect_id,city,address,property_type,horizon,surface,rooms,dpe,terrain,checklist,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [space.id,space.accessToken,space.prospectId,space.city||null,space.address||null,space.propertyType||null,space.horizon||null,space.surface||null,space.rooms||null,space.dpe||null,space.terrain||null,JSON.stringify(space.checklist),space.createdAt,space.updatedAt]
+    );
+  }else memory.sellerSpaces.set(space.accessToken,space);
+  return space;
+}
+
+function sellerSpacePublic(row){
+  if(!row) return null;
+  return {
+    id:row.id, accessToken:row.access_token||row.accessToken, prospectId:row.prospect_id||row.prospectId||null,
+    city:row.city||"", address:row.address||"", propertyType:row.property_type||row.propertyType||"",
+    horizon:row.horizon||"unknown", surface:row.surface||"", rooms:row.rooms||"", dpe:row.dpe||"", terrain:row.terrain||"",
+    checklist:Array.isArray(row.checklist)?row.checklist:[], createdAt:row.created_at||row.createdAt, updatedAt:row.updated_at||row.updatedAt
+  };
+}
+
+app.get("/api/seller-space/:token", async (req,res)=>{
+  const token=clean(req.params.token,100);
+  if(!token) return apiError(res,400,"JML-S001","Accès vendeur invalide.");
+  try{
+    if(pool){
+      const q=await db("SELECT * FROM jml_seller_spaces WHERE access_token=$1 LIMIT 1",[token]);
+      if(!q.rowCount) return apiError(res,404,"JML-S002","Espace vendeur introuvable.");
+      return res.json({ok:true,space:sellerSpacePublic(q.rows[0])});
+    }
+    const space=memory.sellerSpaces.get(token);
+    if(!space) return apiError(res,404,"JML-S002","Espace vendeur introuvable.");
+    return res.json({ok:true,space:sellerSpacePublic(space)});
+  }catch(e){return unexpected(res,"JML-S003","Lecture de votre espace vendeur indisponible.",e);}
+});
+
+app.patch("/api/seller-space/:token", async (req,res)=>{
+  const token=clean(req.params.token,100), b=req.body||{};
+  const fields={city:clean(b.city,100),address:clean(b.address,180),propertyType:clean(b.propertyType,60),horizon:clean(b.horizon,20),surface:clean(b.surface,40),rooms:clean(b.rooms,40),dpe:clean(b.dpe,10),terrain:clean(b.terrain,40)};
+  const checklist=Array.isArray(b.checklist)?b.checklist.map(x=>Number(x)).filter(x=>Number.isInteger(x)&&x>=1&&x<=6).slice(0,6):null;
+  try{
+    if(pool){
+      const q=await db(`UPDATE jml_seller_spaces SET city=$2,address=$3,property_type=$4,horizon=$5,surface=$6,rooms=$7,dpe=$8,terrain=$9,
+        checklist=COALESCE($10::jsonb,checklist),updated_at=NOW() WHERE access_token=$1 RETURNING *`,
+        [token,fields.city||null,fields.address||null,fields.propertyType||null,fields.horizon||"unknown",fields.surface||null,fields.rooms||null,fields.dpe||null,fields.terrain||null,checklist?JSON.stringify(checklist):null]);
+      if(!q.rowCount) return apiError(res,404,"JML-S004","Espace vendeur introuvable.");
+      return res.json({ok:true,space:sellerSpacePublic(q.rows[0])});
+    }
+    const space=memory.sellerSpaces.get(token);
+    if(!space) return apiError(res,404,"JML-S004","Espace vendeur introuvable.");
+    Object.assign(space,fields); if(checklist) space.checklist=checklist; space.updatedAt=now(); memory.sellerSpaces.set(token,space);
+    return res.json({ok:true,space:sellerSpacePublic(space)});
+  }catch(e){return unexpected(res,"JML-S005","Mise à jour de votre espace vendeur indisponible.",e);}
+});
+
 app.post("/api/leads", async (req,res) => {
   const b=req.body||{};
   const lead={id:newId(),name:clean(b.name,120),email:clean(b.email,180),phone:clean(b.phone,40),city:clean(b.city,100),propertyType:clean(b.propertyType,60),horizon:clean(b.horizon,20),source:clean(b.source||"Lead Magnet",80),consent:toBoolean(b.consent),createdAt:now()};
@@ -890,7 +976,10 @@ app.post("/api/leads", async (req,res) => {
           emailConfirmation = { sent: false, reason: "send-failed" };
         }
 
-        return res.status(201).json({ok:true,persisted:true,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation});
+        const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
+        const sellerSpaceUrl=`${String(process.env.PUBLIC_BASE_URL||"").replace(/\/$/,"")||""}/espace-vendeur/${sellerSpace.accessToken}`;
+        if(emailConfirmation.sent){ /* confirmation email already sent below; access link is also returned for the browser */ }
+        return res.status(201).json({ok:true,persisted:true,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation,spaceToken:sellerSpace.accessToken,spaceUrl:sellerSpaceUrl||(`/espace-vendeur/${sellerSpace.accessToken}`)});
       }catch(txErr){
         await client.query("ROLLBACK");
         throw txErr;
@@ -928,7 +1017,8 @@ app.post("/api/leads", async (req,res) => {
       emailConfirmation = { sent: false, reason: "send-failed" };
     }
 
-    res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation});
+    const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
+    return res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation,spaceToken:sellerSpace.accessToken,spaceUrl:`/espace-vendeur/${sellerSpace.accessToken}`});
   }catch(e){unexpected(res,"JML-L001","Enregistrement du lead indisponible.",e);}
 });
 
