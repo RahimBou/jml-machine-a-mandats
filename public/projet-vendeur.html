@@ -506,6 +506,11 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 const sellerSpaceKey="jml-seller-space-v1";
 const sellerSpaceRead=()=>{try{return JSON.parse(localStorage.getItem(sellerSpaceKey)||"{}")}catch(_e){return {}}};
 const sellerSpaceWrite=(data)=>{try{localStorage.setItem(sellerSpaceKey,JSON.stringify(data))}catch(_e){}};
+const sellerSubmissionKey="jml-seller-submission-v1";
+const sellerSubmissionRead=()=>{try{return JSON.parse(sessionStorage.getItem(sellerSubmissionKey)||"null")}catch(_e){return null}};
+const sellerSubmissionWrite=(data)=>{try{sessionStorage.setItem(sellerSubmissionKey,JSON.stringify(data))}catch(_e){}};
+const sellerSubmissionClear=()=>{try{sessionStorage.removeItem(sellerSubmissionKey)}catch(_e){}};
+
 const params=new URLSearchParams(location.search);
 const rawCampaign=params.get("campaign")||params.get("utm_campaign")||"organique";
 const rawContent=params.get("utm_content")||"";
@@ -641,7 +646,7 @@ loadSellerMarket(city,propertyType);
   const r=await fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const d=await r.json();
   if(!r.ok)throw new Error(d.error||"Impossible d’enregistrer votre demande.");
-  publicLead={name,city,phone,email};window.jmlProspectId=d.prospectId||"";form.reset();msg.style.display="none";form.style.display="none";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
+  publicLead={name,city,phone,email};window.jmlProspectId=d.prospectId||"";sellerSubmissionWrite({submitted:true,lead:publicLead,prospectId:window.jmlProspectId,savedAt:Date.now()});form.reset();msg.style.display="none";form.style.display="none";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
  }catch(err){msg.style.display="block";msg.textContent=err.message}
 });
 const appointmentForm=document.getElementById("fbAppointmentForm");
@@ -742,7 +747,38 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  document.getElementById("sellerQuickAdvice")?.addEventListener("click",showAdvice);
  restoreSellerDetails();
 
- const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
+ function restoreSellerSubmittedView(){
+   const saved=sellerSubmissionRead();
+   if(!saved||saved.submitted!==true)return false;
+   const success=document.getElementById("fbSuccess");
+   if(!success)return false;
+   form.style.display="none";
+   if(msg)msg.style.display="none";
+   success.style.display="block";
+   const lead=saved.lead||{};
+   publicLead={name:lead.name||"",city:lead.city||"",phone:lead.phone||"",email:lead.email||""};
+   window.jmlProspectId=saved.prospectId||"";
+   const d=getSellerSpace();
+   const h=d.horizon||"unknown";
+   const horizonLabel={"0-3":"dans les 3 mois","3-6":"dans 3 à 6 mois","6-12":"dans 6 à 12 mois","unknown":"sans calendrier défini pour le moment"}[h]||h;
+   const propertyAdvice={"Maison":"Pour une maison, les surfaces, les extérieurs, les travaux récents et les équipements seront particulièrement utiles à préparer.","Appartement":"Pour un appartement, préparez notamment la surface, l’étage, les charges, le DPE et les informations disponibles sur la copropriété.","Immeuble":"Pour un immeuble, les surfaces, la composition des lots, les loyers éventuels et les informations techniques seront utiles.","Terrain":"Pour un terrain, préparez notamment la surface, la localisation et les informations d’urbanisme dont vous disposez.","Commerce":"Pour un commerce, préparez notamment la surface, la destination du local et les informations disponibles sur le bail.","Autre":"Nous adapterons les premiers échanges aux caractéristiques particulières de votre bien."};
+   const personalIntro=document.getElementById("fbPersonalIntro"),sectorText=document.getElementById("fbSectorText"),propertyText=document.getElementById("fbPropertyText"),horizonText=document.getElementById("fbHorizonText");
+   const city=d.city||lead.city||"";
+   const propertyType=d.propertyType||"Bien";
+   const cityPill=document.getElementById("fbCityPill"),typePill=document.getElementById("fbTypePill"),horizonPill=document.getElementById("fbHorizonPill");
+   if(personalIntro)personalIntro.textContent="Votre projet"+(city?" à "+city:"")+" · "+propertyType+" · projet "+horizonLabel+".";
+   if(cityPill)cityPill.textContent=city||"Votre secteur";
+   if(typePill)typePill.textContent=propertyType;
+   if(horizonPill)horizonPill.textContent=horizonLabel;
+   if(sectorText)sectorText.textContent=city?"Nous préparerons les informations locales disponibles pour "+city+".":"Votre commune sera utilisée pour préparer les informations locales disponibles.";
+   if(propertyText)propertyText.textContent=propertyAdvice[propertyType]||propertyAdvice["Autre"];
+   if(horizonText)horizonText.textContent="Vous envisagez votre projet "+horizonLabel+". Nous garderons ce calendrier comme repère pour la suite.";
+   return true;
+ }
+ restoreSellerSubmittedView();
+ window.addEventListener("pageshow",function(){restoreSellerSubmittedView()});
+
+ const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
 <div class="seller-modal" id="sellerModal" aria-hidden="true">
