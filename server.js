@@ -906,27 +906,71 @@ app.get("/api/territory-summary", async (req,res) => {
   const address=clean(req.query.address,180);
   const propertyType=clean(req.query.propertyType,60);
   const surface=clean(req.query.surface,40);
+  const rooms=clean(req.query.rooms,40);
   if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
+
   try{
     const geoUrl="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(city)+"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
-    const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(6000)});
+    const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(6000)});
     if(!geoResponse.ok) throw new Error("Géo API HTTP "+geoResponse.status);
     const candidates=await geoResponse.json();
     if(!Array.isArray(candidates)||!candidates.length) throw new Error("Commune introuvable");
     const commune=candidates[0];
-    const market=await getCommuneMarketData(commune.nom,commune.code);
-    const comparable=await buildComparableSales(market,{address,propertyType,surface,city:commune.nom});
-    const nearby=await getNearbyCommunes(commune);
-    const sellerReference=buildSellerReference({...market,comparables:comparable},{address,propertyType,surface});
+
+    // Chaque bloc est indépendant : une source secondaire en panne ne doit
+    // jamais faire disparaître tout le rapport.
+    let market;
+    try{
+      market=await getCommuneMarketData(commune.nom,commune.code);
+    }catch(error){
+      console.warn("JML market isolated:",error.message);
+      market={
+        city:commune.nom,found:false,source:"Données publiques",
+        sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",
+        message:"Les données de marché sont temporairement indisponibles.",
+        recentSales:[],recentSalesSource:null,history:[],transactions:null,
+        communalPrice:null,housePrice:null,apartmentPrice:null,nearby:[]
+      };
+    }
+
+    let comparable={sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Non disponible",origin:null,message:"Les comparables seront recherchés dès que l'adresse pourra être géolocalisée."};
+    try{
+      comparable=await buildComparableSales(market,{address,propertyType,surface,rooms,city:commune.nom});
+    }catch(error){
+      console.warn("JML comparables isolated:",error.message);
+      comparable.message="La recherche de comparables est temporairement indisponible.";
+    }
+
+    let nearby=[];
+    try{ nearby=await getNearbyCommunes(commune); }
+    catch(error){ console.warn("JML nearby isolated:",error.message); }
+
+    let sellerReference;
+    try{
+      sellerReference=buildSellerReference({...market,comparables:comparable},{address,propertyType,surface});
+    }catch(error){
+      console.warn("JML seller reference isolated:",error.message);
+      sellerReference={available:false,type:propertyType||"Non renseigné",basePriceM2:null,surface:Number(surface)||null,referenceValue:null,range:{low:null,high:null,marginPct:15},transactions:market.transactions||null,history:market.history||[],comparables,explanation:"Le repère personnalisé sera calculé lorsque les données de marché seront disponibles."};
+    }
+
     return res.json({
-      ok:true,commune,market:{...market,comparables:comparable},
+      ok:true,
+      commune,
+      market:{...market,comparables},
       sellerReference,
       nearby,
-      source:"geo.api.gouv.fr + DVF+ / Cerema (d’après DVF, DGFiP) via Estimus"
+      source:"geo.api.gouv.fr + DVF+ / Cerema / DVF",
+      diagnostics:{
+        market:!!market?.found,
+        comparables:!!comparable,
+        nearby:Array.isArray(nearby),
+        marketSource:market?.source||null,
+        marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0
+      }
     });
   }catch(error){
-    console.warn("JML territory-summary:",error.message);
-    return res.status(502).json({ok:false,error:"Données territoriales temporairement indisponibles."});
+    console.warn("JML territory-summary fatal:",error.message);
+    return res.status(502).json({ok:false,error:"Impossible de charger la commune. Réessayez dans quelques instants."});
   }
 });
 
