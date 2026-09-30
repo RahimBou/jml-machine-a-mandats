@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.0.1";
-const BUILD_MARKER = "seller-geoplateforme-robust-resolver-v2";
+const VERSION = "3.1.0";
+const BUILD_MARKER = "seller-territory-rebuild-v1";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
