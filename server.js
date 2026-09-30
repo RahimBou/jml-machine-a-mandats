@@ -173,6 +173,45 @@ app.get("/api/commune-market", async (req,res) => {
   return res.json({ok:true,...fallback,cache:false});
 });
 
+app.get("/api/territory-summary", async (req,res) => {
+  const city=clean(req.query.city,100);
+  if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
+  try{
+    const geoUrl="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(city)+"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
+    const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(6000)});
+    if(!geoResponse.ok) throw new Error("Géo API HTTP "+geoResponse.status);
+    const candidates=await geoResponse.json();
+    if(!Array.isArray(candidates)||!candidates.length) throw new Error("Commune introuvable");
+    const commune=candidates[0];
+    const marketResponse=await fetch("http://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(commune.nom),{headers:{...req.headers,host:req.headers.host},signal:AbortSignal.timeout(8000)});
+    const market=marketResponse.ok?await marketResponse.json():{ok:false};
+    let nearby=[];
+    if(commune.epci?.code){
+      const eRes=await fetch("https://geo.api.gouv.fr/epcis/"+encodeURIComponent(commune.epci.code)+"/communes?fields=nom,code,population,centre&format=json",{headers:{"User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(6000)});
+      if(eRes.ok){
+        const communes=await eRes.json();
+        const [lat,lon]=commune.centre?.coordinates?.slice().reverse?.()||[];
+        const ranked=Array.isArray(communes)?communes.filter(x=>x.code!==commune.code&&x.centre?.coordinates).map(x=>{
+          const [xlat,xlon]=x.centre.coordinates.slice().reverse();
+          const dlat=(xlat-lat)*111,dLon=(xlon-lon)*111*Math.cos((lat||49)*Math.PI/180);
+          return {...x,distanceKm:Math.sqrt(dlat*dlat+dLon*dLon)};
+        }).filter(x=>Number.isFinite(x.distanceKm)).sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,4):[];
+        nearby=await Promise.all(ranked.map(async x=>{
+          try{
+            const m=await fetch("http://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(x.nom),{headers:{...req.headers,host:req.headers.host},signal:AbortSignal.timeout(5000)});
+            const md=m.ok?await m.json():null;
+            return {nom:x.nom,code:x.code,population:x.population,distanceKm:Number(x.distanceKm.toFixed(1)),price:md?.communalPrice||md?.price||null,housePrice:md?.housePrice||null,apartmentPrice:md?.apartmentPrice||null,transactions:md?.transactions||null,source:md?.source||null};
+          }catch(_){return {nom:x.nom,code:x.code,population:x.population,distanceKm:Number(x.distanceKm.toFixed(1)),price:null};}
+        }));
+      }
+    }
+    return res.json({ok:true,commune,market,nearby,source:"API Découpage administratif — geo.api.gouv.fr + DVF via Estimus"});
+  }catch(error){
+    console.warn("JML territory-summary:",error.message);
+    return res.status(502).json({ok:false,error:"Données territoriales temporairement indisponibles."});
+  }
+});
+
 const cleanEmail = v => String(v ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g,"").trim().slice(0,180);
 const validEmail = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(v));
 const toBoolean = v => v === true || v === "true" || v === 1 || v === "1";
