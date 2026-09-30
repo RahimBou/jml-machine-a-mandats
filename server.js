@@ -20,7 +20,21 @@ app.get("/facebook", (req, res) => {
   const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
   res.redirect(302, `/projet-vendeur${qs}`);
 });
-app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
+app.use((req,res,next) => {
+  if (req.path.endsWith(".html") || req.path === "/") {
+    res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma","no-cache");
+    res.setHeader("Expires","0");
+  }
+  next();
+});
+app.get("/vendeur-secteur", (req,res) => {
+  res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma","no-cache");
+  res.setHeader("Expires","0");
+  res.sendFile(path.join(__dirname, "public", "vendeur-secteur.html"));
+});
+app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], etag: false, lastModified: false }));
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const pool = hasDatabase ? new Pool({
