@@ -484,8 +484,10 @@ app.get("/api/territory-summary", async (req,res) => {
     const market=await getCommuneMarketData(commune.nom,commune.code);
     const comparable=buildComparableSales(market,{address,propertyType,surface});
     const nearby=Array.isArray(market.nearby)?market.nearby.slice(0,6):[];
+    const sellerReference=buildSellerReference({...market,comparables:comparable},{address,propertyType,surface});
     return res.json({
       ok:true,commune,market:{...market,comparables:comparable},
+      sellerReference,
       nearby,
       source:"geo.api.gouv.fr + DVF+ / Cerema (d’après DVF, DGFiP) via Estimus"
     });
