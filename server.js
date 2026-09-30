@@ -9,12 +9,32 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.1.0";
-const BUILD_MARKER = "seller-territory-rebuild-v1";
+const VERSION = "3.2.0";
+const BUILD_MARKER = "seller-territory-v2-deploy-check";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
-app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION, build:BUILD_MARKER, sellerSpace:true, persistentDashboard:true }));
+app.get("/health", (req, res) => {
+  res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.status(200).json({
+    ok:true,
+    service:"jml-projet-vendeur",
+    version:VERSION,
+    build:BUILD_MARKER,
+    sellerSpace:true,
+    persistentDashboard:true
+  });
+});
+app.get("/api/territory-version", (req,res) => {
+  res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.status(200).json({
+    ok:true,
+    version:VERSION,
+    build:BUILD_MARKER,
+    route:"/api/territory-summary",
+    expected:"inline-seller-reference"
+  });
+});
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
