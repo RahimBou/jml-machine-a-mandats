@@ -901,6 +901,136 @@ async function getNearbyCommunes(commune){
   }
 }
 
+async function resolveTerritoryCommune(city,address){
+  const requestedCity=String(city||"").trim();
+  const requestedAddress=String(address||"").trim();
+  if(!requestedCity) return null;
+
+  const postalMatch=requestedAddress.match(/\b(\d{5})\b/) || requestedCity.match(/\b(\d{5})\b/);
+  const postal=postalMatch ? postalMatch[1] : "";
+  const cityName=requestedCity
+    .replace(/\b\d{5}\b/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+
+  const normalizeName=value=>String(value||"")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase().replace(/['’\-]/g," ")
+    .replace(/\s+/g," ").trim()
+    .replace(/^(le|la|les|l|d|de|du|des)\s+/,"");
+
+  const wanted=normalizeName(cityName);
+
+  const chooseCandidate=(rows)=>{
+    const list=Array.isArray(rows)?rows.filter(Boolean):[];
+    if(!list.length) return null;
+
+    const exact=list.find(row=>normalizeName(row.nom)===wanted);
+    const starts=list.find(row=>{
+      const n=normalizeName(row.nom);
+      return n===wanted || n.startsWith(wanted+" ") || wanted.startsWith(n+" ");
+    });
+    const selected=exact||starts||list[0];
+    if(!selected || !/^\d{5}$/.test(String(selected.code||""))) return null;
+
+    const centre=selected.centre&&Array.isArray(selected.centre.coordinates)
+      ?selected.centre.coordinates:[null,null];
+
+    return {
+      nom:String(selected.nom||cityName||requestedCity).trim(),
+      code:String(selected.code).trim(),
+      population:Number.isFinite(Number(selected.population))?Number(selected.population):null,
+      surface:Number.isFinite(Number(selected.surface))?Number(selected.surface):null,
+      centre:{type:"Point",coordinates:centre},
+      departement:selected.departement||{code:String(selected.code).slice(0,2)},
+      region:selected.region||null,
+      epci:selected.epci||null
+    };
+  };
+
+  if(postal){
+    try{
+      const url="https://geo.api.gouv.fr/communes?codePostal="+encodeURIComponent(postal)
+        +"&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
+      const response=await fetch(url,{
+        headers:{"User-Agent":"JML-Projet-Vendeur/3.1.0","Accept":"application/json"},
+        signal:AbortSignal.timeout(5000)
+      });
+      if(response.ok){
+        const rows=await response.json();
+        const selected=chooseCandidate(rows);
+        if(selected){
+          console.log("JML commune résolue par code postal:",postal,selected.nom,selected.code);
+          return selected;
+        }
+      }
+    }catch(error){
+      console.warn("JML résolution commune par code postal:",error.message);
+    }
+  }
+
+  if(cityName){
+    try{
+      const url="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(cityName)
+        +"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
+      const response=await fetch(url,{
+        headers:{"User-Agent":"JML-Projet-Vendeur/3.1.0","Accept":"application/json"},
+        signal:AbortSignal.timeout(5000)
+      });
+      if(response.ok){
+        const rows=await response.json();
+        const selected=chooseCandidate(rows);
+        if(selected){
+          console.log("JML commune résolue par nom:",cityName,selected.code);
+          return selected;
+        }
+      }
+    }catch(error){
+      console.warn("JML résolution commune par nom:",error.message);
+    }
+  }
+
+  const queries=[];
+  const addQuery=value=>{
+    const q=String(value||"").trim();
+    if(q&&!queries.includes(q)) queries.push(q);
+  };
+  addQuery([requestedAddress,cityName].filter(Boolean).join(", "));
+  addQuery([cityName,postal].filter(Boolean).join(", "));
+  addQuery(cityName);
+
+  for(const query of queries){
+    try{
+      const url="https://data.geopf.fr/geocodage/search?q="+encodeURIComponent(query)+"&limit=5";
+      const response=await fetch(url,{
+        headers:{"User-Agent":"JML-Projet-Vendeur/3.1.0","Accept":"application/json"},
+        signal:AbortSignal.timeout(6000)
+      });
+      if(!response.ok) continue;
+      const payload=await response.json();
+      const features=Array.isArray(payload?.features)?payload.features:[];
+      for(const feature of features){
+        const p=feature?.properties||{};
+        const code=String(p.citycode||p.cityCode||p.citycode_insee||"").trim();
+        if(!/^\d{5}$/.test(code)) continue;
+        const coords=feature?.geometry?.coordinates;
+        const label=String(p.label||p.name||cityName).trim();
+        const nom=String(p.city||p.commune||cityName).trim()||cityName;
+        return {
+          nom,code,population:null,surface:null,
+          centre:{type:"Point",coordinates:Array.isArray(coords)&&coords.length>=2?coords:[null,null]},
+          departement:{code:code.slice(0,2)},region:null,epci:null,
+          geocodedLabel:label
+        };
+      }
+    }catch(error){
+      console.warn("JML résolution commune IGN:",query,error.message);
+    }
+  }
+
+  return null;
+}
+
 app.get("/api/territory-summary", async (req,res) => {
   const city=clean(req.query.city,100);
   const address=clean(req.query.address,180);
@@ -910,132 +1040,87 @@ app.get("/api/territory-summary", async (req,res) => {
   if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
 
   try{
-    let commune=null;
-
-    // 1) Résolution directe de la commune par le nouveau géocodeur IGN.
-    // On essaie plusieurs requêtes : adresse complète, adresse + code postal,
-    // puis uniquement la commune. Une panne ou une réponse vide ne doit pas
-    // bloquer tout le rapport.
-    const geoCandidates=[];
-    const addGeoQuery=(value)=>{
-      const v=String(value||"").trim();
-      if(v&&!geoCandidates.includes(v)) geoCandidates.push(v);
-    };
-    const postal=(address.match(/\\b\\d{5}\\b/)||[])[0]||"";
-    addGeoQuery([address,city].filter(Boolean).join(", "));
-    addGeoQuery([address,postal].filter(Boolean).join(", "));
-    addGeoQuery([city,postal].filter(Boolean).join(", "));
-    addGeoQuery(city);
-
-    for(const query of geoCandidates){
-      try{
-        const geoUrl="https://data.geopf.fr/geocodage/search?q="+encodeURIComponent(query)+"&limit=5";
-        const geoResponse=await fetch(geoUrl,{
-          headers:{"User-Agent":"JML-Projet-Vendeur/3.0.1","Accept":"application/json"},
-          signal:AbortSignal.timeout(6000)
-        });
-        if(!geoResponse.ok) continue;
-        const payload=await geoResponse.json();
-        const features=Array.isArray(payload?.features)?payload.features:[];
-        const feature=features.find(f=>{
-          const p=f?.properties||{};
-          return /^\\d{5}$/.test(String(p.citycode||"")) ||
-            /^\\d{5}$/.test(String(p.cityCode||"")) ||
-            /^\\d{5}$/.test(String(p.citycode_insee||""));
-        });
-        if(!feature) continue;
-
-        const p=feature.properties||{};
-        const coords=feature.geometry?.coordinates;
-        const cityCode=String(p.citycode||p.cityCode||p.citycode_insee||"").trim();
-        const label=String(p.label||p.name||city).trim();
-        commune={
-          nom:String(p.city||p.commune||city).trim()||city,
-          code:cityCode,
-          population:null,
-          surface:null,
-          centre:{type:"Point",coordinates:Array.isArray(coords)?coords:[null,null]},
-          departement:{code:String(p.context||"").split(",")[0].trim().slice(0,2)||cityCode.slice(0,2)},
-          region:null,
-          epci:null
-        };
-        console.log("JML commune résolue par Géoplateforme:",commune.nom,commune.code,label);
-        break;
-      }catch(error){
-        console.warn("JML Géoplateforme query échouée:",query,error.message);
-      }
-    }
-
-    // 2) Secours : ancienne API geo.api.gouv.fr si elle répond encore.
+    const commune=await resolveTerritoryCommune(city,address);
     if(!commune){
-      try{
-        const geoUrl="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(city)+"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
-        const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0.1"},signal:AbortSignal.timeout(5000)});
-        if(geoResponse.ok){
-          const candidates=await geoResponse.json();
-          if(Array.isArray(candidates)&&candidates.length) commune=candidates[0];
-        }
-      }catch(error){
-        console.warn("JML geo.api.gouv.fr secours:",error.message);
-      }
+      console.warn("JML territory-summary: commune introuvable",{city,address});
+      return res.status(422).json({
+        ok:false,
+        error:"Commune introuvable. Vérifiez le nom de la commune ou le code postal."
+      });
     }
 
-    if(!commune) throw new Error("Commune introuvable via les services géographiques publics.");
-
-    // Chaque bloc est indépendant : une source secondaire en panne ne doit
-    // jamais faire disparaître tout le rapport.
-    let market;
+    let market={
+      city:commune.nom,found:false,source:"Données publiques",
+      sourceUrl:"https://www.data.gouv.fr/datasets/demandes-de-valeurs-foncieres/",
+      message:"Les données de marché sont temporairement indisponibles.",
+      recentSales:[],recentSalesSource:null,history:[],transactions:null,
+      communalPrice:null,housePrice:null,apartmentPrice:null,nearby:[]
+    };
     try{
       market=await getCommuneMarketData(commune.nom,commune.code);
     }catch(error){
       console.warn("JML market isolated:",error.message);
-      market={
-        city:commune.nom,found:false,source:"Données publiques",
-        sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",
-        message:"Les données de marché sont temporairement indisponibles.",
-        recentSales:[],recentSalesSource:null,history:[],transactions:null,
-        communalPrice:null,housePrice:null,apartmentPrice:null,nearby:[]
-      };
     }
 
-    let comparable={sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Non disponible",origin:null,message:"Les comparables seront recherchés dès que l'adresse pourra être géolocalisée."};
+    let comparable={
+      sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,
+      totalCandidates:0,radiusKm:null,searchScope:"Non disponible",origin:null,
+      message:"Les comparables seront recherchés dès que l'adresse pourra être géolocalisée."
+    };
     try{
-      comparable=await buildComparableSales(market,{address,propertyType,surface,rooms,city:commune.nom});
+      comparable=await buildComparableSales(
+        market,
+        {address,propertyType,surface,rooms,city:commune.nom}
+      );
     }catch(error){
       console.warn("JML comparables isolated:",error.message);
       comparable.message="La recherche de comparables est temporairement indisponible.";
     }
 
     let nearby=[];
-    try{ nearby=await getNearbyCommunes(commune); }
-    catch(error){ console.warn("JML nearby isolated:",error.message); }
+    try{
+      nearby=await getNearbyCommunes(commune);
+    }catch(error){
+      console.warn("JML nearby isolated:",error.message);
+    }
 
     let sellerReference;
     try{
-      sellerReference=buildSellerReference({...market,comparables:comparable},{address,propertyType,surface});
+      sellerReference=buildSellerReference(
+        {...market,comparables:comparable},
+        {address,propertyType,surface}
+      );
     }catch(error){
       console.warn("JML seller reference isolated:",error.message);
-      sellerReference={available:false,type:propertyType||"Non renseigné",basePriceM2:null,surface:Number(surface)||null,referenceValue:null,range:{low:null,high:null,marginPct:15},transactions:market.transactions||null,history:market.history||[],comparables,explanation:"Le repère personnalisé sera calculé lorsque les données de marché seront disponibles."};
+      sellerReference={
+        available:false,type:propertyType||"Non renseigné",
+        basePriceM2:null,surface:Number(surface)||null,referenceValue:null,
+        range:{low:null,high:null,marginPct:15},
+        transactions:market.transactions||null,history:market.history||[],
+        comparables,
+        explanation:"Le repère personnalisé sera calculé lorsque les données de marché seront disponibles."
+      };
     }
 
     return res.json({
-      ok:true,
-      commune,
-      market:{...market,comparables},
-      sellerReference,
-      nearby,
-      source:"geo.api.gouv.fr + DVF+ / Cerema / DVF",
+      ok:true,version:VERSION,build:BUILD_MARKER,commune,
+      market:{...market,comparables},sellerReference,nearby,
+      source:"API Géo + Géoplateforme IGN/BAN + DVF+ / Cerema / DVF",
       diagnostics:{
-        market:!!market?.found,
-        comparables:!!comparable,
+        communeResolver:"geo.api.gouv.fr par code postal/nom, puis Géoplateforme",
+        communeCode:commune.code,communeName:commune.nom,
+        market:!!market?.found,comparables:!!comparable,
         nearby:Array.isArray(nearby),
         marketSource:market?.source||null,
         marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0
       }
     });
   }catch(error){
-    console.warn("JML territory-summary fatal:",error.message);
-    return res.status(502).json({ok:false,error:"Impossible de charger la commune. Réessayez dans quelques instants."});
+    console.error("JML territory-summary fatal:",error);
+    return res.status(500).json({
+      ok:false,error:"Erreur interne du module Mon secteur.",
+      version:VERSION,build:BUILD_MARKER
+    });
   }
 });
 
