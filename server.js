@@ -190,14 +190,14 @@ async function getGeoRisks(code){
     }
   }catch(error){console.warn("JML Géorisques API:",error.message);}
   try{
-    const response=await fetch("https://www.mon-quartier-info.com/environnement/"+cleanCode,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
+    const response=await fetch("https://www.mon-quartier-info.com/commune/"+cleanCode,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
     if(response.ok){
       const text=stripHtml(await response.text());
       const risks=[];
-      const patterns=[["Inondations et coulées de boue","inondations? et coulées de boue"],["Sécheresse / retrait-gonflement des argiles","sécheresse"],["Mouvements de terrain","mouvements? de terrain"],["Séisme","séismes?"]];
+      const patterns=[["Inondation","inondation"],["Mouvement de terrain","mouvement de terrain"],["Séisme","séisme"],["Transport de marchandises dangereuses","transport de marchandises dangereuses"],["Sécheresse","sécheresse"]];
       for(const [label,pattern] of patterns) if(new RegExp(pattern,"i").test(text)) risks.push(label);
       const m=text.match(/([0-9]+) arrêtés? de catastrophe naturelle/i);
-      if(risks.length||m) return {available:true,source:"Géorisques / BRGM — restitution publique",sourceUrl:"https://www.mon-quartier-info.com/environnement/"+cleanCode,risks,count:risks.length,catNatCount:m?Number(m[1]):null,note:"Repère communal issu de données Géorisques. Il ne remplace pas un état des risques à l'adresse ou à la parcelle."};
+      if(risks.length||m) return {available:true,source:"Géorisques / BRGM — restitution publique",sourceUrl:"https://www.mon-quartier-info.com/commune/"+cleanCode,risks,count:risks.length,catNatCount:m?Number(m[1]):null,note:"Repère communal issu de données Géorisques. Il ne remplace pas un état des risques à l'adresse ou à la parcelle."};
     }
   }catch(error){console.warn("JML risques secours:",error.message);}
   return {available:false,message:"Données Géorisques temporairement indisponibles.",reportUrl};
@@ -389,6 +389,10 @@ async function getCommuneMarketData(city,code){
     const communeHtml=await communeResponse.text();
     const parsed=parseEstimusCommunePage(communeHtml,cleanCity);
     if(!parsed) throw new Error("Médiane communale non trouvée pour "+cleanCity);
+    if(!Array.isArray(parsed.recentSales)||!parsed.recentSales.length){
+      const fallbackSales=await fetchImmoDvfRecentSales(cleanCity,code);
+      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF / Immo-DVF";}
+    }
     parsed.sourceUrl=communeUrl;
     communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
     return {...parsed,cache:false};
@@ -421,6 +425,25 @@ async function geocodeAddress(address,city){
     geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value});
     return value;
   }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
+}
+
+async function fetchImmoDvfRecentSales(city,code){
+  const slug=normalizeSearchCity(city).replace(/\s+/g,"-");
+  if(!slug||!/^08\d{3}$/.test(String(code||""))) return [];
+  const url="https://www.immo-dvf.fr/prix-immobilier/grand-est/ardennes/"+slug+"-08000/";
+  try{
+    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(8000)});
+    if(!response.ok) throw new Error("Immo-DVF HTTP "+response.status);
+    const html=await response.text(),text=stripHtml(html);
+    const section=(text.split(/Dernières transactions immobilières enregistrées/i)[1]||text).split(/Pourquoi certaines rues|Prix moyen vs prix médian|©/i)[0];
+    const re=/(\d{1,2}\/\d{1,2}\/\d{4})\s+(Appartement|Maison)\s+([0-9\s]+)\s*m²\s+([0-9\s]+)\s*€\s+([0-9\s]+)\s*€/m²/gi;
+    const out=[];let m;
+    while((m=re.exec(section))&&out.length<12){
+      const surface=Number(m[3].replace(/\s/g,"")),price=Number(m[4].replace(/\s/g,"")),psm=Number(m[5].replace(/\s/g,""));
+      if(surface>0&&price>0&&psm>=300&&psm<=6000) out.push({type:m[2],address:"Commune · adresse publiée par DVF",date:m[1],surface,rooms:null,price,pricePerM2:psm,source:"DVF / Immo-DVF"});
+    }
+    return out;
+  }catch(error){console.warn("JML Immo-DVF fallback:",error.message);return [];}
 }
 
 async function fetchCeremaDvfRadiusSales(origin,property){
@@ -511,7 +534,6 @@ function haversineKm(a,b){
 
 async function buildComparableSales(market,property){
   const sales=Array.isArray(market?.recentSales)?market.recentSales:[];
-  if(!sales.length) return {sales:[],sameStreet:[],median:null,matchCount:0,radiusKm:0.5,origin:null};
   const wantedType=String(property?.propertyType||"").toLowerCase();
   const isApartment=/appartement|studio|duplex|loft/i.test(wantedType);
   const typeWanted=isApartment?"Appartement":/maison/i.test(wantedType)?"Maison":null;
@@ -519,35 +541,39 @@ async function buildComparableSales(market,property){
   const origin=await geocodeAddress(property?.address,city);
   if(!origin) return {sales:[],sameStreet:[],median:null,matchCount:0,radiusKm:0.5,origin:null,message:"Adresse du bien non géolocalisable avec suffisamment de précision."};
   let sourceSales=sales;
-  let externalSource="";
-  if(!sourceSales.length){
+  let externalSource=sourceSales.length?"Estimus":"";
+  const buildRanked=async source=>{
+    const candidates=source.filter(s=>!typeWanted||s.type===typeWanted),geocoded=[];
+    for(const sale of candidates){
+      let distanceKm=Number.isFinite(Number(sale.distanceKm))?Number(sale.distanceKm):null;
+      if(distanceKm===null){
+        const point=await geocodeAddress(sale.address,city);
+        if(!point) continue;
+        distanceKm=haversineKm(origin,point);
+      }
+      if(distanceKm===null||distanceKm>0.5) continue;
+      const surfaceGap=Number.isFinite(surface)&&surface>0?Math.abs(Number(sale.surface)-surface)/surface:1;
+      const sameStreet=normalizeAddress(sale.address)===normalizeAddress(property?.address);
+      geocoded.push({...sale,distanceKm:Number(distanceKm.toFixed(3)),sameStreet,surfaceGap});
+    }
+    return geocoded
+      .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3))
+      .sort((a,b)=>(Number(b.sameStreet)-Number(a.sameStreet))||a.surfaceGap-b.surfaceGap||a.distanceKm-b.distanceKm)
+      .slice(0,6);
+  };
+  let ranked=await buildRanked(sourceSales);
+  if(!ranked.length){
     sourceSales=await fetchCeremaDvfRadiusSales(origin,property);
-    if(sourceSales.length) externalSource="DVF+ / Cerema";
+    if(sourceSales.length){externalSource="DVF+ / Cerema";ranked=await buildRanked(sourceSales);}
   }
-  if(!sourceSales.length){
+  if(!ranked.length){
     sourceSales=await fetchDvfRadiusSales(origin,property);
-    if(sourceSales.length) externalSource="CQuest";
+    if(sourceSales.length){externalSource="DVF / CQuest";ranked=await buildRanked(sourceSales);}
   }
   const candidates=sourceSales.filter(s=>!typeWanted||s.type===typeWanted), geocoded=[];
-  for(const sale of candidates){
-    let distanceKm=Number.isFinite(Number(sale.distanceKm))?Number(sale.distanceKm):null;
-    if(distanceKm===null){
-      const point=await geocodeAddress(sale.address,city);
-      if(!point) continue;
-      distanceKm=haversineKm(origin,point);
-    }
-    if(distanceKm===null||distanceKm>0.5) continue;
-    const surfaceGap=Number.isFinite(surface)&&surface>0?Math.abs(Number(sale.surface)-surface)/surface:1;
-    const sameStreet=normalizeAddress(sale.address)===normalizeAddress(property?.address);
-    geocoded.push({...sale,distanceKm:Number(distanceKm.toFixed(3)),sameStreet,surfaceGap});
-  }
-  const ranked=geocoded
-    .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3))
-    .sort((a,b)=>(Number(b.sameStreet)-Number(a.sameStreet))||a.surfaceGap-b.surfaceGap||a.distanceKm-b.distanceKm)
-    .slice(0,6);
   const prices=ranked.map(s=>Number(s.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
   const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:Math.round((prices[prices.length/2-1]+prices[prices.length/2])/2)):null;
-  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin,source:sourceSales===sales?"Estimus":(externalSource||"DVF")};
+  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin,source:externalSource||"DVF"};
 }
 
 app.get("/api/commune-market", async (req,res) => {
