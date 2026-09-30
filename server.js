@@ -100,18 +100,14 @@ function parseEstimusTransactions(text){
   const source=String(text||"");
   const section=(source.split(/Dernières transactions/i)[1]||"").split(/Aussi dans les Ardennes|Aussi dans|Communes proches|Index des adresses/i)[0];
   const month="janv\\.?|févr\\.?|mars|avr\\.?|mai|juin|juil\\.?|août|sept\\.?|oct\\.?|nov\\.?|déc\\.?";
-  const re=new RegExp("(Maison|Appartement|Terrain|Local|Dépendance)\\s+(.+?)\\s+(\\d{1,2}\\s+(?:"+month+")\\s+\\d{4})\\s+([0-9\\s]+)\\s*m²(?:\\s*·\\s*(\\d+)\\s*pièces)?(?:\\s*·\\s*terrain\\s*([0-9\\s]+)\\s*m²)?\\s*([0-9\\s]+)\\s*€\\s*([0-9\\s]+)\\s*€\/m²","gi");
+  const re=new RegExp("(Maison|Appartement|Terrain|Local|Dépendance)\\s+(.+?)\\s+(\\d{1,2}\\s+(?:"+month+")\\s+\\d{4})\\s+([0-9\\s\\u202f\\u00a0]+)\\s*m²(?:\\s*·\\s*(\\d+)\\s*pièces)?(?:\\s*·\\s*terrain\\s*([0-9\\s\\u202f\\u00a0]+)\\s*m²)?\\s*([0-9\\s\\u202f\\u00a0]+)\\s*€\\s*([0-9\\s\\u202f\\u00a0]+)\\s*€\\/m²","gi");
   const out=[]; let m;
   while((m=re.exec(section)) && out.length<12){
-    const price=Number(m[7].replace(/\s/g,""));
-    const sqm=Number(m[4].replace(/\s/g,""));
-    const psm=Number(m[8].replace(/\s/g,""));
+    const price=Number(m[7].replace(/[\\s\\u202f\\u00a0]/g,""));
+    const sqm=Number(m[4].replace(/[\\s\\u202f\\u00a0]/g,""));
+    const psm=Number(m[8].replace(/[\\s\\u202f\\u00a0]/g,""));
     if(!Number.isFinite(price)||!Number.isFinite(sqm)||!Number.isFinite(psm)||sqm<=0||price<=0||psm<300||psm>6000) continue;
-    out.push({
-      type:m[1],address:m[2].replace(/\s+/g," ").trim(),date:m[3].replace(/\s+/g," ").trim(),
-      surface:sqm,rooms:m[5]?Number(m[5]):null,terrain:m[6]?Number(m[6].replace(/\s/g,"")):null,
-      price,pricePerM2:psm
-    });
+    out.push({type:m[1],address:m[2].replace(/\\s+/g," ").trim(),date:m[3].replace(/\\s+/g," ").trim(),surface:sqm,rooms:m[5]?Number(m[5]):null,terrain:m[6]?Number(m[6].replace(/[\\s\\u202f\\u00a0]/g,"")):null,price,pricePerM2:psm});
   }
   return out;
 }
@@ -119,15 +115,13 @@ function parseEstimusTransactions(text){
 function parseEstimusNearby(text){
   const source=String(text||"");
   const section=(source.split(/Communes proches/i)[1]||"").split(/Index des adresses|Estimus/i)[0];
-  const re=/([^\n()]{2,70})\(\d{2}\)à\s*([0-9]+(?:[.,][0-9]+)?)\s*km\s*([0-9\s]+)\s*€\/m²/gi;
+  const re=/([A-Za-zÀ-ÿ0-9'’ -]{2,70})\s*\(\d{2}\)\s*à\s*([0-9]+(?:[.,][0-9]+)?)\s*km\s*([0-9\s\u202f\u00a0]+)\s*€\/m²/gi;
   const out=[]; let m;
   while((m=re.exec(section)) && out.length<8){
     const name=m[1].replace(/\s+/g," ").trim();
     const distance=Number(m[2].replace(",","."));
-    const price=Number(m[3].replace(/\s/g,""));
-    if(name && Number.isFinite(distance) && Number.isFinite(price) && price>=300 && price<=6000){
-      out.push({name,distanceKm:Number(distance.toFixed(1)),price});
-    }
+    const price=Number(m[3].replace(/[\s\u202f\u00a0]/g,""));
+    if(name && Number.isFinite(distance) && Number.isFinite(price) && price>=300 && price<=6000) out.push({name,distanceKm:Number(distance.toFixed(1)),price});
   }
   return out;
 }
