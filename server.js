@@ -148,29 +148,31 @@ async function loadSsmsiSecurityDataset(){
 async function getSecurityData(code){
   const cleanCode=String(code||"").trim();
   if(!/^\d{5}$/.test(cleanCode)) return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"Code commune non disponible."};
+  const sourceUrl="https://www.mon-quartier-info.com/securite/"+cleanCode;
+  try{
+    const response=await fetch("https://www.mon-quartier-info.com/commune/"+cleanCode,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
+    if(response.ok){
+      const text=stripHtml(await response.text());
+      const labels=["Destructions et dégradations volontaires","Vols sans violence contre des personnes","Cambriolages de logement","Vols de véhicule","Vols dans les véhicules","Vols d'accessoires sur véhicules","Violences physiques intrafamiliales","Violences physiques hors cadre familial","Violences sexuelles","Escroqueries et fraudes aux moyens de paiement"];
+      const indicators=[];
+      for(const label of labels){
+        const safe=label.replace(/[.*+?^$()|[\]\\]/g,"\\$&");
+        const re=new RegExp(safe+"\\s+([0-9\\s]+)\\s+(?:faits|victimes|véhicules)\\s+([0-9]+(?:[.,][0-9]+)?)","i");
+        const m=text.match(re);
+        if(m) indicators.push({label,indicator:label,count:Number(m[1].replace(/\\s/g,"")),rate:Number(m[2].replace(",",".")),unit:label==="Cambriolages de logement"?"‰ logements":"‰ habitants",available:true});
+      }
+      if(indicators.length) return {available:true,year:2025,indicators,source:"SSMSI / Ministère de l’Intérieur — via source publique de restitution",sourceUrl,note:"Les chiffres proviennent du SSMSI 2025. Aucun score JML n'est calculé."};
+    }
+  }catch(error){console.warn("JML sécurité source publique:",error.message);}
   try{
     await loadSsmsiSecurityDataset();
     const record=ssmsiSecurityCache.get(cleanCode);
     if(record){
       const preferred=["Cambriolages de logement","Vols de véhicule","Vols dans les véhicules","Destructions et dégradations volontaires","Vols sans violence contre des personnes","Violences physiques intrafamiliales","Violences physiques hors cadre familial","Violences sexuelles","Escroqueries et fraudes aux moyens de paiement"];
       const indicators=preferred.map(k=>record.indicators[k]).filter(Boolean);
-      return {available:true,year:record.year,population:record.population,logements:record.logements,indicators,source:SSMSI_SECURITY_SOURCE,sourceUrl:"https://www.data.gouv.fr/datasets/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales",note:"Faits enregistrés par la police et la gendarmerie. Une donnée non diffusée relève du secret statistique et ne signifie pas zéro."};
+      return {available:true,year:record.year,population:record.population,logements:record.logements,indicators,source:SSMSI_SECURITY_SOURCE,sourceUrl:"https://www.data.gouv.fr/datasets/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales",note:"Faits enregistrés par la police et la gendarmerie. Une donnée non diffusée ne signifie pas zéro."};
     }
-  }catch(error){ console.warn("JML SSMSI dataset:",error.message); }
-  try{
-    const response=await fetch("https://www.mon-quartier-info.com/commune/"+cleanCode,{headers:{"User-Agent":"JML-Projet-Vendeur/3.1"},signal:AbortSignal.timeout(8000)});
-    if(response.ok){
-      const text=stripHtml(await response.text());
-      const labels=["Destructions et dégradations volontaires","Vols sans violence contre des personnes","Cambriolages de logement","Vols de véhicule","Vols dans les véhicules","Vols d'accessoires sur véhicules","Violences physiques intrafamiliales","Violences physiques hors cadre familial","Violences sexuelles","Escroqueries et fraudes aux moyens de paiement"];
-      const indicators=[];
-      for(const label of labels){
-        const re=new RegExp(label+"\\s+([0-9\\s]+)\\s+(?:faits|victimes|véhicules)\\s+([0-9]+(?:[.,][0-9]+)?)","i");
-        const m=text.match(re);
-        if(m) indicators.push({label,indicator:label,count:Number(m[1].replace(/\\s/g,"")),rate:Number(m[2].replace(",",".")),unit:label==="Cambriolages de logement"?"‰ logements":"‰ habitants",available:true});
-      }
-      if(indicators.length) return {available:true,year:2025,indicators,source:"SSMSI / Ministère de l’Intérieur — extraction de secours depuis une source publique",sourceUrl:"https://www.data.gouv.fr/datasets/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales",note:"Données SSMSI 2025. La source de secours ne remplace pas le fichier officiel ; aucun score n'est calculé."};
-    }
-  }catch(error){ console.warn("JML sécurité secours:",error.message); }
+  }catch(error){console.warn("JML SSMSI dataset:",error.message);}
   return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"Données de sécurité temporairement indisponibles."};
 }
 
