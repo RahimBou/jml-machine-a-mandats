@@ -649,7 +649,7 @@ app.get("/api/territory-enrichment", async (req,res) => {
   try{
     const commune={code,centre:{coordinates:[lon,lat]}};
     const [security,risks,environment]=await Promise.all([
-      Promise.race([getSecurityData(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données SSMSI prennent trop de temps à répondre.",year:2025}),6000))]),
+      Promise.race([getSecurityData(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données SSMSI prennent trop de temps à répondre.",year:2025}),20000))]),
       Promise.race([getGeoRisks(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données Géorisques sont temporairement indisponibles."}),6000))]),
       Promise.race([getLocalEnvironment(commune),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les services locaux sont temporairement indisponibles."}),10000))])
     ]);
