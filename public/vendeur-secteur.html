@@ -72,7 +72,7 @@
 <section class="card sales">
   <p class="intro">Voici des ventes enregistrées dans la commune. Elles servent à comprendre le marché local ; elles ne sont pas présentées comme des comparables directs de votre maison.</p>
   <div class="sales-grid" id="salesGrid"><div class="loading">Chargement des transactions publiques…</div></div>
-  <div class="notice">Source : transactions DVF+ / Cerema, d’après DVF et DGFiP, relayées par Estimus. Une transaction enregistrée dans DVF n'indique pas à elle seule l'état réel du bien au moment de la vente.</div>
+  <div class="notice" id="salesSource">Source : transactions DVF/DGFiP via les sources publiques disponibles. Une transaction enregistrée dans DVF n'indique pas à elle seule l'état réel du bien au moment de la vente.</div>
 </section>
 
 <section class="section-head"><div><div class="eyebrow">03 · VOTRE BIEN FACE AU MARCHÉ</div><h2>Premiers repères comparables</h2></div></section>
@@ -183,6 +183,7 @@
     if(m.evolution)evo.innerHTML='<h3>Évolution du marché</h3><p>Entre '+m.evolution.from+' et '+m.evolution.to+', le prix médian communal est passé de <strong>'+num(m.evolution.start)+' €/m²</strong> à <strong>'+num(m.evolution.end)+' €/m²</strong>, soit une évolution de <strong>'+String(m.evolution.percent).replace(".",",")+' %</strong>. Cet indicateur décrit une évolution historique ; il ne constitue pas une prévision.</p>';
     else evo.innerHTML='<h3>Évolution du marché</h3><p>Un indicateur historique suffisamment documenté n’est pas disponible dans la source actuelle. Aucun taux n’est inventé.</p>';
     const rs=Array.isArray(m.recentSales)?m.recentSales:[];
+    const salesSource=document.getElementById("salesSource");if(salesSource)salesSource.textContent="Source : "+(m.recentSalesSource||"DVF+ / Cerema · données DVF/DGFiP")+". Une transaction enregistrée dans DVF n'indique pas à elle seule l'état réel du bien au moment de la vente.";
     sales.innerHTML=rs.length?rs.slice(0,9).map(s=>'<article class="sale"><div class="sale-top"><strong>'+esc(s.type)+' · '+esc(s.surface)+' m²</strong><span class="sale-price">'+num(s.pricePerM2)+' €/m²</span></div><div class="meta">'+esc(s.address)+'<br>'+esc(date(s.date))+' · '+num(s.price)+' €'+(s.distanceKm!=null?' · '+String(s.distanceKm).replace('.',',')+' km du bien':'')+(s.rooms?' · '+esc(s.rooms)+' pièces':'')+(s.terrain?' · terrain '+num(s.terrain)+' m²':'')+'</div></article>').join(""):'<div class="empty">Aucune transaction récente exploitable n’est affichée pour cette commune.</div>';
     const ranked=Array.isArray(comp.sales)?comp.sales:[];
     const median=comp.median;
