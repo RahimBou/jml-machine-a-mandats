@@ -961,7 +961,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    try{const rr=await fetch("/api/seller-space/"+encodeURIComponent(token),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({city:d.city,address:d.address,propertyType:d.propertyType,horizon:d.horizon,surface:d.surface,rooms:d.rooms,dpe:d.dpe,terrain:d.terrain,checklist:list})});if(rr.ok){const dd=await rr.json();if(dd.space)sellerSpaceWrite({...dd.space,submitted:true,token:token});}}catch(_e){}
  }
  document.querySelectorAll(".seller-check").forEach(function(btn){btn.addEventListener("click",function(){btn.classList.toggle("done");const list=[...document.querySelectorAll(".seller-check.done")].map(x=>Number(x.dataset.check));renderSellerChecklist(list);saveSellerChecklist();});});
- function refreshSellerSpaceUI(){const d=getSellerSpace();if(!d.submitted)return;updateSellerAccess(d);renderSellerChecklist(d.checklist||[]);updateSellerProjectSummary(d);}
+ function refreshSellerSpaceUI(){const d=getSellerSpace();if(!d.submitted)return;updateSellerAccess(d);renderSellerChecklist(d.checklist||[]);updateSellerProjectSummary(d);const sector=document.getElementById("sellerQuickSector");if(sector&&d.token){const q=new URLSearchParams({token:d.token});sector.href="/vendeur-secteur.html?"+q.toString();}}
  restoreSellerSubmittedView().then(refreshSellerSpaceUI);
  window.addEventListener("pageshow",function(){restoreSellerSubmittedView().then(refreshSellerSpaceUI)});
 
