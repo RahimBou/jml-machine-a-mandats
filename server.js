@@ -434,6 +434,48 @@ async function geocodeAddress(address,city){
   }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
 }
 
+async function fetchDvfRadiusSales(origin,property,cityCode){
+  if(!origin) return [];
+  const type=String(property?.propertyType||"").toLowerCase();
+  const typeLocal=/appartement|studio|duplex|loft/i.test(type)?"Appartement":/maison/i.test(type)?"Maison":"";
+  const params=new URLSearchParams({
+    lat:String(origin.lat),lon:String(origin.lon),dist:"500",
+    nature_mutation:"Vente"
+  });
+  if(typeLocal) params.set("type_local",typeLocal);
+  try{
+    const url="https://api.cquest.org/dvf?"+params.toString();
+    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+    if(!response.ok) throw new Error("CQuest DVF HTTP "+response.status);
+    const payload=await response.json();
+    const rows=Array.isArray(payload?.resultats)?payload.resultats:
+      Array.isArray(payload?.data)?payload.data:
+      Array.isArray(payload?.features)?payload.features.map(f=>f.properties||{}):[];
+    const surface=Number(property?.surface);
+    return rows.map(s=>{
+      const lat=Number(s.lat??s.latitude??s.geometry?.coordinates?.[1]);
+      const lon=Number(s.lon??s.longitude??s.geometry?.coordinates?.[0]);
+      const saleSurface=Number(s.surface_relle_bati??s.surface_reelle_bati??s.surface);
+      const price=Number(s.valeur_fonciere??s.price);
+      const distanceKm=haversineKm(origin,{lat,lon});
+      const psm=Number(s.prix_m2??s.pricePerM2) || (price>0&&saleSurface>0?price/saleSurface:null);
+      return {
+        type:s.type_local||s.type||typeLocal,
+        address:[s.adresse_numero,s.adresse_nom_voie].filter(Boolean).join(" ")||s.address||"Adresse non renseignée",
+        date:s.date_mutation||s.date||null,
+        surface:saleSurface,rooms:Number(s.nombre_pieces_principales??s.rooms)||null,
+        price,pricePerM2:psm,
+        distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,
+        source:"DVF / CQuest"
+      };
+    }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=0.5)
+      .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3));
+  }catch(error){
+    console.warn("JML DVF CQuest:",error.message);
+    return [];
+  }
+}
+
 function haversineKm(a,b){
   if(!a||!b) return null;
   const rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad,lat1=a.lat*rad,lat2=b.lat*rad;
@@ -450,7 +492,11 @@ async function buildComparableSales(market,property){
   const surface=Number(property?.surface), city=String(property?.city||"").trim();
   const origin=await geocodeAddress(property?.address,city);
   if(!origin) return {sales:[],sameStreet:[],median:null,matchCount:0,radiusKm:0.5,origin:null,message:"Adresse du bien non géolocalisable avec suffisamment de précision."};
-  const candidates=sales.filter(s=>!typeWanted||s.type===typeWanted), geocoded=[];
+  let sourceSales=sales;
+  if(!sourceSales.length){
+    sourceSales=await fetchDvfRadiusSales(origin,property);
+  }
+  const candidates=sourceSales.filter(s=>!typeWanted||s.type===typeWanted), geocoded=[];
   for(const sale of candidates){
     const point=await geocodeAddress(sale.address,city);
     if(!point) continue;
@@ -466,7 +512,7 @@ async function buildComparableSales(market,property){
     .slice(0,6);
   const prices=ranked.map(s=>Number(s.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
   const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:Math.round((prices[prices.length/2-1]+prices[prices.length/2])/2)):null;
-  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin};
+  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin,source:sourceSales===sales?"Estimus":"DVF / CQuest"};
 }
 
 app.get("/api/commune-market", async (req,res) => {
