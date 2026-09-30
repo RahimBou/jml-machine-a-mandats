@@ -1039,6 +1039,7 @@ app.get("/api/territory-summary", async (req,res) => {
   const rooms=clean(req.query.rooms,40);
   if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
 
+  let stage="resolve-commune";
   try{
     const commune=await resolveTerritoryCommune(city,address);
     if(!commune){
@@ -1049,6 +1050,7 @@ app.get("/api/territory-summary", async (req,res) => {
       });
     }
 
+    stage="market";
     let market={
       city:commune.nom,found:false,source:"Données publiques",
       sourceUrl:"https://www.data.gouv.fr/datasets/demandes-de-valeurs-foncieres/",
@@ -1062,6 +1064,7 @@ app.get("/api/territory-summary", async (req,res) => {
       console.warn("JML market isolated:",error.message);
     }
 
+    stage="comparables";
     let comparable={
       sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,
       totalCandidates:0,radiusKm:null,searchScope:"Non disponible",origin:null,
@@ -1084,6 +1087,7 @@ app.get("/api/territory-summary", async (req,res) => {
       console.warn("JML nearby isolated:",error.message);
     }
 
+    stage="seller-reference";
     let sellerReference;
     try{
       sellerReference=buildSellerReference(
@@ -1118,8 +1122,12 @@ app.get("/api/territory-summary", async (req,res) => {
   }catch(error){
     console.error("JML territory-summary fatal:",error);
     return res.status(500).json({
-      ok:false,error:"Erreur interne du module Mon secteur.",
-      version:VERSION,build:BUILD_MARKER
+      ok:false,
+      error:"Erreur interne du module Mon secteur.",
+      stage,
+      detail:String(error?.message||error||"Erreur inconnue").slice(0,300),
+      version:VERSION,
+      build:BUILD_MARKER
     });
   }
 });
