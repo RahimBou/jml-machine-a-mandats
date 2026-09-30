@@ -434,6 +434,40 @@ async function geocodeAddress(address,city){
   }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
 }
 
+async function fetchGeoRegistrySales(property,city){
+  const address=String(property?.address||"").trim(), commune=String(city||"").trim();
+  if(!address||!commune) return [];
+  const type=String(property?.propertyType||"").toLowerCase();
+  const typeCode=/appartement|studio|duplex|loft/i.test(type)?"2":/maison/i.test(type)?"1":"";
+  try{
+    const params=new URLSearchParams({adresse:address+" "+commune,radius:"500",limit:"50"});
+    if(typeCode) params.set("type_local",typeCode);
+    const response=await fetch("https://georegistry.fr/api/v1/dvf/ventes/address?"+params.toString(),{
+      headers:{"User-Agent":"JML-Projet-Vendeur/2.8","Accept":"application/json"},
+      signal:AbortSignal.timeout(7000)
+    });
+    if(!response.ok) throw new Error("GeoRegistry HTTP "+response.status);
+    const payload=await response.json();
+    const rows=Array.isArray(payload?.data)?payload.data:[];
+    const surface=Number(property?.surface);
+    return rows.map(s=>({
+      type:s.type_local||"",
+      address:s.adresse||"Adresse non renseignée",
+      date:s.mutation_date||s.date_mutation||null,
+      surface:Number(s.surface_bati??s.surface_reelle_bati),
+      rooms:Number(s.nombre_pieces_principales)||null,
+      price:Number(s.valeur_fonciere),
+      pricePerM2:Number(s.prix_m2)||(Number(s.valeur_fonciere)>0&&Number(s.surface_bati)>0?Number(s.valeur_fonciere)/Number(s.surface_bati):null),
+      distanceKm:Number.isFinite(Number(s.distance_m))?Number((Number(s.distance_m)/1000).toFixed(3)):null,
+      source:"DVF / GeoRegistry"
+    })).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=0.5)
+      .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3));
+  }catch(error){
+    console.warn("JML DVF GeoRegistry:",error.message);
+    return [];
+  }
+}
+
 async function fetchDvfRadiusSales(origin,property,cityCode){
   if(!origin) return [];
   const type=String(property?.propertyType||"").toLowerCase();
@@ -476,6 +510,7 @@ async function fetchDvfRadiusSales(origin,property,cityCode){
   }
 }
 
+
 function haversineKm(a,b){
   if(!a||!b) return null;
   const rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad,lat1=a.lat*rad,lat2=b.lat*rad;
@@ -493,8 +528,14 @@ async function buildComparableSales(market,property){
   const origin=await geocodeAddress(property?.address,city);
   if(!origin) return {sales:[],sameStreet:[],median:null,matchCount:0,radiusKm:0.5,origin:null,message:"Adresse du bien non géolocalisable avec suffisamment de précision."};
   let sourceSales=sales;
+  let externalSource="";
+  if(!sourceSales.length){
+    sourceSales=await fetchGeoRegistrySales(property,city);
+    if(sourceSales.length) externalSource="GeoRegistry";
+  }
   if(!sourceSales.length){
     sourceSales=await fetchDvfRadiusSales(origin,property);
+    if(sourceSales.length) externalSource="CQuest";
   }
   const candidates=sourceSales.filter(s=>!typeWanted||s.type===typeWanted), geocoded=[];
   for(const sale of candidates){
@@ -515,7 +556,7 @@ async function buildComparableSales(market,property){
     .slice(0,6);
   const prices=ranked.map(s=>Number(s.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
   const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:Math.round((prices[prices.length/2-1]+prices[prices.length/2])/2)):null;
-  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin,source:sourceSales===sales?"Estimus":"DVF / CQuest"};
+  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin,source:sourceSales===sales?"Estimus":(externalSource||"DVF")};
 }
 
 app.get("/api/commune-market", async (req,res) => {
