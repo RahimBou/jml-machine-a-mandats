@@ -436,7 +436,7 @@ async function fetchImmoDvfRecentSales(city,code){
     if(!response.ok) throw new Error("DataFonciere HTTP "+response.status);
     const html=await response.text(),text=stripHtml(html);
     const section=(text.split(/Dernières transactions immobilières enregistrées/i)[1]||text).split(/Pourquoi certaines rues|Prix moyen vs prix médian|©/i)[0];
-    const re=/(\d{1,2}\/\d{1,2}\/\d{4})\s+(Appartement|Maison)\s+([0-9\s]+)\s*m²\s+([0-9\s]+)\s*€\s+([0-9\s]+)\s*€/m²/gi;
+    const re=/(\d{1,2}\/\d{1,2}\/\d{4})\s+(Appartement|Maison)\s+([0-9\s]+)\s*m²\s+([0-9\s]+)\s*€\s+([0-9\s]+)\s*€\/m²/gi;
     const out=[];let m;
     while((m=re.exec(section))&&out.length<12){
       const surface=Number(m[3].replace(/\s/g,"")),price=Number(m[4].replace(/\s/g,"")),psm=Number(m[5].replace(/\s/g,""));
