@@ -1040,7 +1040,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
       body+='<div class="seller-step-tips"><h4>À préparer</h4><ul>'+s.checklist.map(x=>'<li>'+esc2(x)+'</li>').join("")+'</ul></div>';
     }
     body+='<div class="seller-step-note">'+esc2(s.note)+'</div>';
-    body+='<div class="seller-step-actions"><button type="button" class="primary" id="sellerStepDone">'+(done?"Étape validée ✓":"Marquer cette étape comme faite")+" </button><button type="button" class="secondary" id="sellerStepClose">Fermer</button></div></div>';
+    body+='<div class="seller-step-actions"><button type="button" class="primary" id="sellerStepDone">'+(done?"Étape validée ✓":"Marquer cette étape comme faite")+' </button><button type="button" class="secondary" id="sellerStepClose">Fermer</button></div></div>';
     m.title.textContent=s.title;m.body.innerHTML=body;m.box.classList.add("open");m.box.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
     const close=()=>{m.box.classList.remove("open");m.box.setAttribute("aria-hidden","true");document.body.style.overflow=""};
     document.getElementById("sellerStepClose")?.addEventListener("click",close);
