@@ -280,16 +280,15 @@ function findEstimusCommuneUrl(html, city){
 
 function parseEstimusTransactions(text){
   const source=String(text||"");
-  const section=(source.split(/Dernières transactions/i)[1]||"").split(/Aussi dans les Ardennes|Aussi dans|Communes proches|Index des adresses/i)[0];
+  const section=(source.split(/Dernières transactions/i)[1]||source).split(/Aussi dans les Ardennes|Aussi dans|Communes proches|Index des adresses/i)[0];
   const month="janv\\.?|févr\\.?|mars|avr\\.?|mai|juin|juil\\.?|août|sept\\.?|oct\\.?|nov\\.?|déc\\.?";
   const re=new RegExp("(Maison|Appartement|Terrain|Local|Dépendance)\\s+(.+?)\\s+(\\d{1,2}\\s+(?:"+month+")\\s+\\d{4})\\s+([0-9\\s\\u202f\\u00a0]+)\\s*m²(?:\\s*·\\s*(\\d+)\\s*pièces)?(?:\\s*·\\s*terrain\\s*([0-9\\s\\u202f\\u00a0]+)\\s*m²)?\\s*([0-9\\s\\u202f\\u00a0]+)\\s*€\\s*([0-9\\s\\u202f\\u00a0]+)\\s*€\\/m²","gi");
   const out=[]; let m;
   while((m=re.exec(section)) && out.length<12){
-    const price=Number(m[7].replace(/[\\s\\u202f\\u00a0]/g,""));
     const sqm=Number(m[4].replace(/[\\s\\u202f\\u00a0]/g,""));
+    const price=Number(m[7].replace(/[\\s\\u202f\\u00a0]/g,""));
     const psm=Number(m[8].replace(/[\\s\\u202f\\u00a0]/g,""));
-    if(!Number.isFinite(price)||!Number.isFinite(sqm)||!Number.isFinite(psm)||sqm<=0||price<=0||psm<300||psm>6000) continue;
-    out.push({type:m[1],address:m[2].replace(/\\s+/g," ").trim(),date:m[3].replace(/\\s+/g," ").trim(),surface:sqm,rooms:m[5]?Number(m[5]):null,terrain:m[6]?Number(m[6].replace(/[\\s\\u202f\\u00a0]/g,"")):null,price,pricePerM2:psm});
+    if(sqm>0&&price>0&&psm>=300&&psm<=6000) out.push({type:m[1],address:m[2].replace(/\\s+/g," ").trim(),date:m[3].replace(/\\s+/g," ").trim(),surface:sqm,rooms:m[5]?Number(m[5]):null,terrain:m[6]?Number(m[6].replace(/[\\s\\u202f\\u00a0]/g,"")):null,price,pricePerM2:psm});
   }
   return out;
 }
@@ -445,9 +444,9 @@ app.get("/api/territory-enrichment", async (req,res) => {
   try{
     const commune={code,centre:{coordinates:[lon,lat]}};
     const [security,risks,environment]=await Promise.all([
-      getSecurityData(code),
-      getGeoRisks(code),
-      getLocalEnvironment(commune)
+      Promise.race([getSecurityData(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données SSMSI prennent trop de temps à répondre.",year:2025}),6000))]),
+      Promise.race([getGeoRisks(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données Géorisques sont temporairement indisponibles."}),6000))]),
+      Promise.race([getLocalEnvironment(commune),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les services locaux sont temporairement indisponibles."}),10000))])
     ]);
     return res.json({ok:true,security,risks,environment});
   }catch(error){
