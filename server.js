@@ -202,39 +202,36 @@ async function getGeoRisks(code){
 
 const localEnvironmentCache=new Map();
 async function getLocalEnvironment(commune){
-  const lat=Number(commune?.centre?.coordinates?.[1]);
-  const lon=Number(commune?.centre?.coordinates?.[0]);
+  const lat=Number(commune?.centre?.coordinates?.[1]), lon=Number(commune?.centre?.coordinates?.[0]);
   if(!Number.isFinite(lat)||!Number.isFinite(lon)) return {available:false,message:"Coordonnées communales indisponibles."};
   const key=String(commune.code||lat.toFixed(4)+":"+lon.toFixed(4));
   const cached=localEnvironmentCache.get(key);
-  if(cached && cached.expiresAt>Date.now()) return cached.data;
-  try{
-    const query='[out:json][timeout:12];(nwr(around:2000,'+lat+','+lon+')["amenity"~"school|pharmacy|hospital|clinic|post_office"];nwr(around:3500,'+lat+','+lon+')["shop"~"supermarket|bakery|convenience"];nwr(around:3500,'+lat+','+lon+')["railway"~"station|halt"];nwr(around:3500,'+lat+','+lon+')["highway"="bus_stop"];);out center tags;';
-    const response=await fetch("https://overpass.kumi.systems/api/interpreter",{method:"POST",headers:{"Content-Type":"text/plain","User-Agent":"JML-Projet-Vendeur/3.0"},body:query,signal:AbortSignal.timeout(10000)});
-    if(!response.ok) throw new Error("Overpass HTTP "+response.status);
-    const payload=await response.json();
-    const elements=Array.isArray(payload.elements)?payload.elements:[];
-    const counters={schools:0,health:0,pharmacies:0,shops:0,stations:0,busStops:0,postOffices:0};
-    const names={schools:[],health:[],pharmacies:[],shops:[],stations:[]};
-    for(const e of elements){
-      const t=e.tags||{};
-      if(t.amenity==="school"){counters.schools++;if(t.name&&names.schools.length<3)names.schools.push(t.name);}
-      if(["hospital","clinic"].includes(t.amenity)){counters.health++;if(t.name&&names.health.length<3)names.health.push(t.name);}
-      if(t.amenity==="pharmacy"){counters.pharmacies++;if(t.name&&names.pharmacies.length<3)names.pharmacies.push(t.name);}
-      if(["supermarket","bakery","convenience"].includes(t.shop)){counters.shops++;if(t.name&&names.shops.length<3)names.shops.push(t.name);}
-      if(["station","halt"].includes(t.railway)){counters.stations++;if(t.name&&names.stations.length<3)names.stations.push(t.name);}
-      if(t.highway==="bus_stop") counters.busStops++;
-      if(t.amenity==="post_office") counters.postOffices++;
-    }
-    const data={available:true,source:"OpenStreetMap / Overpass",sourceUrl:"https://www.openstreetmap.org/",radiusKm:3.5,counters,names,note:"Comptage indicatif des objets cartographiques présents dans OpenStreetMap autour du centre communal. Ce n'est pas un inventaire administratif exhaustif."};
-    localEnvironmentCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
-    return data;
-  }catch(error){
-    console.warn("JML environnement:",error.message);
-    const data={available:false,message:"Les services locaux ne sont pas disponibles pour le moment."};
-    localEnvironmentCache.set(key,{expiresAt:Date.now()+30*60*1000,data});
-    return data;
+  if(cached&&cached.expiresAt>Date.now()) return cached.data;
+  const query='[out:json][timeout:20];(nwr(around:2500,'+lat+','+lon+')["amenity"~"school|pharmacy|hospital|clinic|post_office"];nwr(around:4000,'+lat+','+lon+')["shop"~"supermarket|bakery|convenience"];nwr(around:4000,'+lat+','+lon+')["railway"~"station|halt"];nwr(around:4000,'+lat+','+lon+')["highway"="bus_stop"];);out center tags;';
+  const endpoints=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
+  for(const endpoint of endpoints){
+    try{
+      const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"text/plain","User-Agent":"JML-Projet-Vendeur/3.0"},body:query,signal:AbortSignal.timeout(9000)});
+      if(!response.ok) continue;
+      const payload=await response.json(), elements=Array.isArray(payload.elements)?payload.elements:[];
+      const counters={schools:0,health:0,pharmacies:0,shops:0,stations:0,busStops:0,postOffices:0};
+      const names={schools:[],health:[],pharmacies:[],shops:[],stations:[]};
+      for(const item of elements){
+        const t=item.tags||{};
+        if(t.amenity==="school"){counters.schools++;if(t.name&&names.schools.length<3)names.schools.push(t.name);}
+        if(["hospital","clinic"].includes(t.amenity)){counters.health++;if(t.name&&names.health.length<3)names.health.push(t.name);}
+        if(t.amenity==="pharmacy"){counters.pharmacies++;if(t.name&&names.pharmacies.length<3)names.pharmacies.push(t.name);}
+        if(["supermarket","bakery","convenience"].includes(t.shop)){counters.shops++;if(t.name&&names.shops.length<3)names.shops.push(t.name);}
+        if(["station","halt"].includes(t.railway)){counters.stations++;if(t.name&&names.stations.length<3)names.stations.push(t.name);}
+        if(t.highway==="bus_stop") counters.busStops++;
+        if(t.amenity==="post_office") counters.postOffices++;
+      }
+      const data={available:true,source:"OpenStreetMap / Overpass",sourceUrl:"https://www.openstreetmap.org/",radiusKm:4,counters,names,note:"Comptage indicatif des équipements cartographiés autour du centre communal."};
+      localEnvironmentCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
+      return data;
+    }catch(error){ console.warn("JML Overpass:",endpoint,error.message); }
   }
+  return {available:false,message:"Les services locaux sont temporairement indisponibles."};
 }
 
 const normalizeSearchCity = value => String(value || "")
