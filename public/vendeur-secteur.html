@@ -32,6 +32,7 @@ document.querySelectorAll("[data-horizon]").forEach(e=>e.textContent=({"0-3":"Da
 })();
 </script><script>
 (function(){
+const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};
 const d=read(),city=d.city||"";
 const esc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const euro=v=>Number.isFinite(Number(v))?Number(v).toLocaleString("fr-FR")+" €/m²":"Non disponible";
