@@ -498,9 +498,12 @@ async function buildComparableSales(market,property){
   }
   const candidates=sourceSales.filter(s=>!typeWanted||s.type===typeWanted), geocoded=[];
   for(const sale of candidates){
-    const point=await geocodeAddress(sale.address,city);
-    if(!point) continue;
-    const distanceKm=haversineKm(origin,point);
+    let distanceKm=Number.isFinite(Number(sale.distanceKm))?Number(sale.distanceKm):null;
+    if(distanceKm===null){
+      const point=await geocodeAddress(sale.address,city);
+      if(!point) continue;
+      distanceKm=haversineKm(origin,point);
+    }
     if(distanceKm===null||distanceKm>0.5) continue;
     const surfaceGap=Number.isFinite(surface)&&surface>0?Math.abs(Number(sale.surface)-surface)/surface:1;
     const sameStreet=normalizeAddress(sale.address)===normalizeAddress(property?.address);
