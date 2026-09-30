@@ -180,23 +180,24 @@ async function getGeoRisks(code){
   const reportUrl="https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2/"+cleanCode+"/commune/00000";
   try{
     const url="https://www.georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+encodeURIComponent(cleanCode);
-    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"application/json"},signal:AbortSignal.timeout(8000)});
-    if(!response.ok) throw new Error("Géorisques HTTP "+response.status);
-    const payload=await response.json();
-    const rows=Array.isArray(payload)?payload:(Array.isArray(payload.data)?payload.data:(Array.isArray(payload.resultats)?payload.resultats:[]));
-    const labels=rows.map(r=>String(r.libelle||r.nom||r.libelle_risque||r.risque||"").trim()).filter(Boolean);
-    const unique=[...new Set(labels)].slice(0,12);
-    return {
-      available:true,source:"Géorisques / BRGM",
-      sourceUrl:"https://www.georisques.gouv.fr/",
-      risks:unique,
-      count:unique.length,
-      note:"Information à l'échelle communale. Elle ne remplace pas un état des risques établi pour l'adresse ou la parcelle."
-    };
-  }catch(error){
-    console.warn("JML Géorisques:",error.message);
-    return {available:false,message:"Les données Géorisques sont temporairement indisponibles.",reportUrl};
-  }
+    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"application/json"},signal:AbortSignal.timeout(6000)});
+    if(response.ok){
+      const payload=await response.json();
+      const rows=Array.isArray(payload)?payload:(Array.isArray(payload.data)?payload.data:(Array.isArray(payload.resultats)?payload.resultats:[]));
+      const labels=[...new Set(rows.map(r=>String(r.libelle||r.nom||r.libelle_risque||r.risque||"").trim()).filter(Boolean))].slice(0,12);
+      if(labels.length) return {available:true,source:"Géorisques / BRGM",sourceUrl:"https://www.georisques.gouv.fr/",risks:labels,count:labels.length,note:"Information à l'échelle communale. Elle ne remplace pas un état des risques établi pour l'adresse ou la parcelle."};
+    }
+  }catch(error){ console.warn("JML Géorisques API:",error.message); }
+  try{
+    const response=await fetch(reportUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"text/html"},signal:AbortSignal.timeout(8000)});
+    if(response.ok){
+      const text=stripHtml(await response.text());
+      const known=["Inondation","Mouvement de terrain","Retrait-gonflement des argiles","Séisme","Radon","Risque industriel","Risque technologique","Transport de matières dangereuses","Pollution des sols","Feu de forêt","Cavités souterraines","Avalanche"];
+      const risks=known.filter(label=>text.toLowerCase().includes(label.toLowerCase()));
+      if(risks.length) return {available:true,source:"Géorisques / BRGM",sourceUrl:reportUrl,risks:[...new Set(risks)],count:[...new Set(risks)].length,note:"Risques repérés dans le rapport communal Géorisques. Vérification à l'adresse/parcelle recommandée."};
+    }
+  }catch(error){ console.warn("JML Géorisques rapport:",error.message); }
+  return {available:false,message:"Données Géorisques temporairement indisponibles.",reportUrl};
 }
 
 const localEnvironmentCache=new Map();
