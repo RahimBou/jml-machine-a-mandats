@@ -938,5 +938,79 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
   refresh();
 })();
 </script>
+
+<script>
+/* JML CHECKLIST INTERACTIVE V1 — chaque étape ouvre un contenu utile et peut être validée */
+(function(){
+  const storageKey="jml-seller-space-v1";
+  const readSpace=()=>{try{return JSON.parse(localStorage.getItem(storageKey)||"{}")}catch(_e){return {}}};
+  const writeSpace=d=>{try{localStorage.setItem(storageKey,JSON.stringify(d))}catch(_e){}};
+  const esc2=v=>String(v??"").replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]});
+  const getModal=()=>({box:document.getElementById("sellerModal"),title:document.getElementById("sellerModalTitle"),body:document.getElementById("sellerModalBody")});
+  function openStep(index){
+    const d=readSpace(), m=getModal(); if(!m.box)return;
+    const steps=[
+      {icon:"🏠",title:"Mon bien",intro:"Préparez les informations qui permettront de mieux comprendre votre bien avant notre échange.",
+       items:[
+        ["Type de bien",d.propertyType||"À compléter"],["Commune",d.city||"À compléter"],["Adresse",d.address||"À compléter"],["Surface habitable",d.surface?d.surface+" m²":"À compléter"],["Pièces / chambres",d.rooms||"À compléter"],["Terrain",d.terrain||"À compléter"]
+       ],note:"Vous pouvez vérifier ou compléter ces informations dans le formulaire de votre espace."},
+      {icon:"📄",title:"Mes documents",intro:"Voici les documents utiles à rassembler progressivement. Vous n'avez pas besoin de tout avoir immédiatement.",
+       checklist:["Titre de propriété","Dernier avis de taxe foncière","Diagnostics disponibles","Documents de copropriété si applicable","Factures ou justificatifs de travaux"],note:"Cette étape sert à préparer le dossier, pas à vous demander d'envoyer vos documents maintenant."},
+      {icon:"⚡",title:"Mon DPE",intro:"Les informations énergétiques sont importantes pour préparer une vente dans de bonnes conditions.",
+       items:[["Classe DPE",d.dpe||"Non renseignée"],["Date de validité","À vérifier"],["Diagnostic disponible",d.dpe?"Oui, classe renseignée":"À préparer"]],note:"Gardez votre DPE à portée de main. Les informations définitives seront vérifiées avant toute utilisation."},
+      {icon:"🛠️",title:"Travaux",intro:"Préparez simplement les travaux et améliorations qui peuvent aider à comprendre l'état du bien.",
+       checklist:["Travaux récents","Années approximatives","Factures disponibles","Améliorations énergétiques","Équipements remplacés"],note:"Même sans facture, une chronologie approximative peut être utile lors de notre échange."},
+      {icon:"📸",title:"Présentation",intro:"Avant les photos ou la visite, quelques préparatifs simples peuvent faciliter la présentation du bien.",
+       checklist:["Ranger les pièces principales","Dégager les espaces","Soigner les extérieurs","Préparer les points forts du bien","Lister les équipements importants"],note:"L'objectif est de présenter le bien fidèlement, sans masquer ses caractéristiques."},
+      {icon:"🤝",title:"Rendez-vous",intro:"Préparez les questions que vous souhaitez poser et choisissez ensuite un créneau disponible.",
+       checklist:["Mes questions","Mes disponibilités","Les documents à montrer","Les informations sur les travaux","Mes attentes concernant le projet"],note:"Le rendez-vous reste confirmé par JML Immobilier après vérification du créneau demandé."}
+    ];
+    const s=steps[index]||steps[0], done=(Array.isArray(d.checklist)?d.checklist:[]).map(Number).includes(index+1);
+    let body='<div class="seller-step-modal">';
+    body+='<div class="seller-step-modal-hero"><span>'+s.icon+'</span><div><strong>'+esc2(s.title)+'</strong><p>'+esc2(s.intro)+'</p></div></div>';
+    if(s.items){
+      body+='<div class="seller-step-details">'+s.items.map(function(x){return '<div><span>'+esc2(x[0])+'</span><strong>'+esc2(x[1])+'</strong></div>'}).join("")+'</div>';
+    }
+    if(s.checklist){
+      body+='<div class="seller-step-tips"><h4>À préparer</h4><ul>'+s.checklist.map(x=>'<li>'+esc2(x)+'</li>').join("")+'</ul></div>';
+    }
+    body+='<div class="seller-step-note">'+esc2(s.note)+'</div>';
+    body+='<div class="seller-step-actions"><button type="button" class="primary" id="sellerStepDone">'+(done?"Étape validée ✓":"Marquer cette étape comme faite")+" </button><button type="button" class="secondary" id="sellerStepClose">Fermer</button></div></div>';
+    m.title.textContent=s.title;m.body.innerHTML=body;m.box.classList.add("open");m.box.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
+    const close=()=>{m.box.classList.remove("open");m.box.setAttribute("aria-hidden","true");document.body.style.overflow=""};
+    document.getElementById("sellerStepClose")?.addEventListener("click",close);
+    document.getElementById("sellerStepDone")?.addEventListener("click",async function(){
+      const current=readSpace(), list=Array.isArray(current.checklist)?current.checklist.map(Number):[];
+      if(!list.includes(index+1))list.push(index+1);
+      current.checklist=list;current.submitted=true;writeSpace(current);
+      document.querySelectorAll(".seller-check").forEach(function(btn){const on=list.includes(Number(btn.dataset.check));btn.classList.toggle("done",on);const mark=btn.querySelector(".seller-check-mark");if(mark)mark.textContent=on?"✓":"○"});
+      const n=list.length,p=Math.round(n/6*100),bar=document.getElementById("sellerChecklistProgress"),count=document.getElementById("sellerChecklistCount"),pct=document.getElementById("sellerChecklistPercent");
+      if(bar)bar.style.width=p+"%";if(count)count.textContent=n+" / 6";if(pct)pct.textContent=p+" %";
+      const next=document.getElementById("sellerNextProgress");if(next)next.textContent=n+" / 6 étapes";
+      const token=current.token;
+      if(token){try{await fetch("/api/seller-space/"+encodeURIComponent(token),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({city:current.city,address:current.address,propertyType:current.propertyType,horizon:current.horizon,surface:current.surface,rooms:current.rooms,dpe:current.dpe,terrain:current.terrain,checklist:list})})}catch(_e){}}
+      close();
+    });
+  }
+  document.querySelectorAll(".seller-check").forEach(function(btn){
+    btn.addEventListener("click",function(e){
+      e.preventDefault();e.stopImmediatePropagation();
+      openStep(Number(btn.dataset.check)-1);
+    },true);
+  });
+})();
+</script>
+<style>
+/* JML CHECKLIST INTERACTIVE V1 */
+.seller-step-modal-hero{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;background:#f7f1e4;border:1px solid var(--line)}
+.seller-step-modal-hero>span{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#173b31;color:#e2c37d;font-size:21px;flex:0 0 42px}
+.seller-step-modal-hero strong{display:block;font-size:17px;color:#173b31}.seller-step-modal-hero p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.seller-step-details{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.seller-step-details>div{padding:11px;border:1px solid var(--line);border-radius:10px;background:#fffdf8}.seller-step-details span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.05em}.seller-step-details strong{display:block;margin-top:4px;color:#173b31;font-size:12px}
+.seller-step-tips{margin-top:12px;padding:13px;border:1px solid var(--line);border-radius:12px;background:#faf7ef}.seller-step-tips h4{margin:0 0 7px;color:#173b31;font-size:13px}.seller-step-tips ul{margin:0;padding-left:18px;color:var(--muted);font-size:11.5px;line-height:1.65}
+.seller-step-note{margin-top:12px;padding:11px 12px;border-left:3px solid #d8bb7a;background:#f7f1e4;color:#505951;font-size:11px;line-height:1.5}
+.seller-step-actions{display:flex;gap:9px;margin-top:14px}.seller-step-actions button{min-height:42px;flex:1}
+@media(max-width:600px){.seller-step-details{grid-template-columns:1fr}.seller-step-actions{flex-direction:column}}
+</style>
+
 </body>
 </html>
