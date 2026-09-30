@@ -197,7 +197,7 @@ app.get("/api/territory-summary", async (req,res) => {
     const candidates=await geoResponse.json();
     if(!Array.isArray(candidates)||!candidates.length) throw new Error("Commune introuvable");
     const commune=candidates[0];
-    const marketResponse=await fetch("http://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(commune.nom),{headers:{...req.headers,host:req.headers.host},signal:AbortSignal.timeout(8000)});
+    const marketResponse=await fetch((req.headers["x-forwarded-proto"]==="https"?"https":"http")+"://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(commune.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(8000)});
     const market=marketResponse.ok?await marketResponse.json():{ok:false};
     let nearby=[];
     if(commune.epci?.code){
@@ -212,7 +212,7 @@ app.get("/api/territory-summary", async (req,res) => {
         }).filter(x=>Number.isFinite(x.distanceKm)).sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,4):[];
         nearby=await Promise.all(ranked.map(async x=>{
           try{
-            const m=await fetch("http://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(x.nom),{headers:{...req.headers,host:req.headers.host},signal:AbortSignal.timeout(5000)});
+            const m=await fetch((req.headers["x-forwarded-proto"]==="https"?"https":"http")+"://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(x.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(5000)});
             const md=m.ok?await m.json():null;
             return {nom:x.nom,code:x.code,population:x.population,distanceKm:Number(x.distanceKm.toFixed(1)),price:md?.communalPrice||md?.price||null,housePrice:md?.housePrice||null,apartmentPrice:md?.apartmentPrice||null,transactions:md?.transactions||null,source:md?.source||null};
           }catch(_){return {nom:x.nom,code:x.code,population:x.population,distanceKm:Number(x.distanceKm.toFixed(1)),price:null};}
