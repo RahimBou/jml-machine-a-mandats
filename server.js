@@ -204,35 +204,23 @@ async function getGeoRisks(code){
 
 const localEnvironmentCache=new Map();
 async function getLocalEnvironment(commune){
-  const lat=Number(commune?.centre?.coordinates?.[1]), lon=Number(commune?.centre?.coordinates?.[0]);
-  if(!Number.isFinite(lat)||!Number.isFinite(lon)) return {available:false,message:"Coordonnées communales indisponibles."};
-  const key=String(commune.code||lat.toFixed(4)+":"+lon.toFixed(4));
+  const code=String(commune?.code||"").trim();
+  if(!/^\d{5}$/.test(code)) return {available:false,message:"Code commune indisponible."};
+  const key=code;
   const cached=localEnvironmentCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return cached.data;
-  const query='[out:json][timeout:20];(nwr(around:2500,'+lat+','+lon+')["amenity"~"school|pharmacy|hospital|clinic|post_office"];nwr(around:4000,'+lat+','+lon+')["shop"~"supermarket|bakery|convenience"];nwr(around:4000,'+lat+','+lon+')["railway"~"station|halt"];nwr(around:4000,'+lat+','+lon+')["highway"="bus_stop"];);out center tags;';
-  const endpoints=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
-  for(const endpoint of endpoints){
-    try{
-      const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"text/plain","User-Agent":"JML-Projet-Vendeur/3.0"},body:query,signal:AbortSignal.timeout(9000)});
-      if(!response.ok) continue;
-      const payload=await response.json(), elements=Array.isArray(payload.elements)?payload.elements:[];
-      const counters={schools:0,health:0,pharmacies:0,shops:0,stations:0,busStops:0,postOffices:0};
-      const names={schools:[],health:[],pharmacies:[],shops:[],stations:[]};
-      for(const item of elements){
-        const t=item.tags||{};
-        if(t.amenity==="school"){counters.schools++;if(t.name&&names.schools.length<3)names.schools.push(t.name);}
-        if(["hospital","clinic"].includes(t.amenity)){counters.health++;if(t.name&&names.health.length<3)names.health.push(t.name);}
-        if(t.amenity==="pharmacy"){counters.pharmacies++;if(t.name&&names.pharmacies.length<3)names.pharmacies.push(t.name);}
-        if(["supermarket","bakery","convenience"].includes(t.shop)){counters.shops++;if(t.name&&names.shops.length<3)names.shops.push(t.name);}
-        if(["station","halt"].includes(t.railway)){counters.stations++;if(t.name&&names.stations.length<3)names.stations.push(t.name);}
-        if(t.highway==="bus_stop") counters.busStops++;
-        if(t.amenity==="post_office") counters.postOffices++;
-      }
-      const data={available:true,source:"OpenStreetMap / Overpass",sourceUrl:"https://www.openstreetmap.org/",radiusKm:4,counters,names,note:"Comptage indicatif des équipements cartographiés autour du centre communal."};
+  try{
+    const response=await fetch("https://www.mon-quartier-info.com/commune/"+code,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
+    if(response.ok){
+      const text=stripHtml(await response.text());
+      const pick=label=>{const m=text.match(new RegExp(label+"\\s*\\((\\d+)\\)","i"));return m?Number(m[1]):null;};
+      const schools=pick("École"),pharmacies=pick("Pharmacie"),shops=pick("Alimentation générale"),postOffices=pick("Bureau ou relais de poste"),stations=pick("Gare de voyageurs");
+      const sm=text.match(/([0-9\s]+) équipements et services recensés sur la commune/i);
+      const data={available:true,source:"INSEE BPE / Mon Quartier Info",sourceUrl:"https://www.mon-quartier-info.com/commune/"+code,counters:{schools:schools??0,health:null,pharmacies:pharmacies??0,shops:shops??0,stations:stations??0,busStops:null,postOffices:postOffices??0,totalServices:sm?Number(sm[1].replace(/\s/g,"")):null},names:{schools:[],health:[],pharmacies:[],shops:[],stations:[]},radiusKm:null,note:"Comptage communal issu principalement de la Base permanente des équipements (INSEE)."};
       localEnvironmentCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
       return data;
-    }catch(error){ console.warn("JML Overpass:",endpoint,error.message); }
-  }
+    }
+  }catch(error){console.warn("JML services source publique:",error.message);}
   return {available:false,message:"Les services locaux sont temporairement indisponibles."};
 }
 
