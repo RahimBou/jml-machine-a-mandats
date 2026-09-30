@@ -518,7 +518,7 @@ async function fetchImmoDvfRecentSales(city,code){
   }catch(error){console.warn("JML DataFonciere fallback:",error.message);return [];}
 }
 
-async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
+async async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
   if(!origin) return [];
   const type=String(property?.propertyType||"").toLowerCase();
   const codtypbien=/appartement|studio|duplex|loft/i.test(type)?"121":/maison/i.test(type)?"111":"111,121";
@@ -528,7 +528,7 @@ async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
   const bbox=[origin.lon-lonDelta,origin.lat-latDelta,origin.lon+lonDelta,origin.lat+latDelta]
     .map(v=>Number(v.toFixed(6))).join(",");
   try{
-    const params=new URLSearchParams({in_bbox:bbox,codtypbien,page_size:"1000",fields:"all"});
+    const params=new URLSearchParams({in_bbox:bbox,codtypbien,page_size:"1000",fields:"all",anneemut_min:String(new Date().getFullYear()-2),anneemut_max:String(new Date().getFullYear())});
     const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
     const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(10000)});
     if(!response.ok) throw new Error("Cerema DVF HTTP "+response.status);
@@ -654,12 +654,36 @@ async function buildComparableSales(market,property){
     {radius:3000,months:24,label:"3 km / 24 mois"}
   ];
   const now=Date.now();
-  const normalizeDate=v=>{
-    const d=new Date(v);
-    return Number.isNaN(d.getTime())?null:d;
+  const parseSaleDate=v=>{
+    if(v instanceof Date && !Number.isNaN(v.getTime())) return v;
+    const raw=String(v??"").trim();
+    if(!raw) return null;
+    const direct=new Date(raw);
+    if(!Number.isNaN(direct.getTime())) return direct;
+    const normalized=raw.toLowerCase()
+      .normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
+      .replace(/\\s+/g," ");
+    const fr=normalized.match(/^(\\d{1,2})[\\s/-]+(janvier|janv|fevrier|fevr|mars|avril|avr|mai|juin|juillet|juil|aout|septembre|sept|octobre|oct|novembre|nov|decembre|dec)[a-z.]*[\\s/-]+(\\d{4})$/i);
+    if(fr){
+      const months={janvier:0,janv:0,fevrier:1,fevr:1,mars:2,avril:3,avr:3,mai:4,juin:5,juillet:6,juil:6,aout:7,septembre:8,sept:8,octobre:9,oct:9,novembre:10,nov:10,decembre:11,dec:11};
+      const day=Number(fr[1]),month=months[fr[2]],year=Number(fr[3]);
+      const d=new Date(year,month,day);
+      return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day?d:null;
+    }
+    const slash=raw.match(/^(\\d{1,2})[\\/.-](\\d{1,2})[\\/.-](\\d{4})$/);
+    if(slash){
+      const d=new Date(Number(slash[3]),Number(slash[2])-1,Number(slash[1]));
+      return d.getFullYear()===Number(slash[3])&&d.getMonth()===Number(slash[2])-1&&d.getDate()===Number(slash[1])?d:null;
+    }
+    const isoYear=raw.match(/^(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})/);
+    if(isoYear){
+      const d=new Date(Number(isoYear[1]),Number(isoYear[2])-1,Number(isoYear[3]));
+      return d.getFullYear()===Number(isoYear[1])&&d.getMonth()===Number(isoYear[2])-1&&d.getDate()===Number(isoYear[3])?d:null;
+    }
+    return null;
   };
   const ageMonths=v=>{
-    const d=normalizeDate(v);
+    const d=parseSaleDate(v);
     return d?Math.max(0,(now-d.getTime())/(30.4375*86400000)):99;
   };
   const streetKey=v=>normalizeAddress(v).replace(/\b\d+\b/g,"").trim();
