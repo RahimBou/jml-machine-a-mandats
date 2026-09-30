@@ -295,14 +295,14 @@ function parseEstimusTransactions(text){
 
 function parseEstimusNearby(text){
   const source=String(text||"");
-  const section=(source.split(/Communes proches/i)[1]||"").split(/Index des adresses|Estimus/i)[0];
-  const re=/([A-Za-zÀ-ÿ0-9'’ -]{2,70})\s*\(\d{2}\)\s*à\s*([0-9]+(?:[.,][0-9]+)?)\s*km\s*([0-9\s\u202f\u00a0]+)\s*€\/m²/gi;
+  const section=(source.split(/Communes proches/i)[1]||source).split(/Index des adresses/i)[0];
+  const re=/([A-Za-zÀ-ÿ0-9'’ -]{2,70})\s*\(\d{2}\)\s*à\s*([0-9]+(?:[.,][0-9]+)?)\s*km\s*([0-9\s\u202f\u00a0]+)\s*€\s*\/\s*m²/gi;
   const out=[]; let m;
-  while((m=re.exec(section)) && out.length<8){
+  while((m=re.exec(section))&&out.length<8){
     const name=m[1].replace(/\s+/g," ").trim();
     const distance=Number(m[2].replace(",","."));
     const price=Number(m[3].replace(/[\s\u202f\u00a0]/g,""));
-    if(name && Number.isFinite(distance) && Number.isFinite(price) && price>=300 && price<=6000) out.push({name,distanceKm:Number(distance.toFixed(1)),price});
+    if(name&&Number.isFinite(distance)&&Number.isFinite(price)&&price>=300&&price<=6000) out.push({name,distanceKm:Number(distance.toFixed(1)),price});
   }
   return out;
 }
