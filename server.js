@@ -171,8 +171,8 @@ async function getCommuneMarketData(city,code){
   };
   try{
     let communeUrl=null;
-    if(/^08\\d{3}$/.test(String(code||""))){
-      const slug=normalizeSearchCity(cleanCity).replace(/\\s+/g,"-");
+    if(/^08\d{3}$/.test(String(code||""))){
+      const slug=normalizeSearchCity(cleanCity).replace(/\s+/g,"-");
       communeUrl="https://estimus.fr/commune/"+slug+"-"+String(code);
     }
     let communeResponse=null;
@@ -203,7 +203,7 @@ async function getCommuneMarketData(city,code){
 }
 
 function normalizeAddress(value){
-  return normalizeSearchCity(String(value||"").replace(/[0-9]+/g," ").replace(/\\s+/g," "));
+  return normalizeSearchCity(String(value||"").replace(/[0-9]+/g," ").replace(/\s+/g," "));
 }
 
 function buildComparableSales(market,property){
