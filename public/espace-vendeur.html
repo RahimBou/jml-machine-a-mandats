@@ -771,7 +771,8 @@ if(appointmentForm){
 }
 const timelineSteps=[...document.querySelectorAll(".seller-step")];
  const horizonIndex={"0-3":0,"3-6":1,"6-12":2,"unknown":3};
- const activeIndex=horizonIndex[horizon] ?? 3;
+ const sellerTimelineData=sellerSpaceRead()||{};
+ const activeIndex=horizonIndex[sellerTimelineData.horizon||"unknown"] ?? 3;
  timelineSteps.forEach(function(step,index){step.classList.toggle("active",index<=activeIndex);});
  async function loadSellerAdvice(cityValue){
    const card=document.getElementById("sellerAdviceCard"),dots=document.getElementById("sellerAdviceDots");
