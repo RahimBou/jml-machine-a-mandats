@@ -99,8 +99,8 @@ function findEstimusCommuneUrl(html, city){
 function parseEstimusTransactions(text){
   const source=String(text||"");
   const section=(source.split(/Dernières transactions/i)[1]||"").split(/Aussi dans les Ardennes|Aussi dans|Communes proches|Index des adresses/i)[0];
-  const month="janv\.?|févr\.?|mars|avr\.?|mai|juin|juil\.?|août|sept\.?|oct\.?|nov\.?|déc\.?";
-  const re=new RegExp("(Maison|Appartement|Terrain|Local|Dépendance)\s+(.+?)\s+(\d{1,2}\s+(?:"+month+")\s+\d{4})\s+([0-9\s]+)\s*m²(?:\s*·\s*(\d+)\s*pièces)?(?:\s*·\s*terrain\s*([0-9\s]+)\s*m²)?\s*([0-9\s]+)\s*€\s*([0-9\s]+)\s*€/m²","gi");
+  const month="janv\\.?|févr\\.?|mars|avr\\.?|mai|juin|juil\\.?|août|sept\\.?|oct\\.?|nov\\.?|déc\\.?";
+  const re=new RegExp("(Maison|Appartement|Terrain|Local|Dépendance)\\s+(.+?)\\s+(\\d{1,2}\\s+(?:"+month+")\\s+\\d{4})\\s+([0-9\\s]+)\\s*m²(?:\\s*·\\s*(\\d+)\\s*pièces)?(?:\\s*·\\s*terrain\\s*([0-9\\s]+)\\s*m²)?\\s*([0-9\\s]+)\\s*€\\s*([0-9\\s]+)\\s*€/m²","gi");
   const out=[]; let m;
   while((m=re.exec(section)) && out.length<12){
     const price=Number(m[7].replace(/\s/g,""));
