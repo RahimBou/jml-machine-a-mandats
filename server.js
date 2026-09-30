@@ -518,7 +518,7 @@ async function fetchImmoDvfRecentSales(city,code){
   }catch(error){console.warn("JML DataFonciere fallback:",error.message);return [];}
 }
 
-async async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
+async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
   if(!origin) return [];
   const type=String(property?.propertyType||"").toLowerCase();
   const codtypbien=/appartement|studio|duplex|loft/i.test(type)?"121":/maison/i.test(type)?"111":"111,121";
