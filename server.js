@@ -95,20 +95,21 @@ function findEstimusCommuneUrl(html, city){
 }
 
 
+
 function parseEstimusTransactions(text){
   const source=String(text||"");
   const section=(source.split(/Dernières transactions/i)[1]||"").split(/Aussi dans les Ardennes|Aussi dans|Communes proches|Index des adresses/i)[0];
-  const month="janv\\.?|févr\\.?|mars|avr\\.?|mai|juin|juil\\.?|août|sept\\.?|oct\\.?|nov\\.?|déc\\.?";
-  const re=new RegExp("(Maison|Appartement|Terrain|Local|Dépendance)\\s+(.+?)\\s+(\\d{1,2}\\s+(?:"+month+")\\s+\\d{4})\\s+([0-9\\s]+)\\s*m²(?:\\s*·\\s*(\\d+)\\s*pièces)?(?:\\s*·\\s*terrain\\s*([0-9\\s]+)\\s*m²)?\\s*([0-9\\s]+)\\s*€\\s*([0-9\\s]+)\\s*€/m²","gi");
+  const month="janv\.?|févr\.?|mars|avr\.?|mai|juin|juil\.?|août|sept\.?|oct\.?|nov\.?|déc\.?";
+  const re=new RegExp("(Maison|Appartement|Terrain|Local|Dépendance)\s+(.+?)\s+(\d{1,2}\s+(?:"+month+")\s+\d{4})\s+([0-9\s]+)\s*m²(?:\s*·\s*(\d+)\s*pièces)?(?:\s*·\s*terrain\s*([0-9\s]+)\s*m²)?\s*([0-9\s]+)\s*€\s*([0-9\s]+)\s*€/m²","gi");
   const out=[]; let m;
   while((m=re.exec(section)) && out.length<12){
-    const price=Number(m[7].replace(/\\s/g,""));
-    const sqm=Number(m[4].replace(/\\s/g,""));
-    const psm=Number(m[8].replace(/\\s/g,""));
+    const price=Number(m[7].replace(/\s/g,""));
+    const sqm=Number(m[4].replace(/\s/g,""));
+    const psm=Number(m[8].replace(/\s/g,""));
     if(!Number.isFinite(price)||!Number.isFinite(sqm)||!Number.isFinite(psm)||sqm<=0||price<=0||psm<300||psm>6000) continue;
     out.push({
-      type:m[1],address:m[2].replace(/\\s+/g," ").trim(),date:m[3].replace(/\\s+/g," ").trim(),
-      surface:sqm,rooms:m[5]?Number(m[5]):null,terrain:m[6]?Number(m[6].replace(/\\s/g,"")):null,
+      type:m[1],address:m[2].replace(/\s+/g," ").trim(),date:m[3].replace(/\s+/g," ").trim(),
+      surface:sqm,rooms:m[5]?Number(m[5]):null,terrain:m[6]?Number(m[6].replace(/\s/g,"")):null,
       price,pricePerM2:psm
     });
   }
@@ -118,12 +119,12 @@ function parseEstimusTransactions(text){
 function parseEstimusNearby(text){
   const source=String(text||"");
   const section=(source.split(/Communes proches/i)[1]||"").split(/Index des adresses|Estimus/i)[0];
-  const re=/([^\\n()]{2,70})\\(\\d{2}\\)à\\s*([0-9]+(?:[.,][0-9]+)?)\\s*km\\s*([0-9\\s]+)\\s*€/m²/gi;
+  const re=/([^\n()]{2,70})\(\d{2}\)à\s*([0-9]+(?:[.,][0-9]+)?)\s*km\s*([0-9\s]+)\s*€/m²/gi;
   const out=[]; let m;
   while((m=re.exec(section)) && out.length<8){
-    const name=m[1].replace(/\\s+/g," ").trim();
+    const name=m[1].replace(/\s+/g," ").trim();
     const distance=Number(m[2].replace(",","."));
-    const price=Number(m[3].replace(/\\s/g,""));
+    const price=Number(m[3].replace(/\s/g,""));
     if(name && Number.isFinite(distance) && Number.isFinite(price) && price>=300 && price<=6000){
       out.push({name,distanceKm:Number(distance.toFixed(1)),price});
     }
@@ -133,23 +134,23 @@ function parseEstimusNearby(text){
 
 function parseEstimusCommunePage(html, city){
   const text=stripHtml(html);
-  const medianMatch=text.match(/Le prix médian au m² à [^\\.]+ est de ([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\s*\\/\\s*m²/i);
+  const medianMatch=text.match(/Le prix médian au m² à [^\.]+ est de ([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m²/i);
   const median=parseEuroPerM2(medianMatch ? medianMatch[0] : "");
-  const houseMatch=text.match(/le prix médian est de ([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\s*\\/\\s*m² pour les maisons/i);
-  const apartmentMatch=text.match(/([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\s*\\/\\s*m² pour les appartements/i);
+  const houseMatch=text.match(/le prix médian est de ([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m² pour les maisons/i);
+  const apartmentMatch=text.match(/([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\s*\/\s*m² pour les appartements/i);
   const housePrice=parseEuroPerM2(houseMatch ? houseMatch[0] : "");
   const apartmentPrice=parseEuroPerM2(apartmentMatch ? apartmentMatch[0] : "");
-  const transactionsMatch=text.match(/([0-9]{1,4}(?:\\s[0-9]{3})?) transactions?\\s*·\\s*12 derniers mois/i);
-  const transactions=transactionsMatch ? Number(transactionsMatch[1].replace(/\\s/g,"")) : null;
-  const lastSaleMatch=text.match(/dernière vente enregistrée le\\s+([^·\\.]+?\\s+\\d{4})/i);
-  const evolutionMatch=text.match(/Entre\\s+2014\\s+et\\s+2025,?\\s+le prix médian au m² [^\\.]* est passé de\\s+([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\/m² à\\s+([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\/m²,?\\s+soit une hausse de\\s+([0-9]+(?:[.,][0-9]+)?)\\s*%/i);
+  const transactionsMatch=text.match(/([0-9]{1,4}(?:\s[0-9]{3})?) transactions?\s*·\s*12 derniers mois/i);
+  const transactions=transactionsMatch ? Number(transactionsMatch[1].replace(/\s/g,"")) : null;
+  const lastSaleMatch=text.match(/dernière vente enregistrée le\s+([^·\.]+?\s+\d{4})/i);
+  const evolutionMatch=text.match(/Entre\s+2014\s+et\s+2025,?\s+le prix médian au m² [^\.]* est passé de\s+([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\/m² à\s+([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\/m²,?\s+soit une hausse de\s+([0-9]+(?:[.,][0-9]+)?)\s*%/i);
   if(!median) return null;
   return {
     city,found:true,price:median,communalPrice:median,housePrice,apartmentPrice,
     transactions:Number.isFinite(transactions)?transactions:null,
     period:"12 derniers mois de données DVF disponibles",
     lastSale:lastSaleMatch?lastSaleMatch[1].trim():null,
-    evolution:evolutionMatch?{from:2014,to:2025,start:Number(evolutionMatch[1].replace(/\\s/g,"")),end:Number(evolutionMatch[2].replace(/\\s/g,"")),percent:Number(evolutionMatch[3].replace(",","."))}:null,
+    evolution:evolutionMatch?{from:2014,to:2025,start:Number(evolutionMatch[1].replace(/\s/g,"")),end:Number(evolutionMatch[2].replace(/\s/g,"")),percent:Number(evolutionMatch[3].replace(",","."))}:null,
     recentSales:parseEstimusTransactions(text),
     nearby:parseEstimusNearby(text),
     source:"DVF+ / Cerema (d’après DVF, DGFiP) — via Estimus",
