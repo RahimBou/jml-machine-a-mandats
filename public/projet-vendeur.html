@@ -367,6 +367,12 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 @media(max-width:600px){.fb-extra-grid{grid-template-columns:1fr 1fr}.seller-modal-dialog{margin:10px auto;max-height:calc(100vh - 20px);padding:18px}.seller-modal-dialog h3{font-size:22px}.seller-map-frame{height:280px}.seller-detail-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:430px){.fb-extra-grid{grid-template-columns:1fr}.seller-modal-dialog{width:calc(100% - 18px);border-radius:18px}.seller-map-actions a{flex:1 1 calc(50% - 7px);text-align:center}}
 
+/* V2.7 — résumé projet visible */
+.seller-project-summary{margin-top:12px;padding:17px;border:1px solid var(--line);border-radius:17px;background:#fffdf8;box-shadow:0 5px 18px rgba(23,51,44,.035)}
+.seller-project-summary-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.seller-project-summary-head h4{margin:3px 0 4px;font-size:18px;color:#173b31}.seller-project-summary-head p{margin:0;color:var(--muted);font-size:10.5px}.seller-project-summary-badge{padding:6px 9px;border-radius:999px;background:#efe4c8;color:#6f592b;font-size:9px;font-weight:900;white-space:nowrap}
+.seller-project-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.seller-project-fact{padding:12px;border-radius:12px;background:#f7f2e7;border:1px solid #e8dfcf}.seller-project-fact span{display:block;color:#8b8f89;font-size:9px}.seller-project-fact strong{display:block;margin-top:5px;color:#173b31;font-size:13px;line-height:1.25}.seller-project-fact small{display:block;margin-top:3px;color:var(--muted);font-size:9px}
+@media(max-width:600px){.seller-project-summary-grid{grid-template-columns:1fr 1fr}}
+
 /* V2.6 — pilotage vendeur visible */
 .seller-next-action{margin-top:12px;padding:16px 18px;border:1px solid #d2bb86;border-radius:17px;background:linear-gradient(135deg,#173b32 0%,#214d41 68%,#8c6d2d 170%);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 8px 22px rgba(23,59,50,.12)}
 .seller-next-action-main{display:flex;align-items:center;gap:12px}.seller-next-action-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#d8bb7a;color:#173b32;font-size:20px;flex:0 0 42px}.seller-next-action-kicker{font-size:9px;letter-spacing:.12em;color:#d8bb7a;font-weight:900}.seller-next-action strong{display:block;font-size:15px;margin-top:3px}.seller-next-action small{display:block;color:#dce7e0;font-size:10.5px;margin-top:3px}.seller-next-action .seller-next-btn{border:1px solid rgba(255,255,255,.3);background:#fff;color:#173b32;border-radius:10px;padding:9px 12px;font-size:10px;font-weight:900;text-decoration:none;white-space:nowrap}
@@ -463,6 +469,19 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
       <button type="button" class="seller-quick-card" id="sellerQuickCalendar"><span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre calendrier sera pris en compte pour préparer la suite.</small></span><em>→</em></button>
       <button type="button" class="seller-quick-card" id="sellerQuickAdvice"><span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples et utiles, adaptés à votre projet.</small></span><em>→</em></button>
     </div>
+
+    <section class="seller-project-summary" id="sellerProjectSummary">
+      <div class="seller-project-summary-head">
+        <div><span class="seller-panel-kicker">🏠 VOTRE PROJET</span><h4>Votre dossier en un coup d’œil</h4><p>Les informations que vous avez renseignées sont regroupées ici.</p></div>
+        <span class="seller-project-summary-badge">Espace personnel</span>
+      </div>
+      <div class="seller-project-summary-grid">
+        <div class="seller-project-fact"><span>COMMUNE</span><strong id="summaryCity">—</strong><small>Votre secteur</small></div>
+        <div class="seller-project-fact"><span>TYPE DE BIEN</span><strong id="summaryType">—</strong><small>Bien concerné</small></div>
+        <div class="seller-project-fact"><span>SURFACE</span><strong id="summarySurface">—</strong><small>Surface renseignée</small></div>
+        <div class="seller-project-fact"><span>DPE</span><strong id="summaryDpe">—</strong><small>Classe énergétique</small></div>
+      </div>
+    </section>
 
     <div class="seller-disclaimer"><strong>En attendant, voici déjà quelques repères utiles pour votre projet de vente.</strong><br>Les informations présentées ici sont indicatives. Les données de marché doivent être vérifiées et datées avant toute utilisation dans une décision de vente.</div>
 
@@ -837,6 +856,11 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    if(open)open.href=url;
    if(copy)copy.onclick=async function(){try{await navigator.clipboard.writeText(url);copy.textContent="Accès copié ✓";setTimeout(()=>copy.textContent="Copier mon accès",1800)}catch(_e){window.prompt("Copiez votre lien personnel :",url)}};
  }
+ function updateSellerProjectSummary(d){
+   d=d||getSellerSpace()||{};
+   const set=(id,v,empty)=>{const e=document.getElementById(id);if(e)e.textContent=v||empty||"Non renseigné";};
+   set("summaryCity",d.city,"Non renseignée");set("summaryType",d.propertyType,"Non renseigné");set("summarySurface",d.surface,"Non renseignée");set("summaryDpe",d.dpe,"Non renseigné");
+ }
  function updateSellerNextAction(list){
    const done=Array.isArray(list)?list.map(Number):[];
    const total=6,n=done.length;
@@ -869,7 +893,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    try{const rr=await fetch("/api/seller-space/"+encodeURIComponent(token),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({city:d.city,address:d.address,propertyType:d.propertyType,horizon:d.horizon,surface:d.surface,rooms:d.rooms,dpe:d.dpe,terrain:d.terrain,checklist:list})});if(rr.ok){const dd=await rr.json();if(dd.space)sellerSpaceWrite({...dd.space,submitted:true,token:token});}}catch(_e){}
  }
  document.querySelectorAll(".seller-check").forEach(function(btn){btn.addEventListener("click",function(){btn.classList.toggle("done");const list=[...document.querySelectorAll(".seller-check.done")].map(x=>Number(x.dataset.check));renderSellerChecklist(list);saveSellerChecklist();});});
- function refreshSellerSpaceUI(){const d=getSellerSpace();if(!d.submitted)return;updateSellerAccess(d);renderSellerChecklist(d.checklist||[]);}
+ function refreshSellerSpaceUI(){const d=getSellerSpace();if(!d.submitted)return;updateSellerAccess(d);renderSellerChecklist(d.checklist||[]);updateSellerProjectSummary(d);}
  restoreSellerSubmittedView().then(refreshSellerSpaceUI);
  window.addEventListener("pageshow",function(){restoreSellerSubmittedView().then(refreshSellerSpaceUI)});
 
