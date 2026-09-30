@@ -101,7 +101,7 @@ function parseEstimusCommunePage(html, city){
     transactions:Number.isFinite(transactions) ? transactions : null,
     source:"DVF — Estimus, commune",
     sourceUrl:null,
-    period:"12 derniers mois disponibles, jusqu’au 31 décembre 2025",
+    period:"Dernières données DVF disponibles pour cette commune",
     message:"Repère communal issu des transactions DVF. Il sert à préparer notre échange et ne constitue pas une estimation du bien.",
     caution:"Le prix communal est un repère. Le type de bien, la surface, l’état et la localisation précise peuvent modifier fortement la valeur."
   };
@@ -140,7 +140,7 @@ app.get("/api/commune-market", async (req,res) => {
     if(!parsed) throw new Error("Médiane communale non trouvée pour "+city);
 
     parsed.sourceUrl=communeUrl;
-    parsed.period="12 derniers mois disponibles, jusqu’au 31 décembre 2025";
+    parsed.period="Dernières données DVF disponibles pour cette commune";
     communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
     return res.json({ok:true,...parsed,cache:false});
   }catch(error){
