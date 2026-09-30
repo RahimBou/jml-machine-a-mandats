@@ -587,10 +587,13 @@ function haversineKm(a,b){
 }
 
 function classifyDvfType(value,code){
-  const raw=String(value||"").toLowerCase();
-  const c=String(code||"");
-  if(/^12/.test(c)||/appartement|studio|duplex|loft/.test(raw)) return "Appartement";
-  if(/^11/.test(c)||/maison/.test(raw)) return "Maison";
+  const raw=String(value||"").toLowerCase().trim();
+  const c=String(code||"").toLowerCase().trim();
+  // DVF+ utilise plusieurs niveaux de typologie : 111/111x pour les maisons,
+  // 121/121x pour les appartements. Le libellé peut parfois être lui-même
+  // un code (ex. 1113) au lieu du texte "UNE MAISON ANCIENNE".
+  if(/^12/.test(c)||/^12/.test(raw)||/appartement|studio|duplex|loft/.test(raw)) return "Appartement";
+  if(/^11/.test(c)||/^11/.test(raw)||/maison/.test(raw)) return "Maison";
   return null;
 }
 
