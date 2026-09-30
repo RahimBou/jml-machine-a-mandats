@@ -132,22 +132,20 @@ app.get("/api/commune-market", async (req,res) => {
     const communeUrl=findEstimusCommuneUrl(departmentHtml,city);
     if(!communeUrl){
       const normalizedCity=normalizeSearchCity(city);
-      const rowRe=/(?:^|\\n)\\s*(\\d{5})?\\s*([^|\\n]+?)\\s*\\|\\s*([0-9]{3,4}(?:\\s[0-9]{3})?)\\s*€\\/m²/gi;
-      let rowMatch, departmentMedian=null;
-      while((rowMatch=rowRe.exec(stripHtml(departmentHtml)))){
-        if(normalizeSearchCity(rowMatch[2]).replace(/^\\d{5}/,"").trim()===normalizedCity){
-          departmentMedian=Number(rowMatch[3].replace(/\\s/g,"")); break;
-        }
-      }
-      if(departmentMedian){
+      const departmentText=stripHtml(departmentHtml);
+      const escapedCity=normalizedCity.split(/\s+/).filter(Boolean).map(function(x){return x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}).join("\\s+");
+      const nearbyRe=new RegExp(escapedCity+"[^0-9]{0,120}([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\s*/\\s*m²","i");
+      const nearby=departmentText.match(nearbyRe);
+      const departmentMedian=nearby?Number(nearby[1].replace(/\\s/g,"")):null;
+      if(departmentMedian && departmentMedian>=300 && departmentMedian<=6000){
         const parsed={
           city,found:true,price:departmentMedian,communalPrice:departmentMedian,
           housePrice:null,apartmentPrice:null,transactions:null,
-          source:"DVF — Estimus, tableau départemental",
+          source:"DVF — Estimus, données départementales",
           sourceUrl:"https://estimus.fr/departement/08-ardennes",
           period:"Dernières données DVF disponibles pour cette commune",
           message:"Repère communal issu des données DVF publiées par Estimus. Les données par type de bien restent à préciser.",
-          caution:"Ce repère sert à préparer l'échange et ne constitue pas une estimation du bien."
+          caution:"Ce repère sert à préparer l’échange et ne constitue pas une estimation du bien."
         };
         communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
         return res.json({ok:true,...parsed,cache:false});
