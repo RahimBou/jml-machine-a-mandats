@@ -80,8 +80,10 @@ function parseDvfCsvLine(line){
   const out=[]; let cur="", quoted=false;
   for(let i=0;i<line.length;i++){
     const ch=line[i];
-    if(ch==="\\""){ if(quoted && line[i+1]==="\\""){cur+="\\"";i++;} else quoted=!quoted; }
-    else if(ch===","&&!quoted){out.push(cur);cur="";}
+    if(ch==='"'){
+      if(quoted && line[i+1]==='"'){cur+='"';i++;}
+      else quoted=!quoted;
+    } else if(ch===","&&!quoted){out.push(cur);cur="";}
     else cur+=ch;
   }
   out.push(cur); return out;
@@ -96,7 +98,7 @@ async function loadLocalDvfSales(){
       if(!response.ok) throw new Error("DVF "+year+" HTTP "+response.status);
       const buffer=Buffer.from(await response.arrayBuffer());
       const raw=zlib.gunzipSync(buffer).toString("utf8");
-      const lines=raw.split(/\\r?\\n/).filter(Boolean);
+      const lines=raw.split(/\r?\n/).filter(Boolean);
       if(!lines.length) continue;
       const header=parseDvfCsvLine(lines[0]).map(v=>v.trim());
       const idx=Object.fromEntries(header.map((v,i)=>[v,i]));
@@ -124,7 +126,6 @@ async function loadLocalDvfSales(){
   })().catch(e=>{dvfLocalLoadPromise=null;console.warn("JML DVF local:",e.message);return [];});
   return dvfLocalLoadPromise;
 }
-
 
 
 const IMMO_DATA_API_BASE_URL = String(process.env.IMMO_DATA_API_BASE_URL || "https://api.immo-data.fr").replace(/\/+$/,"");
