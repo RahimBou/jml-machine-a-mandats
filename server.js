@@ -1101,7 +1101,7 @@ app.get("/api/territory-summary", async (req,res) => {
         basePriceM2:null,surface:Number(surface)||null,referenceValue:null,
         range:{low:null,high:null,marginPct:15},
         transactions:market.transactions||null,history:market.history||[],
-        comparables,
+        comparables:comparable,
         explanation:"Le repère personnalisé sera calculé lorsque les données de marché seront disponibles."
       };
     }
