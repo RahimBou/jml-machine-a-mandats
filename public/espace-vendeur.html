@@ -382,7 +382,38 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 /* V2.5 — espace vendeur persistant */
 .seller-access{margin-top:12px;padding:14px 16px;border:1px solid #d0b477;border-radius:15px;background:linear-gradient(145deg,#fffdf8,#f5efdf);display:flex;justify-content:space-between;gap:14px;align-items:center}.seller-access strong{display:block;color:#173b31;font-size:13px}.seller-access p{margin:4px 0 0;color:var(--muted);font-size:10.5px;line-height:1.45}.seller-access-actions{display:flex;gap:7px;flex-wrap:wrap}.seller-access-actions button,.seller-access-actions a{border:1px solid #c8aa6d;background:#fff;color:#6f592b;border-radius:9px;padding:8px 10px;font-size:10px;font-weight:800;text-decoration:none;cursor:pointer}.seller-access-actions .primary{background:#d8bb7a;color:#173b31;border-color:#d8bb7a}.seller-checklist{margin-top:12px}.seller-check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.seller-check{border:1px solid var(--line);border-radius:12px;background:#fffdf8;padding:12px;text-align:left;cursor:pointer}.seller-check.done{border-color:#b8944e;background:#f5efdf}.seller-check-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.seller-check b{font-size:12px;color:#173b31}.seller-check small{display:block;margin-top:5px;color:var(--muted);font-size:10px;line-height:1.4}.seller-check-mark{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#ddd8cb;color:#777;font-size:12px}.seller-check.done .seller-check-mark{background:#b8944e;color:#173b31}.seller-progress{height:7px;border-radius:99px;background:#e6e1d6;overflow:hidden;margin-top:11px}.seller-progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#173f34,#b8944e);transition:width .25s}.seller-progress-label{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--muted)}.seller-space-note{margin-top:9px;color:var(--muted);font-size:10px;line-height:1.45}.seller-space-loading{padding:18px;border:1px solid var(--line);border-radius:14px;background:#fffdf8;color:var(--muted);font-size:12px;text-align:center}
 @media(max-width:600px){.seller-access{flex-direction:column;align-items:stretch}.seller-access-actions>*{flex:1;text-align:center}.seller-check-grid{grid-template-columns:1fr 1fr}.seller-check{min-width:0}}
-</style>
+
+/* V2.1 — simulateurs, conseils, aménagement et inspirations */
+.seller-v2{margin-top:14px;display:grid;gap:14px}
+.seller-v2-head{padding:22px;border:1px solid #d8c49a;border-radius:20px;background:linear-gradient(135deg,#fffdf8,#f4ecdc);box-shadow:0 8px 25px rgba(23,51,44,.045)}
+.seller-v2-kicker{font-size:10px;letter-spacing:.13em;font-weight:900;color:#8a6b2e}
+.seller-v2-head h4{margin:6px 0 6px;font-family:Georgia,"Times New Roman",serif;font-size:27px;color:#173b31}
+.seller-v2-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.55;max-width:720px}
+.seller-v2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.seller-v2-card{border:1px solid var(--line);border-radius:17px;background:#fffdf8;padding:16px;text-align:left;cursor:pointer;transition:.18s ease;min-height:145px}
+.seller-v2-card:hover{transform:translateY(-2px);border-color:#c8aa6d;box-shadow:0 10px 24px rgba(23,51,44,.08)}
+.seller-v2-card .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#f0e2c1;font-size:20px;margin-bottom:12px}
+.seller-v2-card strong{display:block;color:#173b31;font-size:14px}.seller-v2-card small{display:block;color:var(--muted);font-size:10.5px;line-height:1.45;margin-top:5px}
+.seller-v2-card b{display:block;color:#8a6b2e;font-size:10px;margin-top:10px}
+.seller-v2-personal{margin-top:10px;padding:11px 13px;border-radius:11px;background:#f7f1e4;color:#4d554f;font-size:10.5px;line-height:1.45}
+.seller-v2-section{padding:19px;border:1px solid var(--line);border-radius:19px;background:#fffdf8;box-shadow:0 7px 22px rgba(23,51,44,.04)}
+.seller-v2-section h5{margin:0;color:#173b31;font-size:19px}.seller-v2-section>p{margin:5px 0 13px;color:var(--muted);font-size:11px;line-height:1.45}
+.seller-v2-guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.seller-v2-guide{padding:13px;border:1px solid var(--line);border-radius:13px;background:#faf7ef}
+.seller-v2-guide strong{display:block;color:#173b31;font-size:12px}.seller-v2-guide span{display:block;font-size:10.5px;color:var(--muted);line-height:1.45;margin-top:4px}.seller-v2-guide button{margin-top:9px;border:0;background:transparent;color:#8a6b2e;font-weight:900;font-size:10px;padding:0;cursor:pointer}
+.seller-v2-disclosure{margin-top:9px;color:var(--muted);font-size:9.5px;line-height:1.45}
+.seller-v2-modal{position:fixed;inset:0;z-index:10000;display:none}.seller-v2-modal.open{display:block}.seller-v2-backdrop{position:absolute;inset:0;background:rgba(8,36,30,.65);backdrop-filter:blur(4px)}
+.seller-v2-dialog{position:relative;width:min(760px,calc(100% - 24px));max-height:calc(100vh - 32px);overflow:auto;margin:16px auto;padding:22px;border-radius:22px;background:#fffdf8;border:1px solid #c9ad72;box-shadow:0 25px 80px rgba(0,0,0,.3)}
+.seller-v2-close{position:absolute;right:12px;top:10px;width:36px;height:36px;border:0;border-radius:50%;background:#efe4c8;color:#173b31;font-size:24px;cursor:pointer}
+.seller-v2-dialog h3{margin:0 45px 5px;color:#173b31;font-family:Georgia,"Times New Roman",serif;font-size:25px}.seller-v2-dialog .lead{margin:0 0 15px;color:var(--muted);font-size:11.5px;line-height:1.5}
+.sim-tabs{display:flex;gap:5px;padding:4px;border-radius:999px;background:#f0eadf;margin-bottom:14px}.sim-tabs button{flex:1;border:0;border-radius:999px;padding:8px;background:transparent;color:#6b716b;font-size:10px;cursor:pointer}.sim-tabs button.active{background:#fff;color:#173b31;font-weight:900;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sim-field label{display:block;color:#5a625b;font-size:10px;font-weight:800;margin-bottom:5px}.sim-field input,.sim-field select{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px}
+.sim-result{margin-top:14px;padding:16px;border-radius:15px;background:#173b31;color:#fff}.sim-result span{display:block;color:#d9c080;font-size:9px;letter-spacing:.08em;font-weight:900}.sim-result strong{display:block;font-size:28px;margin-top:3px}.sim-result p{margin:5px 0 0;color:#dce7e0;font-size:10.5px;line-height:1.45}
+.sim-note{margin-top:10px;padding:10px 12px;border-left:3px solid #d8bb7a;background:#f7f1e4;color:#4d554f;font-size:10px;line-height:1.45}
+.advice-list{display:grid;gap:9px}.advice-row{padding:13px;border:1px solid var(--line);border-radius:13px;background:#faf7ef}.advice-row strong{display:block;color:#173b31;font-size:13px}.advice-row p{margin:4px 0 0;color:var(--muted);font-size:10.5px;line-height:1.5}
+.partner-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.partner-card{padding:14px;border:1px solid var(--line);border-radius:13px;background:#faf7ef}.partner-card strong{display:block;color:#173b31;font-size:12px}.partner-card p{margin:4px 0 9px;color:var(--muted);font-size:10px;line-height:1.45}.partner-card a{font-size:10px;font-weight:900;color:#8a6b2e;text-decoration:none}
+@media(max-width:760px){.seller-v2-grid{grid-template-columns:1fr 1fr}.seller-v2-guide-grid{grid-template-columns:1fr}.sim-grid{grid-template-columns:1fr}}
+@media(max-width:430px){.seller-v2-grid{grid-template-columns:1fr}.seller-v2-card{min-height:125px}}
 </style>
 </head>
 <body>
@@ -991,6 +1022,77 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
 .seller-step-actions{display:flex;gap:9px;margin-top:14px}.seller-step-actions button{min-height:42px;flex:1}
 @media(max-width:600px){.seller-step-details{grid-template-columns:1fr}.seller-step-actions{flex-direction:column}}
 </style>
+
+
+<script>
+/* JML V2.1 — boîte à outils vendeur */
+(function(){
+  const modal=document.getElementById("sellerV2Modal"),title=document.getElementById("sellerV2Title"),lead=document.getElementById("sellerV2Lead"),body=document.getElementById("sellerV2Body");
+  if(!modal||!body)return;
+  const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(_e){return {}}};
+  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const money=v=>Number(v||0).toLocaleString("fr-FR",{maximumFractionDigits:0})+" €";
+  const pct=v=>Number(v||0).toLocaleString("fr-FR",{maximumFractionDigits:1})+" %";
+  const open=(key)=>{
+    const d=read(), type=d.propertyType||"votre bien", city=d.city||"votre secteur", surface=Number(String(d.surface||"").replace(",",".").replace(/[^0-9.]/g,""))||0;
+    const views={
+      "sim-credit":{t:"Simulateurs immobiliers",l:"Faites vos propres repères. Les résultats sont indicatifs et ne constituent ni une offre de crédit ni un conseil financier.",html:creditHtml()},
+      "conseils":{t:"Conseils pour préparer la vente",l:"Les points à travailler en priorité dépendent du bien, du marché et de votre calendrier.",html:adviceHtml()},
+      "amenagement":{t:"Préparer mon logement",l:"L’objectif est de mieux présenter le bien sans supposer qu’un gros investissement est nécessaire.",html:amenagementHtml()},
+      "inspirations":{t:"Inspirations & partenaires",l:"Des catégories de produits et services utiles. Les liens partenaires réels seront ajoutés uniquement après validation des partenaires.",html:partnerHtml()},
+      "photos":{t:"Checklist photos",l:"Une préparation simple avant les photos peut rendre les volumes et les points forts plus lisibles.",html:photosHtml()},
+      "documents":{t:"Documents à préparer",l:"Préparez-les progressivement. Ne transmettez aucun document sensible via cet outil sans instruction de JML.",html:documentsHtml()}
+    };
+    const v=views[key]||views["conseils"];title.textContent=v.t;lead.textContent=v.l;body.innerHTML=v.html;modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";bind(key);
+    const p=document.getElementById("sellerV2Personal");if(p)p.textContent="Votre espace est configuré pour "+type+(city?" à "+city:"")+(surface?" · "+surface+" m²":"")+"."; 
+  };
+  function creditHtml(){return '<div class="sim-tabs"><button class="active" data-sim-tab="monthly">Mensualité</button><button data-sim-tab="capacity">Capacité</button><button data-sim-tab="notary">Frais de notaire</button></div><div id="simContent">'+monthlyHtml()+'</div>'}
+  function monthlyHtml(){return '<div class="sim-grid"><div class="sim-field"><label>Montant emprunté (€)</label><input id="simAmount" type="number" min="0" value="180000"></div><div class="sim-field"><label>Durée (années)</label><input id="simYears" type="number" min="1" max="30" value="20"></div><div class="sim-field"><label>Taux annuel indicatif (%)</label><input id="simRate" type="number" min="0" step="0.01" value="3.5"></div></div><div class="sim-result"><span>MENSUALITÉ HORS ASSURANCE</span><strong id="simResult">—</strong><p>Calcul mathématique à partir du capital, de la durée et du taux saisis.</p></div><div class="sim-note">Le taux est modifiable : utilisez celui de votre simulation bancaire. L’assurance, les frais et conditions du prêteur ne sont pas inclus.</div>'}
+  function capacityHtml(){return '<div class="sim-grid"><div class="sim-field"><label>Revenus nets mensuels (€)</label><input id="simIncome" type="number" min="0" value="3000"></div><div class="sim-field"><label>Charges mensuelles (€)</label><input id="simCharges" type="number" min="0" value="500"></div><div class="sim-field"><label>Taux d’effort indicatif (%)</label><input id="simDebt" type="number" min="1" max="60" step="0.5" value="35"></div><div class="sim-field"><label>Durée (années)</label><input id="simCapYears" type="number" min="1" max="30" value="20"></div><div class="sim-field"><label>Taux annuel indicatif (%)</label><input id="simCapRate" type="number" min="0" step="0.01" value="3.5"></div></div><div class="sim-result"><span>CAPITAL THÉORIQUE</span><strong id="simCapResult">—</strong><p>Illustration : mensualité cible = revenus × taux d’effort − charges.</p></div><div class="sim-note">Le seuil de 35 % est un repère indicatif, pas une décision bancaire. La banque examine notamment revenus, charges, apport, assurance et situation globale.</div>'}
+  function notaryHtml(){return '<div class="sim-grid"><div class="sim-field"><label>Prix du bien (€)</label><input id="simPrice" type="number" min="0" value="180000"></div><div class="sim-field"><label>Type</label><select id="simOld"><option value="old">Ancien — estimation 7 à 8 %</option><option value="new">Neuf — estimation 2 à 3 %</option></select></div></div><div class="sim-result"><span>FRAIS ESTIMATIFS</span><strong id="simNotaryResult">—</strong><p>Ordre de grandeur pour préparer un budget, pas un décompte notarial.</p></div><div class="sim-note">Les frais exacts dépendent notamment de la nature du bien, du département, des droits et des éléments de l’acte. Le notaire établit le montant définitif.</div>'}
+  function adviceHtml(){return '<div class="advice-list">'+[
+    ["💶 Prix","Le prix de présentation doit être cohérent avec les caractéristiques du bien et les références de marché disponibles."],
+    ["🧹 Présentation","Désencombrer, nettoyer et dégager les circulations aide à rendre les volumes plus lisibles."],
+    ["📸 Photos","Privilégiez la lumière naturelle et une présentation fidèle. Évitez les photos trop sombres ou trop chargées."],
+    ["🤝 Négociation","Avant une offre, définissez vos priorités : prix, calendrier, conditions et marge de discussion."],
+    ["📄 Dossier","Rassembler les documents tôt permet d’identifier les points à vérifier avant la commercialisation."],
+    ["⚡ DPE","Vérifiez la classe, la date et la cohérence des informations avant de communiquer sur la performance énergétique."]
+  ].map(x=>'<div class="advice-row"><strong>'+x[0]+'</strong><p>'+x[1]+'</p></div>').join("")+'</div>'}
+  function amenagementHtml(){return '<div class="advice-list">'+[
+    ["🛋️ Salon","Libérez les passages, réduisez les objets très personnels et privilégiez une pièce lumineuse."],
+    ["🍳 Cuisine","Nettoyez les plans de travail, rangez les petits appareils et mettez en évidence les rangements."],
+    ["🛁 Salle de bains","Nettoyez les joints et robinetteries, retirez les produits visibles et soignez l’éclairage."],
+    ["🛏️ Chambres","Faites les lits, allégez les meubles et laissez une lecture claire de chaque espace."],
+    ["🌿 Extérieur","Tondez, rangez les outils et présentez terrasse, jardin, accès et dépendances de façon lisible."],
+    ["🎨 Travaux","Avant de dépenser, comparez le coût, l’utilité réelle et l’effet attendu sur la présentation du bien."]
+  ].map(x=>'<div class="advice-row"><strong>'+x[0]+'</strong><p>'+x[1]+'</p></div>').join("")+'</div>'}
+  function photosHtml(){return '<div class="advice-list">'+["Ouvrir les volets et profiter de la lumière naturelle","Ranger câbles, petits objets et surfaces très chargées","Nettoyer vitrages, miroirs et plans de travail","Présenter chaque pièce depuis un angle qui montre les volumes","Montrer les extérieurs et dépendances lorsque c’est un atout","Rester fidèle au bien : aucune retouche ne doit masquer une caractéristique importante"].map((x,i)=>'<div class="advice-row"><strong>'+(i+1)+'. '+x+'</strong><p>À vérifier avant la séance photo.</p></div>').join("")+'</div>'}
+  function documentsHtml(){return '<div class="advice-list">'+["Titre de propriété","Taxe foncière","DPE et autres diagnostics disponibles","Factures et justificatifs de travaux","Informations de copropriété si applicable","Plans, permis ou documents d’urbanisme disponibles","Informations utiles sur les équipements"].map(x=>'<div class="advice-row"><strong>□ '+x+'</strong><p>À rassembler si disponible. JML précisera les pièces réellement nécessaires pour votre dossier.</p></div>').join("")+'</div>'}
+  function partnerHtml(){return '<div class="partner-grid">'+[
+    ["💡 Éclairage","Ampoules, lampes et éclairage d’appoint pour améliorer la lisibilité des pièces.","Catégorie à compléter"],
+    ["🧺 Rangement","Solutions temporaires pour désencombrer avant photos et visites.","Catégorie à compléter"],
+    ["🪴 Extérieur","Petits éléments pour présenter terrasse, balcon ou jardin.","Catégorie à compléter"],
+    ["🖌️ Peinture","Petites retouches et entretien lorsque cela est réellement utile.","Catégorie à compléter"]
+  ].map(x=>'<div class="partner-card"><strong>'+x[0]+'</strong><p>'+x[1]+'</p><span style="font-size:9px;color:#8a6b2e">'+x[2]+'</span></div>').join("")+'</div><div class="seller-v2-disclosure">Transparence : certains liens pourront être affiliés à l’avenir. Un lien affilié peut générer une commission sans surcoût pour l’utilisateur. Aucun partenariat rémunéré n’est présenté ici tant qu’il n’a pas été validé.</div>'}
+  function bind(key){
+    modal.querySelectorAll("[data-sim-tab]").forEach(b=>b.addEventListener("click",()=>{modal.querySelectorAll("[data-sim-tab]").forEach(x=>x.classList.remove("active"));b.classList.add("active");const c=document.getElementById("simContent");c.innerHTML=b.dataset.simTab==="monthly"?monthlyHtml():b.dataset.simTab==="capacity"?capacityHtml():notaryHtml();bindCalc()}));
+    bindCalc();
+  }
+  function bindCalc(){
+    const calc=()=>{
+      const amount=Number(document.getElementById("simAmount")?.value)||0,years=Number(document.getElementById("simYears")?.value)||0,rate=(Number(document.getElementById("simRate")?.value)||0)/100/12,n=years*12;
+      const r=rate,m=r?amount*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1):(n?amount/n:0);const el=document.getElementById("simResult");if(el)el.textContent=money(m);
+      const income=Number(document.getElementById("simIncome")?.value),charges=Number(document.getElementById("simCharges")?.value),debt=Number(document.getElementById("simDebt")?.value)/100,cy=Number(document.getElementById("simCapYears")?.value),cr=(Number(document.getElementById("simCapRate")?.value)||0)/100/12,cn=cy*12;
+      if(Number.isFinite(income)&&Number.isFinite(charges)&&debt&&cy){const target=Math.max(0,income*debt-charges),cap=cr?target*(1-Math.pow(1+cr,-cn))/cr:target*cn;const ce=document.getElementById("simCapResult");if(ce)ce.textContent=money(cap)}
+      const price=Number(document.getElementById("simPrice")?.value),old=document.getElementById("simOld")?.value,ratio=old==="new"?0.025:0.075,ne=document.getElementById("simNotaryResult");if(ne&&price)ne.textContent=money(price*ratio);
+    };
+    modal.querySelectorAll("input,select").forEach(x=>x.addEventListener("input",calc));calc();
+  }
+  modal.querySelectorAll("[data-v2-close]").forEach(x=>x.addEventListener("click",()=>{modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow=""}));
+  document.querySelectorAll("[data-v2-open]").forEach(x=>x.addEventListener("click",()=>open(x.dataset.v2Open)));
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.contains("open")){modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow=""}});
+})();
+</script>
 
 </body>
 </html>
