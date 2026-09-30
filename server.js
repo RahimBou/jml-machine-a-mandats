@@ -414,24 +414,59 @@ function normalizeAddress(value){
   return normalizeSearchCity(String(value||"").replace(/[0-9]+/g," ").replace(/\s+/g," "));
 }
 
-function buildComparableSales(market,property){
+const geocodeCache=new Map();
+
+async function geocodeAddress(address,city){
+  const q=String(address||"").trim(), commune=String(city||"").trim();
+  if(!q||!commune) return null;
+  const key=normalizeSearchCity(q+" "+commune), cached=geocodeCache.get(key);
+  if(cached && cached.expiresAt>Date.now()) return cached.value;
+  try{
+    const url="https://api-adresse.data.gouv.fr/search/?q="+encodeURIComponent(q+" "+commune)+"&limit=1";
+    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(4500)});
+    if(!response.ok) return null;
+    const payload=await response.json(), feature=Array.isArray(payload.features)?payload.features[0]:null;
+    const coords=feature?.geometry?.coordinates, score=Number(feature?.properties?.score);
+    const value=Array.isArray(coords)&&coords.length>=2&&Number.isFinite(Number(coords[0]))&&Number.isFinite(Number(coords[1]))
+      ? {lon:Number(coords[0]),lat:Number(coords[1]),score:Number.isFinite(score)?score:null} : null;
+    geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value});
+    return value;
+  }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
+}
+
+function haversineKm(a,b){
+  if(!a||!b) return null;
+  const rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad,lat1=a.lat*rad,lat2=b.lat*rad;
+  const h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return 6371*2*Math.asin(Math.sqrt(h));
+}
+
+async function buildComparableSales(market,property){
   const sales=Array.isArray(market?.recentSales)?market.recentSales:[];
-  if(!sales.length) return {sales:[],sameStreet:[],median:null,matchCount:0};
+  if(!sales.length) return {sales:[],sameStreet:[],median:null,matchCount:0,radiusKm:0.5,origin:null};
   const wantedType=String(property?.propertyType||"").toLowerCase();
   const isApartment=/appartement|studio|duplex|loft/i.test(wantedType);
   const typeWanted=isApartment?"Appartement":/maison/i.test(wantedType)?"Maison":null;
-  const surface=Number(property?.surface);
-  const street=normalizeAddress(property?.address);
-  const candidates=sales.filter(s=>!typeWanted||s.type===typeWanted);
-  const bySurface=Number.isFinite(surface)&&surface>0?candidates.filter(s=>s.surface>=surface*0.7&&s.surface<=surface*1.3):candidates;
-  const ranked=(bySurface.length>=2?bySurface:candidates).map(s=>{
-    const surfaceGap=Number.isFinite(surface)&&surface>0?Math.abs(s.surface-surface)/surface:1;
-    const sameStreet=street&&normalizeAddress(s.address)===street;
-    return {...s,sameStreet,matchScore:(sameStreet?3:0)+(Math.max(0,1-surfaceGap))};
-  }).sort((a,b)=>b.matchScore-a.matchScore).slice(0,6);
-  const prices=ranked.map(s=>s.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);
+  const surface=Number(property?.surface), city=String(property?.city||"").trim();
+  const origin=await geocodeAddress(property?.address,city);
+  if(!origin) return {sales:[],sameStreet:[],median:null,matchCount:0,radiusKm:0.5,origin:null,message:"Adresse du bien non géolocalisable avec suffisamment de précision."};
+  const candidates=sales.filter(s=>!typeWanted||s.type===typeWanted), geocoded=[];
+  for(const sale of candidates){
+    const point=await geocodeAddress(sale.address,city);
+    if(!point) continue;
+    const distanceKm=haversineKm(origin,point);
+    if(distanceKm===null||distanceKm>0.5) continue;
+    const surfaceGap=Number.isFinite(surface)&&surface>0?Math.abs(Number(sale.surface)-surface)/surface:1;
+    const sameStreet=normalizeAddress(sale.address)===normalizeAddress(property?.address);
+    geocoded.push({...sale,distanceKm:Number(distanceKm.toFixed(3)),sameStreet,surfaceGap});
+  }
+  const ranked=geocoded
+    .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3))
+    .sort((a,b)=>(Number(b.sameStreet)-Number(a.sameStreet))||a.surfaceGap-b.surfaceGap||a.distanceKm-b.distanceKm)
+    .slice(0,6);
+  const prices=ranked.map(s=>Number(s.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
   const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:Math.round((prices[prices.length/2-1]+prices[prices.length/2])/2)):null;
-  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length};
+  return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin};
 }
 
 app.get("/api/commune-market", async (req,res) => {
@@ -483,7 +518,7 @@ app.get("/api/territory-summary", async (req,res) => {
     if(!Array.isArray(candidates)||!candidates.length) throw new Error("Commune introuvable");
     const commune=candidates[0];
     const market=await getCommuneMarketData(commune.nom,commune.code);
-    const comparable=buildComparableSales(market,{address,propertyType,surface});
+    const comparable=await buildComparableSales(market,{address,propertyType,surface,city:commune.nom});
     const nearby=Array.isArray(market.nearby)?market.nearby.slice(0,6):[];
     const sellerReference=buildSellerReference({...market,comparables:comparable},{address,propertyType,surface});
     return res.json({
