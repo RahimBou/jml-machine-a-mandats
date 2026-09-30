@@ -846,6 +846,9 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    if(sectorText)sectorText.textContent=city?"Nous préparerons les informations locales disponibles pour "+city+".":"Votre commune sera utilisée pour préparer les informations locales disponibles.";
    if(propertyText)propertyText.textContent=propertyAdvice[propertyType]||propertyAdvice["Autre"];
    if(horizonText)horizonText.textContent="Vous envisagez votre projet "+horizonLabel+". Nous garderons ce calendrier comme repère pour la suite.";
+   if(typeof updateSellerProjectSummary==="function"){
+     updateSellerProjectSummary({...d,submitted:true,token:pathToken||d.token||""});
+   }
    return true;
  }
 
