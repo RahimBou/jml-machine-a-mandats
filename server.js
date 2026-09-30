@@ -684,8 +684,10 @@ async function buildComparableSales(market,property){
     const sameStreet=streetKey(sale.address)===streetKey(property?.address);
     const streetScore=sameStreet?10:0;
     const qualityScore=Number.isFinite(Number(sale.pricePerM2))?10:0;
-    const score=distanceScore+recencyScore+surfaceScore+roomsScore+streetScore+qualityScore;
-    return {...sale,score:Number(score.toFixed(1)),sameStreet,surfaceGap:gap,ageMonths:Number(age.toFixed(1)),tier:tier.label};
+    const scoreRaw=distanceScore+recencyScore+surfaceScore+roomsScore+streetScore+qualityScore;
+    // Les composantes représentent 110 points bruts ; le moteur expose toujours un score normalisé sur 100.
+    const score=Math.max(0,Math.min(100,scoreRaw/110*100));
+    return {...sale,score:Number(score.toFixed(1)),scoreRaw:Number(scoreRaw.toFixed(1)),sameStreet,surfaceGap:gap,ageMonths:Number(age.toFixed(1)),tier:tier.label};
   };
 
   const seen=new Set(), candidates=[];
@@ -760,7 +762,8 @@ async function buildComparableSales(market,property){
     searchScope:scope,
     origin,
     source:display.some(s=>/Cerema/i.test(s.source))?"DVF+ / Cerema + Estimus":"Estimus",
-    method:"Moteur estimation JML — type + distance + récence + surface ±30 % + pièces ±2 + filtre IQR + pondération"
+    method:"Moteur estimation JML partagé — type + distance + récence + surface ±30 % + pièces ±2 + filtre IQR + pondération",
+    engineVersion:"estimator-shared-v1"
   };
 }
 
