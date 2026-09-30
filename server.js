@@ -1,6 +1,9 @@
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
+const { Readable } = require("stream");
+const zlib = require("zlib");
+const readline = require("readline");
 const { Pool } = require("pg");
 const registerPublicEventsRoute = require("./events");
 
@@ -49,6 +52,185 @@ const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
 
 const communeMarketCache = new Map();
+
+
+/* ---------- Territoire : sécurité, risques et environnement ---------- */
+const ssmsiSecurityCache = new Map();
+let ssmsiSecurityLoadPromise = null;
+const SSMSI_SECURITY_URL = "https://static.data.gouv.fr/resources/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales/20260709-115942/donnee-data.gouv-2025-geographie2026-produit-le2026-06-25.csv.gz";
+const SSMSI_SECURITY_SOURCE = "SSMSI / Ministère de l'Intérieur — données 2025, délinquance enregistrée au lieu de commission";
+
+function parseCsvSemicolonLine(line){
+  const out=[]; let value=""; let quoted=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(quoted && line[i+1]==='"'){ value+='"'; i++; }
+      else quoted=!quoted;
+    }else if(ch===";" && !quoted){ out.push(value); value=""; }
+    else value+=ch;
+  }
+  out.push(value);
+  return out.map(v=>v.trim());
+}
+function parseNumericLoose(value){
+  const v=String(value??"").trim();
+  if(!v || v.toUpperCase()==="NA") return null;
+  const n=Number(v.replace(/\s/g,"").replace(",","."));
+  return Number.isFinite(n)?n:null;
+}
+function normalizeSecurityIndicator(name){
+  return String(name||"").trim();
+}
+function securityUnitLabel(indicator){
+  return /Cambriolages de logement/i.test(indicator) ? "pour 1 000 logements" : "pour 1 000 habitants";
+}
+function securityShortLabel(indicator){
+  const labels={
+    "Cambriolages de logement":"Cambriolages de logement",
+    "Vols de véhicule":"Vols de véhicules",
+    "Vols dans les véhicules":"Vols dans les véhicules",
+    "Destructions et dégradations volontaires":"Dégradations volontaires",
+    "Vols sans violence contre des personnes":"Vols sans violence",
+    "Violences physiques intrafamiliales":"Violences intrafamiliales",
+    "Violences physiques hors cadre familial":"Violences hors cadre familial",
+    "Violences sexuelles":"Violences sexuelles",
+    "Escroqueries et fraudes aux moyens de paiement":"Escroqueries / fraudes",
+    "Usage de stupéfiants":"Usage de stupéfiants",
+    "Trafic de stupéfiants":"Trafic de stupéfiants"
+  };
+  return labels[indicator] || indicator;
+}
+async function loadSsmsiSecurityDataset(){
+  if(ssmsiSecurityLoadPromise) return ssmsiSecurityLoadPromise;
+  ssmsiSecurityLoadPromise=(async()=>{
+    const response=await fetch(SSMSI_SECURITY_URL,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(45000)});
+    if(!response.ok) throw new Error("SSMSI HTTP "+response.status);
+    if(!response.body) throw new Error("SSMSI flux indisponible");
+    const gunzip=zlib.createGunzip();
+    const input=Readable.fromWeb(response.body).pipe(gunzip);
+    const rl=readline.createInterface({input,crlfDelay:Infinity});
+    let header=null, idx={};
+    let loaded=0;
+    for await(const line of rl){
+      if(!line) continue;
+      if(!header){
+        header=parseCsvSemicolonLine(line).map(v=>v.replace(/^"|"$/g,""));
+        header.forEach((name,i)=>idx[name]=i);
+        continue;
+      }
+      const row=parseCsvSemicolonLine(line);
+      const year=String(row[idx.annee]||"");
+      if(year!=="2025") continue;
+      const code=String(row[idx.CODGEO_2025]||"").trim();
+      const indicator=normalizeSecurityIndicator(row[idx.indicateur]);
+      if(!code || !indicator) continue;
+      if(!ssmsiSecurityCache.has(code)) ssmsiSecurityCache.set(code,{year:2025,indicators:{},population:parseNumericLoose(row[idx.insee_pop]),logements:parseNumericLoose(row[idx.insee_log])});
+      const entry=ssmsiSecurityCache.get(code);
+      entry.indicators[indicator]={
+        label:securityShortLabel(indicator),
+        indicator,
+        unit:securityUnitLabel(indicator),
+        count:parseNumericLoose(row[idx.nombre]),
+        rate:parseNumericLoose(row[idx.taux_pour_mille]),
+        status:String(row[idx.est_diffuse]||"").trim(),
+        available:String(row[idx.est_diffuse]||"").trim()==="diff"
+      };
+      loaded++;
+    }
+    return {communes:ssmsiSecurityCache.size,rows:loaded};
+  })().catch(error=>{
+    ssmsiSecurityLoadPromise=null;
+    throw error;
+  });
+  return ssmsiSecurityLoadPromise;
+}
+async function getSecurityData(code){
+  const cleanCode=String(code||"").trim();
+  if(!/^\d{5}$/.test(cleanCode)) return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"Code commune non disponible."};
+  try{
+    await loadSsmsiSecurityDataset();
+    const record=ssmsiSecurityCache.get(cleanCode);
+    if(!record) return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"Aucune donnée communale SSMSI diffusée pour ce code."};
+    const preferred=[
+      "Cambriolages de logement","Vols de véhicule","Vols dans les véhicules",
+      "Destructions et dégradations volontaires","Vols sans violence contre des personnes",
+      "Violences physiques intrafamiliales","Violences physiques hors cadre familial",
+      "Violences sexuelles","Escroqueries et fraudes aux moyens de paiement"
+    ];
+    const indicators=preferred.map(k=>record.indicators[k]).filter(Boolean);
+    return {
+      available:true,year:record.year,population:record.population,logements:record.logements,
+      indicators,source:SSMSI_SECURITY_SOURCE,
+      sourceUrl:"https://www.data.gouv.fr/datasets/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales",
+      note:"Les chiffres portent sur les faits enregistrés par la police et la gendarmerie, au lieu de commission. Une donnée « non diffusée » relève du secret statistique et ne signifie pas zéro."
+    };
+  }catch(error){
+    console.warn("JML SSMSI:",error.message);
+    return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"La base SSMSI n'est pas disponible pour le moment.",error:error.message};
+  }
+}
+
+async function getGeoRisks(code){
+  const cleanCode=String(code||"").trim();
+  if(!/^\d{5}$/.test(cleanCode)) return {available:false,message:"Code INSEE non disponible."};
+  try{
+    const url="https://www.georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+encodeURIComponent(cleanCode);
+    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"application/json"},signal:AbortSignal.timeout(8000)});
+    if(!response.ok) throw new Error("Géorisques HTTP "+response.status);
+    const payload=await response.json();
+    const rows=Array.isArray(payload)?payload:(Array.isArray(payload.data)?payload.data:(Array.isArray(payload.resultats)?payload.resultats:[]));
+    const labels=rows.map(r=>String(r.libelle||r.nom||r.libelle_risque||r.risque||"").trim()).filter(Boolean);
+    const unique=[...new Set(labels)].slice(0,12);
+    return {
+      available:true,source:"Géorisques / BRGM",
+      sourceUrl:"https://www.georisques.gouv.fr/",
+      risks:unique,
+      count:unique.length,
+      note:"Information à l'échelle communale. Elle ne remplace pas un état des risques établi pour l'adresse ou la parcelle."
+    };
+  }catch(error){
+    console.warn("JML Géorisques:",error.message);
+    return {available:false,message:"Les données Géorisques sont temporairement indisponibles."};
+  }
+}
+
+const localEnvironmentCache=new Map();
+async function getLocalEnvironment(commune){
+  const lat=Number(commune?.centre?.coordinates?.[1]);
+  const lon=Number(commune?.centre?.coordinates?.[0]);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)) return {available:false,message:"Coordonnées communales indisponibles."};
+  const key=String(commune.code||lat.toFixed(4)+":"+lon.toFixed(4));
+  const cached=localEnvironmentCache.get(key);
+  if(cached && cached.expiresAt>Date.now()) return cached.data;
+  try{
+    const query='[out:json][timeout:12];(nwr(around:3500,'+lat+','+lon+')["amenity"~"school|pharmacy|hospital|clinic|post_office"];nwr(around:3500,'+lat+','+lon+')["shop"~"supermarket|bakery|convenience"];nwr(around:3500,'+lat+','+lon+')["railway"~"station|halt"];nwr(around:3500,'+lat+','+lon+')["highway"="bus_stop"];);out center tags;';
+    const response=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"text/plain","User-Agent":"JML-Projet-Vendeur/3.0"},body:query,signal:AbortSignal.timeout(15000)});
+    if(!response.ok) throw new Error("Overpass HTTP "+response.status);
+    const payload=await response.json();
+    const elements=Array.isArray(payload.elements)?payload.elements:[];
+    const counters={schools:0,health:0,pharmacies:0,shops:0,stations:0,busStops:0,postOffices:0};
+    const names={schools:[],health:[],pharmacies:[],shops:[],stations:[]};
+    for(const e of elements){
+      const t=e.tags||{};
+      if(t.amenity==="school"){counters.schools++;if(t.name&&names.schools.length<3)names.schools.push(t.name);}
+      if(["hospital","clinic"].includes(t.amenity)){counters.health++;if(t.name&&names.health.length<3)names.health.push(t.name);}
+      if(t.amenity==="pharmacy"){counters.pharmacies++;if(t.name&&names.pharmacies.length<3)names.pharmacies.push(t.name);}
+      if(["supermarket","bakery","convenience"].includes(t.shop)){counters.shops++;if(t.name&&names.shops.length<3)names.shops.push(t.name);}
+      if(["station","halt"].includes(t.railway)){counters.stations++;if(t.name&&names.stations.length<3)names.stations.push(t.name);}
+      if(t.highway==="bus_stop") counters.busStops++;
+      if(t.amenity==="post_office") counters.postOffices++;
+    }
+    const data={available:true,source:"OpenStreetMap / Overpass",sourceUrl:"https://www.openstreetmap.org/",radiusKm:3.5,counters,names,note:"Comptage indicatif des objets cartographiques présents dans OpenStreetMap autour du centre communal. Ce n'est pas un inventaire administratif exhaustif."};
+    localEnvironmentCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
+    return data;
+  }catch(error){
+    console.warn("JML environnement:",error.message);
+    const data={available:false,message:"Les services locaux ne sont pas disponibles pour le moment."};
+    localEnvironmentCache.set(key,{expiresAt:Date.now()+30*60*1000,data});
+    return data;
+  }
+}
 
 const normalizeSearchCity = value => String(value || "")
   .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -244,10 +426,15 @@ app.get("/api/territory-summary", async (req,res) => {
     const market=await getCommuneMarketData(commune.nom,commune.code);
     const comparable=buildComparableSales(market,{address,propertyType,surface});
     const nearby=Array.isArray(market.nearby)?market.nearby.slice(0,6):[];
+    const [security,risks,environment]=await Promise.all([
+      getSecurityData(commune.code),
+      getGeoRisks(commune.code),
+      getLocalEnvironment(commune)
+    ]);
     return res.json({
       ok:true,commune,market:{...market,comparables:comparable},
-      nearby,
-      source:"geo.api.gouv.fr + DVF+ / Cerema (d’après DVF, DGFiP) via Estimus"
+      nearby,security,risks,environment,
+      source:"geo.api.gouv.fr + DVF+ / Cerema (d’après DVF, DGFiP) via Estimus + SSMSI + Géorisques + OpenStreetMap"
     });
   }catch(error){
     console.warn("JML territory-summary:",error.message);
