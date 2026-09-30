@@ -159,7 +159,7 @@ function parseEstimusCommunePage(html, city){
   };
 }
 
-async function getCommuneMarketData(city){
+async function getCommuneMarketData(city,code){
   const cleanCity=clean(city,100);
   const key=normalizeSearchCity(cleanCity);
   const cached=communeMarketCache.get(key);
@@ -170,12 +170,24 @@ async function getCommuneMarketData(city){
     recentSales:[],nearby:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null
   };
   try{
-    const departmentResponse=await fetch("https://estimus.fr/departement/08-ardennes",{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
-    if(!departmentResponse.ok) throw new Error("Estimus département HTTP "+departmentResponse.status);
-    const departmentHtml=await departmentResponse.text();
-    const communeUrl=findEstimusCommuneUrl(departmentHtml,cleanCity);
-    if(!communeUrl) throw new Error("Commune Estimus introuvable pour "+cleanCity);
-    const communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+    let communeUrl=null;
+    if(/^08\\d{3}$/.test(String(code||""))){
+      const slug=normalizeSearchCity(cleanCity).replace(/\\s+/g,"-");
+      communeUrl="https://estimus.fr/commune/"+slug+"-"+String(code);
+    }
+    let communeResponse=null;
+    if(communeUrl){
+      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+      if(!communeResponse.ok) communeResponse=null;
+    }
+    if(!communeResponse){
+      const departmentResponse=await fetch("https://estimus.fr/departement/08-ardennes",{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+      if(!departmentResponse.ok) throw new Error("Estimus département HTTP "+departmentResponse.status);
+      const departmentHtml=await departmentResponse.text();
+      communeUrl=findEstimusCommuneUrl(departmentHtml,cleanCity);
+      if(!communeUrl) throw new Error("Commune Estimus introuvable pour "+cleanCity);
+      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+    }
     if(!communeResponse.ok) throw new Error("Estimus commune HTTP "+communeResponse.status);
     const communeHtml=await communeResponse.text();
     const parsed=parseEstimusCommunePage(communeHtml,cleanCity);
@@ -234,7 +246,7 @@ app.get("/api/territory-summary", async (req,res) => {
     const candidates=await geoResponse.json();
     if(!Array.isArray(candidates)||!candidates.length) throw new Error("Commune introuvable");
     const commune=candidates[0];
-    const market=await getCommuneMarketData(commune.nom);
+    const market=await getCommuneMarketData(commune.nom,commune.code);
     const comparable=buildComparableSales(market,{address,propertyType,surface});
     const nearby=Array.isArray(market.nearby)?market.nearby.slice(0,6):[];
     return res.json({
