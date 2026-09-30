@@ -197,8 +197,13 @@ app.get("/api/territory-summary", async (req,res) => {
     const candidates=await geoResponse.json();
     if(!Array.isArray(candidates)||!candidates.length) throw new Error("Commune introuvable");
     const commune=candidates[0];
-    const marketResponse=await fetch((req.headers["x-forwarded-proto"]==="https"?"https":"http")+"://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(commune.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(8000)});
-    const market=marketResponse.ok?await marketResponse.json():{ok:false};
+    let market={ok:false};
+    try{
+      const marketResponse=await fetch((req.headers["x-forwarded-proto"]==="https"?"https":"http")+"://"+req.headers.host+"/api/commune-market?city="+encodeURIComponent(commune.nom),{headers:{"User-Agent":"JML-Territory/1.0"},signal:AbortSignal.timeout(8000)});
+      if(marketResponse.ok) market=await marketResponse.json();
+    }catch(error){
+      console.warn("JML territory market:",error.message);
+    }
     let nearby=[];
     if(commune.epci?.code){
       const eRes=await fetch("https://geo.api.gouv.fr/epcis/"+encodeURIComponent(commune.epci.code)+"/communes?fields=nom,code,population,centre&format=json",{headers:{"User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(6000)});
