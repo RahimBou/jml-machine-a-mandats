@@ -261,7 +261,10 @@ body{margin:0;background:linear-gradient(180deg,#f4efe5,#fbfaf7 55%,#f1eadf);col
     if(!d.city){throw new Error("Commune absente. Revenez à votre espace vendeur et relancez l’analyse.");}
     const response=await fetch("/api/territory-summary?"+qs.toString(),{cache:"no-store"});
     const x=await response.json().catch(()=>null);
-    if(!response.ok||!x?.ok) throw new Error(x?.error||"Les données territoriales sont momentanément indisponibles.");
+    if(!response.ok||!x?.ok){
+      const detail=[x?.stage,x?.detail].filter(Boolean).join(" · ");
+      throw new Error([x?.error||"Les données territoriales sont momentanément indisponibles.",detail].filter(Boolean).join(" — "));
+    }
     renderStats(x.commune,x.market);
     renderSales(x.market?.recentSales||[]);
     renderReference(x);
