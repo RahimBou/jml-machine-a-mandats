@@ -110,7 +110,9 @@
 (function(){
   const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};
   const stored=read(),urlParams=new URLSearchParams(location.search);
-  const d={...stored,city:stored.city||urlParams.get("city")||"",address:stored.address||urlParams.get("address")||"",propertyType:stored.propertyType||urlParams.get("propertyType")||"",surface:stored.surface||urlParams.get("surface")||"",dpe:stored.dpe||urlParams.get("dpe")||""};
+  let d={...stored,city:stored.city||urlParams.get("city")||"",address:stored.address||urlParams.get("address")||"",propertyType:stored.propertyType||urlParams.get("propertyType")||"",surface:stored.surface||urlParams.get("surface")||"",dpe:stored.dpe||urlParams.get("dpe")||"",token:stored.token||urlParams.get("token")||""};
+  const serverToken=d.token;
+  const hydrateFromServer=serverToken?fetch("/api/seller-space/"+encodeURIComponent(serverToken),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(x=>{if(x&&x.ok&&x.space){d={...d,...x.space,token:serverToken};try{localStorage.setItem("jml-seller-space-v1",JSON.stringify({...d,submitted:true}))}catch(_e){} }}).catch(()=>{}):Promise.resolve();
   const token=d.token||"",city=d.city||"";
   const esc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const euro=v=>Number.isFinite(Number(v))?Number(v).toLocaleString("fr-FR")+" €/m²":"Non disponible";
@@ -124,8 +126,7 @@
   document.querySelectorAll("[data-surface]").forEach(e=>e.textContent=d.surface?d.surface+" m²":"Non renseignée");
   document.querySelectorAll("[data-dpe]").forEach(e=>e.textContent=d.dpe||"Non renseigné");
   const map=document.getElementById("map");if(map&&city)map.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent((d.address?d.address+", ":"")+city);
-  if(!city){
-    sales.innerHTML='<div class="empty">Votre commune n’a pas encore été renseignée dans le projet.</div>';
+  hydrateFromServer.then(()=>{\n  const hydratedCity=d.city||city;\n  if(hydratedCity&&hydratedCity!==city){ document.querySelectorAll("[data-city]").forEach(e=>e.textContent=hydratedCity); }\n  if(!city){\n    sales.innerHTML='<div class="empty">Votre commune n’a pas encore été renseignée dans le projet.</div>';
     near.innerHTML='<div class="empty">Les données territoriales apparaîtront dès qu’une commune sera renseignée.</div>';
     return;
   }
@@ -200,13 +201,13 @@
     rm.querySelector("p").textContent=m.transactions?"Le marché de "+(c.nom||city)+" repose ici sur "+num(m.transactions)+" transactions publiées sur la période disponible.":"Le volume de transactions n’est pas disponible de façon suffisamment fiable.";
     rp.querySelector(".big").textContent=d.propertyType?(d.propertyType+(d.surface?" · "+d.surface+" m²":"")):"Votre bien";
     rp.querySelector("p").textContent=median?"Les ventes retenues donnent un premier point de comparaison. L’analyse finale devra intégrer l’état, le DPE, le terrain et la localisation précise.":"Le rapprochement précis sera complété dès que suffisamment de ventes comparables seront disponibles.";
-  }).catch(()=>{
-    facts.innerHTML='<div class="stat"><span class="label">Marché</span><strong>Données en attente</strong><small>Aucun chiffre estimé</small></div><div class="stat"><span class="label">Transactions</span><strong>—</strong><small>Source publique non joignable</small></div><div class="stat"><span class="label">Population</span><strong>—</strong><small>À actualiser</small></div><div class="stat"><span class="label">Commune</span><strong>'+esc(city)+'</strong><small>Projet enregistré</small></div>';
+  }).catch(()=>{'<div class="stat"><span class="label">Marché</span><strong>Données en attente</strong><small>Aucun chiffre estimé</small></div><div class="stat"><span class="label">Transactions</span><strong>—</strong><small>Source publique non joignable</small></div><div class="stat"><span class="label">Population</span><strong>—</strong><small>À actualiser</small></div><div class="stat"><span class="label">Commune</span><strong>'+esc(city)+'</strong><small>Projet enregistré</small></div>';
     details.innerHTML='<div class="type" style="grid-column:1/-1"><b>Données publiques temporairement indisponibles</b><small>Nous n’affichons volontairement aucun chiffre approximatif.</small></div>';
     sales.innerHTML='<div class="empty">Les transactions seront affichées dès que la source publique répondra.</div>';
     compare.innerHTML='<div class="compare-main"><h3>Analyse personnalisée</h3><p>Le rapprochement des ventes sera effectué automatiquement dès que les données publiques seront disponibles.</p><strong>—</strong></div><div class="compare-list"><div class="compare-item"><strong>Principe</strong><span>Aucun prix inventé</span></div><div class="compare-item"><strong>Sources</strong><span>DVF+ / données publiques</span></div></div>';
     near.innerHTML='<div class="empty">Les communes proches seront affichées après actualisation de la source.</div>';
   });
+  }).catch(()=>{});
 })();
 </script>
 </body>
