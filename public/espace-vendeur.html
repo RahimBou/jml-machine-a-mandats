@@ -414,7 +414,26 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 @media(max-width:760px){.seller-v2-grid{grid-template-columns:1fr 1fr}.seller-v2-guide-grid{grid-template-columns:1fr}.sim-grid{grid-template-columns:1fr}}
 @media(max-width:430px){.seller-v2-grid{grid-template-columns:1fr}.seller-v2-card{min-height:125px}}
 </style>
-</head>
+<style>
+/* JML — cartes d'accès vendeur vers pages dédiées */
+.seller-quick-grid{grid-template-columns:repeat(4,1fr)!important;gap:14px!important}
+.seller-quick-card{min-height:285px!important;padding:15px 14px 12px!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:0!important;text-decoration:none!important;color:inherit!important;background:#fffdf8!important;border:1px solid #e3ddcf!important;border-radius:18px!important;box-shadow:0 6px 18px rgba(23,51,44,.05)!important;box-sizing:border-box!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important}
+.seller-quick-card:hover{transform:translateY(-2px)!important;box-shadow:0 12px 28px rgba(23,51,44,.1)!important;border-color:#c8aa6d!important}
+.seller-quick-card .seller-quick-icon{width:46px!important;height:46px!important;margin:0 0 7px!important;border-radius:50%!important;flex:0 0 46px!important}
+.seller-quick-card>span:nth-child(2){min-height:58px!important}
+.seller-quick-card strong{font-size:18px!important;line-height:1.15!important}
+.seller-quick-card small{font-size:12px!important;line-height:1.4!important;margin-top:5px!important;padding-right:2px!important}
+.seller-quick-card:after{left:14px!important;right:14px!important;bottom:59px!important;width:auto!important;height:112px!important;opacity:1!important;border-radius:12px!important;pointer-events:none!important}
+.seller-quick-card em{position:relative!important;right:auto!important;bottom:auto!important;margin-top:auto!important;min-height:40px!important;display:flex!important;align-items:center!important;padding:0 15px!important;border-radius:999px!important;background:#f1e4c4!important;color:#6f592b!important;font-size:0!important;font-style:normal!important;font-weight:800!important}
+.seller-quick-card em:before{font-size:14px!important}
+.seller-quick-card:nth-child(1) em:before{content:"Voir mon secteur"}
+.seller-quick-card:nth-child(2) em:before{content:"Voir mon bien"}
+.seller-quick-card:nth-child(3) em:before{content:"Voir mon calendrier"}
+.seller-quick-card:nth-child(4) em:before{content:"Voir les conseils"}
+.seller-quick-card em:after{content:"→";font-size:20px!important;margin-left:auto}
+@media(max-width:850px){.seller-quick-grid{grid-template-columns:repeat(2,1fr)!important}}
+@media(max-width:560px){.seller-quick-grid{grid-template-columns:1fr!important}.seller-quick-card{min-height:265px!important}}
+</style></head>
 <body>
 <div class="fb-wrap">
 <section class="fb-card">
@@ -464,10 +483,10 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
     </div>
 
     <div class="seller-quick-grid">
-      <button type="button" class="seller-quick-card" id="sellerQuickSector"><span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Nous préparerons les informations locales disponibles pour votre commune.</small></span><em>→</em></button>
-      <button type="button" class="seller-quick-card" id="sellerQuickProperty"><span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, terrain, état, travaux et équipements à préparer.</small></span><em>→</em></button>
-      <button type="button" class="seller-quick-card" id="sellerQuickCalendar"><span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre calendrier sera pris en compte pour préparer la suite.</small></span><em>→</em></button>
-      <button type="button" class="seller-quick-card" id="sellerQuickAdvice"><span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples et utiles, adaptés à votre projet.</small></span><em>→</em></button>
+      <a class="seller-quick-card" id="sellerQuickSector" href="/vendeur-secteur.html"><span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Analyse du marché local de votre secteur.</small></span><em>→</em></a>
+      <a class="seller-quick-card" id="sellerQuickProperty" href="/vendeur-bien.html"><span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, terrain, état, travaux et équipements…</small></span><em>→</em></a>
+      <a class="seller-quick-card" id="sellerQuickCalendar" href="/vendeur-calendrier.html"><span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre horizon, les prochaines étapes et le rendez-vous.</small></span><em>→</em></a>
+      <a class="seller-quick-card" id="sellerQuickAdvice" href="/vendeur-conseils.html"><span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples et concrets pour votre projet.</small></span><em>→</em></a>
     </div>
 
     <section class="seller-project-summary" id="sellerProjectSummary">
@@ -838,11 +857,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    openSellerModal("Conseils vendeurs",'<div class="seller-advice-list-modal"><div class="seller-advice-item-modal"><b>💡 JML</b><strong>'+esc(title)+'</strong><p>Les conseils affichés dans votre espace sont issus de sources professionnelles et sont actualisés lorsque de nouvelles informations utiles sont disponibles.</p><a href="#sellerAdviceCard" id="sellerAdviceGo">Voir le conseil détaillé dans votre espace ↓</a></div><div class="seller-advice-item-modal"><b>📊 MARCHÉ</b><strong>Prix, transactions et contexte local</strong><p>Croisez toujours les données de marché avec le type de bien, sa surface, son état et sa localisation précise.</p></div><div class="seller-advice-item-modal"><b>⚡ DPE</b><strong>Préparez les informations énergétiques</strong><p>Gardez votre DPE et les diagnostics disponibles à portée de main avant le rendez-vous.</p></div><div class="seller-advice-item-modal"><b>🏦 FINANCEMENT</b><strong>Le financement des acquéreurs compte</strong><p>Les conditions de crédit influencent directement la capacité d’achat et donc le marché des vendeurs.</p></div></div>');
    const go=document.getElementById("sellerAdviceGo");if(go)go.onclick=function(e){e.preventDefault();closeSellerModal();sourceCard?.scrollIntoView({behavior:"smooth",block:"center"})}
  }
- const quickSector=document.getElementById("sellerQuickSector"),quickProperty=document.getElementById("sellerQuickProperty"),quickCalendar=document.getElementById("sellerQuickCalendar"),quickAdvice=document.getElementById("sellerQuickAdvice");
- if(quickSector)quickSector.onclick=function(e){e.preventDefault();showSector();};
- if(quickProperty)quickProperty.onclick=function(e){e.preventDefault();showProperty();};
- if(quickCalendar)quickCalendar.onclick=function(e){e.preventDefault();showCalendar();};
- if(quickAdvice)quickAdvice.onclick=function(e){e.preventDefault();showAdvice();};
+ /* Les quatre cartes sont maintenant de vraies pages dédiées : pas d'interception JS du clic. */
  restoreSellerDetails();
 
  async function restoreSellerSubmittedView(){
