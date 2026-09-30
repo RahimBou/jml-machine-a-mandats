@@ -358,7 +358,7 @@ function parseEstimusCommunePage(html, city){
 
 async function getCommuneMarketData(city,code){
   const cleanCity=clean(city,100);
-  const key=normalizeSearchCity(cleanCity);
+  const key="v3|"+normalizeSearchCity(cleanCity);
   const cached=communeMarketCache.get(key);
   if(cached && cached.expiresAt>Date.now()) return {...cached.data,cache:true};
   const fallback={
@@ -389,9 +389,15 @@ async function getCommuneMarketData(city,code){
     const communeHtml=await communeResponse.text();
     const parsed=parseEstimusCommunePage(communeHtml,cleanCity);
     if(!parsed) throw new Error("Médiane communale non trouvée pour "+cleanCity);
-    if(!Array.isArray(parsed.recentSales)||!parsed.recentSales.length){
+    const existingSales=Array.isArray(parsed.recentSales)?parsed.recentSales:[];
+    if(existingSales.length<6){
       const fallbackSales=await fetchCeremaRecentSales(code);
-      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF+ / Cerema";}
+      if(fallbackSales.length){
+        const seen=new Set(existingSales.map(s=>[s.date,s.address,s.price,s.surface].join("|")));
+        const merged=existingSales.concat(fallbackSales.filter(s=>!seen.has([s.date,s.address,s.price,s.surface].join("|"))));
+        parsed.recentSales=merged.slice(0,12);
+        parsed.recentSalesSource=existingSales.length?"Estimus + DVF+ / Cerema":"DVF+ / Cerema";
+      }
     }
     if(!Array.isArray(parsed.recentSales)||!parsed.recentSales.length){
       const fallbackSales=await fetchImmoDvfRecentSales(cleanCity,code);
@@ -414,21 +420,39 @@ function normalizeAddress(value){
 const geocodeCache=new Map();
 
 async function geocodeAddress(address,city){
-  const q=String(address||"").trim(), commune=String(city||"").trim();
-  if(!q||!commune) return null;
-  const key=normalizeSearchCity(q+" "+commune), cached=geocodeCache.get(key);
+  const raw=String(address||"").trim(), commune=String(city||"").trim();
+  if(!raw||!commune) return null;
+  const variants=[];
+  const add=(v)=>{v=String(v||"").trim();if(v&&!variants.includes(v))variants.push(v);};
+  add(raw);
+  // BAN is sometimes more reliable when the house number is removed.
+  add(raw.replace(/^\\s*\\d+(?:\\s*(?:bis|ter|quater))?\\s*/i,""));
+  // Accept common punctuation variants without inventing a different street name.
+  add(raw.replace(/-/g," "));
+  add(raw.replace(/\\s+/g," ").trim());
+  const key=normalizeSearchCity(variants[0]+" "+commune), cached=geocodeCache.get(key);
   if(cached && cached.expiresAt>Date.now()) return cached.value;
+  let best=null;
   try{
-    const url="https://api-adresse.data.gouv.fr/search/?q="+encodeURIComponent(q+" "+commune)+"&limit=1";
-    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(4500)});
-    if(!response.ok) return null;
-    const payload=await response.json(), feature=Array.isArray(payload.features)?payload.features[0]:null;
-    const coords=feature?.geometry?.coordinates, score=Number(feature?.properties?.score);
-    const value=Array.isArray(coords)&&coords.length>=2&&Number.isFinite(Number(coords[0]))&&Number.isFinite(Number(coords[1]))
-      ? {lon:Number(coords[0]),lat:Number(coords[1]),score:Number.isFinite(score)?score:null} : null;
-    geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value});
-    return value;
+    for(const q0 of variants){
+      const url="https://api-adresse.data.gouv.fr/search/?q="+encodeURIComponent(q0+" "+commune)+"&limit=5";
+      const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(4500)});
+      if(!response.ok) continue;
+      const payload=await response.json();
+      const features=Array.isArray(payload.features)?payload.features:[];
+      for(const feature of features){
+        const coords=feature?.geometry?.coordinates, score=Number(feature?.properties?.score);
+        if(!Array.isArray(coords)||coords.length<2) continue;
+        const value={lon:Number(coords[0]),lat:Number(coords[1]),score:Number.isFinite(score)?score:null,label:String(feature?.properties?.label||"")};
+        if(!Number.isFinite(value.lon)||!Number.isFinite(value.lat)) continue;
+        if(!best || (value.score||0)>(best.score||0)) best=value;
+      }
+      if(best && Number(best.score)>=0.75) break;
+    }
+    geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value:best});
+    return best;
   }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
+}
 }
 
 async function fetchCeremaRecentSales(code){
