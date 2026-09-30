@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.9.2";
-const BUILD_MARKER = "seller-patch-v6-dvf-direct-fallback";
+const VERSION = "3.0.0";
+const BUILD_MARKER = "seller-geoplateforme-geocodage-v1";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -375,16 +375,16 @@ async function getCommuneMarketData(city,code){
     }
     let communeResponse=null;
     if(communeUrl){
-      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
       if(!communeResponse.ok) communeResponse=null;
     }
     if(!communeResponse){
-      const departmentResponse=await fetch("https://estimus.fr/departement/08-ardennes",{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+      const departmentResponse=await fetch("https://estimus.fr/departement/08-ardennes",{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
       if(!departmentResponse.ok) throw new Error("Estimus département HTTP "+departmentResponse.status);
       const departmentHtml=await departmentResponse.text();
       communeUrl=findEstimusCommuneUrl(departmentHtml,cleanCity);
       if(!communeUrl) throw new Error("Commune Estimus introuvable pour "+cleanCity);
-      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(7000)});
+      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
     }
     if(!communeResponse.ok) throw new Error("Estimus commune HTTP "+communeResponse.status);
     const communeHtml=await communeResponse.text();
@@ -483,8 +483,8 @@ async function geocodeAddress(address,city){
   let best=null;
   try{
     for(const q0 of variants){
-      const url="https://api-adresse.data.gouv.fr/search/?q="+encodeURIComponent(q0+" "+commune)+"&limit=5";
-      const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(4500)});
+      const url="https://data.geopf.fr/geocodage/search/?q="+encodeURIComponent(q0+" "+commune)+"&limit=5";
+      const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(4500)});
       if(!response.ok) continue;
       const payload=await response.json();
       const features=Array.isArray(payload.features)?payload.features:[];
@@ -521,7 +521,7 @@ async function fetchCeremaRecentSales(code){
       fields:"all",page_size:"1000"
     });
     if(codtypbien) params.set("codtypbien",codtypbien);
-    const response=await fetch("https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString(),{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.9"},signal:AbortSignal.timeout(9000)});
+    const response=await fetch("https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString(),{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(9000)});
     if(!response.ok) throw new Error("Cerema recent DVF HTTP "+response.status);
     const payload=await response.json();
     return Array.isArray(payload?.features)?payload.features:[];
@@ -549,7 +549,7 @@ async function fetchImmoDvfRecentSales(city,code){
   if(!slug||!/^08\d{3}$/.test(String(code||""))) return [];
   const url="https://datafonciere.fr/analyse/08-ardennes/"+slug;
   try{
-    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(8000)});
+    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(8000)});
     if(!response.ok) throw new Error("DataFonciere HTTP "+response.status);
     const html=await response.text(),text=stripHtml(html);
     const section=(text.split(/Dernières transactions immobilières enregistrées/i)[1]||text).split(/Pourquoi certaines rues|Prix moyen vs prix médian|©/i)[0];
@@ -583,7 +583,7 @@ async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
     });
     if(codtypbien) params.set("codtypbien",codtypbien);
     const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
-    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.9"},signal:AbortSignal.timeout(10000)});
+    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(10000)});
     if(!response.ok) throw new Error("Cerema DVF HTTP "+response.status);
     const payload=await response.json();
     return Array.isArray(payload?.features)?payload.features:[];
@@ -927,7 +927,7 @@ app.get("/api/territory-summary", async (req,res) => {
     // bloque toute la page Mon secteur.
     if(!commune){
       const q=[address,city].filter(Boolean).join(", ");
-      const banUrl="https://api-adresse.data.gouv.fr/search/?q="+encodeURIComponent(q)+"&limit=5";
+      const banUrl="https://data.geopf.fr/geocodage/search/?q="+encodeURIComponent(q)+"&limit=5";
       const banResponse=await fetch(banUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.1"},signal:AbortSignal.timeout(6000)});
       if(!banResponse.ok) throw new Error("Géo et BAN indisponibles");
       const payload=await banResponse.json();
