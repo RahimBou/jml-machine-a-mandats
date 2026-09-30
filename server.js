@@ -215,9 +215,9 @@ async function getLocalEnvironment(commune){
     if(response.ok){
       const text=stripHtml(await response.text());
       const pick=label=>{const m=text.match(new RegExp(label+"\\s*\\((\\d+)\\)","i"));return m?Number(m[1]):null;};
-      const schools=pick("École"),pharmacies=pick("Pharmacie"),shops=pick("Alimentation générale"),postOffices=pick("Bureau ou relais de poste"),stations=pick("Gare de voyageurs");
+      const schools=pick("École"),health=pick("Médecin généraliste"),pharmacies=pick("Pharmacie"),shops=pick("Alimentation générale"),postOffices=pick("Bureau ou relais de poste"),stations=pick("Gare de voyageurs");
       const sm=text.match(/([0-9\s]+) équipements et services recensés sur la commune/i);
-      const data={available:true,source:"INSEE BPE / Mon Quartier Info",sourceUrl:"https://www.mon-quartier-info.com/commune/"+code,counters:{schools:schools??0,health:null,pharmacies:pharmacies??0,shops:shops??0,stations:stations??0,busStops:null,postOffices:postOffices??0,totalServices:sm?Number(sm[1].replace(/\s/g,"")):null},names:{schools:[],health:[],pharmacies:[],shops:[],stations:[]},radiusKm:null,note:"Comptage communal issu principalement de la Base permanente des équipements (INSEE)."};
+      const data={available:true,source:"INSEE BPE / Mon Quartier Info",sourceUrl:"https://www.mon-quartier-info.com/commune/"+code,counters:{schools:schools??0,health:health??0,pharmacies:pharmacies??0,shops:shops??0,stations:stations??0,busStops:null,postOffices:postOffices??0,totalServices:sm?Number(sm[1].replace(/\s/g,"")):null},names:{schools:[],health:[],pharmacies:[],shops:[],stations:[]},radiusKm:null,note:"Comptage communal issu principalement de la Base permanente des équipements (INSEE)."};
       localEnvironmentCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
       return data;
     }
