@@ -13,7 +13,8 @@ app.disable("x-powered-by");
 app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION, build:BUILD_MARKER, sellerSpace:true, persistentDashboard:true }));
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
-app.get("/", (req, res) => res.redirect(302, "/projet-vendeur"));\napp.get("/projet-vendeur", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
+app.get("/", (req, res) => res.redirect(302, "/projet-vendeur"));
+app.get("/projet-vendeur", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
 app.get("/espace-vendeur/:token", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
 app.get("/facebook", (req, res) => {
   const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
