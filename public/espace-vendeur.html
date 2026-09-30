@@ -279,7 +279,7 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 .seller-status{margin-top:14px;padding:17px 22px;border-radius:18px;background:rgba(255,253,248,.96);box-shadow:0 8px 25px rgba(23,51,44,.06)}
 .seller-status-copy strong:before{content:"✓";display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:#b8944e;color:#173b31;font-size:13px}
 .seller-quick-grid{margin-top:14px;gap:12px}
-.seller-quick-card{position:relative;overflow:hidden;min-height:152px;padding:17px 16px 13px;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;background:#fffdf8}
+.seller-quick-card{position:relative;overflow:hidden;min-height:152px;padding:17px 16px 13px;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;background:#fffdf8;cursor:pointer;pointer-events:auto;z-index:2}.seller-quick-card:after{pointer-events:none}
 .seller-quick-card em{position:absolute;right:13px;bottom:12px;padding:4px 8px;border-radius:999px;background:#f1e4c4}
 .seller-quick-card:after{content:"";position:absolute;right:0;bottom:0;width:104px;height:58px;opacity:.9;background-position:center;background-size:cover;border-radius:48px 0 0 0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
 .seller-quick-card:nth-child(1):after{background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/guide-hero.svg")}
@@ -838,10 +838,11 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    openSellerModal("Conseils vendeurs",'<div class="seller-advice-list-modal"><div class="seller-advice-item-modal"><b>💡 JML</b><strong>'+esc(title)+'</strong><p>Les conseils affichés dans votre espace sont issus de sources professionnelles et sont actualisés lorsque de nouvelles informations utiles sont disponibles.</p><a href="#sellerAdviceCard" id="sellerAdviceGo">Voir le conseil détaillé dans votre espace ↓</a></div><div class="seller-advice-item-modal"><b>📊 MARCHÉ</b><strong>Prix, transactions et contexte local</strong><p>Croisez toujours les données de marché avec le type de bien, sa surface, son état et sa localisation précise.</p></div><div class="seller-advice-item-modal"><b>⚡ DPE</b><strong>Préparez les informations énergétiques</strong><p>Gardez votre DPE et les diagnostics disponibles à portée de main avant le rendez-vous.</p></div><div class="seller-advice-item-modal"><b>🏦 FINANCEMENT</b><strong>Le financement des acquéreurs compte</strong><p>Les conditions de crédit influencent directement la capacité d’achat et donc le marché des vendeurs.</p></div></div>');
    const go=document.getElementById("sellerAdviceGo");if(go)go.onclick=function(e){e.preventDefault();closeSellerModal();sourceCard?.scrollIntoView({behavior:"smooth",block:"center"})}
  }
- document.getElementById("sellerQuickSector")?.addEventListener("click",showSector);
- document.getElementById("sellerQuickProperty")?.addEventListener("click",showProperty);
- document.getElementById("sellerQuickCalendar")?.addEventListener("click",showCalendar);
- document.getElementById("sellerQuickAdvice")?.addEventListener("click",showAdvice);
+ const quickSector=document.getElementById("sellerQuickSector"),quickProperty=document.getElementById("sellerQuickProperty"),quickCalendar=document.getElementById("sellerQuickCalendar"),quickAdvice=document.getElementById("sellerQuickAdvice");
+ if(quickSector)quickSector.onclick=function(e){e.preventDefault();showSector();};
+ if(quickProperty)quickProperty.onclick=function(e){e.preventDefault();showProperty();};
+ if(quickCalendar)quickCalendar.onclick=function(e){e.preventDefault();showCalendar();};
+ if(quickAdvice)quickAdvice.onclick=function(e){e.preventDefault();showAdvice();};
  restoreSellerDetails();
 
  async function restoreSellerSubmittedView(){
