@@ -646,7 +646,7 @@ loadSellerMarket(city,propertyType);
   const r=await fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const d=await r.json();
   if(!r.ok)throw new Error(d.error||"Impossible d’enregistrer votre demande.");
-  publicLead={name,city,phone,email};window.jmlProspectId=d.prospectId||"";sellerSubmissionWrite({submitted:true,lead:publicLead,prospectId:window.jmlProspectId,savedAt:Date.now()});form.reset();msg.style.display="none";form.style.display="none";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
+  publicLead={name,city,phone,email};window.jmlProspectId=d.prospectId||"";sellerSubmissionWrite({submitted:true,lead:publicLead,prospectId:window.jmlProspectId,savedAt:Date.now()});try{const u=new URL(location.href);u.searchParams.set("espace","vendeur");history.replaceState({sellerSpace:true},"",u.href)}catch(_e){};form.reset();msg.style.display="none";form.style.display="none";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
  }catch(err){msg.style.display="block";msg.textContent=err.message}
 });
 const appointmentForm=document.getElementById("fbAppointmentForm");
@@ -749,7 +749,9 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
 
  function restoreSellerSubmittedView(){
    const saved=sellerSubmissionRead();
-   if(!saved||saved.submitted!==true)return false;
+   const urlSpace=new URLSearchParams(location.search).get("espace")==="vendeur";
+   if((!saved||saved.submitted!==true)&&!urlSpace)return false;
+   if(urlSpace&&(!saved||saved.submitted!==true))return false;
    const success=document.getElementById("fbSuccess");
    if(!success)return false;
    form.style.display="none";
@@ -778,7 +780,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  restoreSellerSubmittedView();
  window.addEventListener("pageshow",function(){restoreSellerSubmittedView()});
 
- const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
+ const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};try{const u=new URL(location.href);u.searchParams.delete("espace");history.replaceState({sellerSpace:false},"",u.href)}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
 <div class="seller-modal" id="sellerModal" aria-hidden="true">
