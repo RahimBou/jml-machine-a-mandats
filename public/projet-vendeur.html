@@ -367,6 +367,12 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 @media(max-width:600px){.fb-extra-grid{grid-template-columns:1fr 1fr}.seller-modal-dialog{margin:10px auto;max-height:calc(100vh - 20px);padding:18px}.seller-modal-dialog h3{font-size:22px}.seller-map-frame{height:280px}.seller-detail-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:430px){.fb-extra-grid{grid-template-columns:1fr}.seller-modal-dialog{width:calc(100% - 18px);border-radius:18px}.seller-map-actions a{flex:1 1 calc(50% - 7px);text-align:center}}
 
+/* V2.6 — pilotage vendeur visible */
+.seller-next-action{margin-top:12px;padding:16px 18px;border:1px solid #d2bb86;border-radius:17px;background:linear-gradient(135deg,#173b32 0%,#214d41 68%,#8c6d2d 170%);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 8px 22px rgba(23,59,50,.12)}
+.seller-next-action-main{display:flex;align-items:center;gap:12px}.seller-next-action-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#d8bb7a;color:#173b32;font-size:20px;flex:0 0 42px}.seller-next-action-kicker{font-size:9px;letter-spacing:.12em;color:#d8bb7a;font-weight:900}.seller-next-action strong{display:block;font-size:15px;margin-top:3px}.seller-next-action small{display:block;color:#dce7e0;font-size:10.5px;margin-top:3px}.seller-next-action .seller-next-btn{border:1px solid rgba(255,255,255,.3);background:#fff;color:#173b32;border-radius:10px;padding:9px 12px;font-size:10px;font-weight:900;text-decoration:none;white-space:nowrap}
+.seller-space-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.seller-space-meta span{padding:5px 8px;border-radius:999px;background:rgba(216,187,122,.15);border:1px solid rgba(216,187,122,.3);color:#f0dfb8;font-size:9px;font-weight:800}
+@media(max-width:600px){.seller-next-action{align-items:stretch;flex-direction:column}.seller-next-action .seller-next-btn{text-align:center}.seller-next-action-main{align-items:flex-start}}
+
 /* V2.5 — espace vendeur persistant */
 .seller-access{margin-top:12px;padding:14px 16px;border:1px solid #d0b477;border-radius:15px;background:linear-gradient(145deg,#fffdf8,#f5efdf);display:flex;justify-content:space-between;gap:14px;align-items:center}.seller-access strong{display:block;color:#173b31;font-size:13px}.seller-access p{margin:4px 0 0;color:var(--muted);font-size:10.5px;line-height:1.45}.seller-access-actions{display:flex;gap:7px;flex-wrap:wrap}.seller-access-actions button,.seller-access-actions a{border:1px solid #c8aa6d;background:#fff;color:#6f592b;border-radius:9px;padding:8px 10px;font-size:10px;font-weight:800;text-decoration:none;cursor:pointer}.seller-access-actions .primary{background:#d8bb7a;color:#173b31;border-color:#d8bb7a}.seller-checklist{margin-top:12px}.seller-check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.seller-check{border:1px solid var(--line);border-radius:12px;background:#fffdf8;padding:12px;text-align:left;cursor:pointer}.seller-check.done{border-color:#b8944e;background:#f5efdf}.seller-check-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.seller-check b{font-size:12px;color:#173b31}.seller-check small{display:block;margin-top:5px;color:var(--muted);font-size:10px;line-height:1.4}.seller-check-mark{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#ddd8cb;color:#777;font-size:12px}.seller-check.done .seller-check-mark{background:#b8944e;color:#173b31}.seller-progress{height:7px;border-radius:99px;background:#e6e1d6;overflow:hidden;margin-top:11px}.seller-progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#173f34,#b8944e);transition:width .25s}.seller-progress-label{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--muted)}.seller-space-note{margin-top:9px;color:var(--muted);font-size:10px;line-height:1.45}.seller-space-loading{padding:18px;border:1px solid var(--line);border-radius:14px;background:#fffdf8;color:var(--muted);font-size:12px;text-align:center}
 @media(max-width:600px){.seller-access{flex-direction:column;align-items:stretch}.seller-access-actions>*{flex:1;text-align:center}.seller-check-grid{grid-template-columns:1fr 1fr}.seller-check{min-width:0}}
@@ -436,6 +442,19 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
     <div class="seller-status">
       <div class="seller-status-copy"><strong>Votre projet est enregistré</strong><span>Vous gardez la main sur la suite. JML vous accompagne à chaque étape.</span></div>
       <div class="seller-status-steps"><div class="done"><b>1</b><span>Demande<br><small>Enregistrée</small></span></div><div><b>2</b><span>Confirmation<br><small>Par e-mail</small></span></div><div><b>3</b><span>Prochaine étape<br><small>Échange avec JML</small></span></div></div>
+    </div>
+
+    <div class="seller-next-action" id="sellerNextAction">
+      <div class="seller-next-action-main">
+        <div class="seller-next-action-icon" id="sellerNextIcon">✓</div>
+        <div>
+          <div class="seller-next-action-kicker">VOTRE PROCHAINE ACTION</div>
+          <strong id="sellerNextTitle">Votre espace est prêt</strong>
+          <small id="sellerNextText">Commencez par préparer les éléments utiles à votre projet.</small>
+          <div class="seller-space-meta"><span id="sellerNextProgress">0 / 6 étapes</span><span>Espace personnel actif</span></div>
+        </div>
+      </div>
+      <a class="seller-next-btn" id="sellerNextBtn" href="#sellerChecklistGrid">Commencer →</a>
     </div>
 
     <div class="seller-quick-grid">
@@ -818,11 +837,30 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    if(open)open.href=url;
    if(copy)copy.onclick=async function(){try{await navigator.clipboard.writeText(url);copy.textContent="Accès copié ✓";setTimeout(()=>copy.textContent="Copier mon accès",1800)}catch(_e){window.prompt("Copiez votre lien personnel :",url)}};
  }
+ function updateSellerNextAction(list){
+   const done=Array.isArray(list)?list.map(Number):[];
+   const total=6,n=done.length;
+   const title=document.getElementById("sellerNextTitle"),copy=document.getElementById("sellerNextText"),icon=document.getElementById("sellerNextIcon"),progress=document.getElementById("sellerNextProgress"),btn=document.getElementById("sellerNextBtn");
+   if(!title||!copy)return;
+   const steps=[
+     ["🏠","Commencez par préparer les informations sur votre bien.","Surface, pièces, équipements et éléments importants à connaître.","#sellerChecklistGrid"],
+     ["📄","Préparez vos documents utiles.","Titre de propriété, diagnostics et documents disponibles.","#sellerChecklistGrid"],
+     ["⚡","Vérifiez votre DPE.","Notez la classe énergétique et la date de validité du diagnostic.","#sellerChecklistGrid"],
+     ["🛠️","Rassemblez les informations sur vos travaux.","Factures, améliorations et travaux récents peuvent être utiles lors de l’échange.","#sellerChecklistGrid"],
+     ["📸","Préparez la présentation de votre bien.","Extérieurs, rangement et éléments à mettre en valeur.","#sellerChecklistGrid"],
+     ["🤝","Votre dossier est prêt pour le rendez-vous.","Vous pouvez maintenant préparer les questions et choisir un créneau.","#fbAppointmentForm"]
+   ];
+   if(n>=total){
+     icon.textContent="✓";title.textContent="Votre préparation est complète";copy.textContent="Votre espace est prêt pour la prochaine étape avec JML Immobilier.";progress.textContent="6 / 6 étapes";if(btn){btn.textContent="Demander un rendez-vous →";btn.href="#fbAppointmentForm";}
+   }else{
+     const s=steps[n]||steps[0];icon.textContent=s[0];title.textContent=s[1];copy.textContent=s[2];progress.textContent=n+" / "+total+" étapes";if(btn){btn.textContent="Continuer →";btn.href=s[3];}
+   }
+ }
  function renderSellerChecklist(list){
    const done=Array.isArray(list)?list.map(Number):[];
    document.querySelectorAll(".seller-check").forEach(function(btn){const on=done.includes(Number(btn.dataset.check));btn.classList.toggle("done",on);const mark=btn.querySelector(".seller-check-mark");if(mark)mark.textContent=on?"✓":"○";});
    const n=done.length,p=Math.round(n/6*100),bar=document.getElementById("sellerChecklistProgress"),count=document.getElementById("sellerChecklistCount"),pct=document.getElementById("sellerChecklistPercent");
-   if(bar)bar.style.width=p+"%";if(count)count.textContent=n+" / 6";if(pct)pct.textContent=p+" %";
+   if(bar)bar.style.width=p+"%";if(count)count.textContent=n+" / 6";if(pct)pct.textContent=p+" %";updateSellerNextAction(done);
  }
  async function saveSellerChecklist(){
    const d=getSellerSpace(),token=d.token;if(!token)return;
