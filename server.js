@@ -9,8 +9,9 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.8.0";
-const BUILD_MARKER = "seller-patch-v3";
+const VERSION = "2.9.0";
+const BUILD_MARKER = "seller-patch-v4-comparables";
+const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
 app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION, build:BUILD_MARKER, sellerSpace:true, persistentDashboard:true }));
@@ -528,7 +529,7 @@ async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
   const bbox=[origin.lon-lonDelta,origin.lat-latDelta,origin.lon+lonDelta,origin.lat+latDelta]
     .map(v=>Number(v.toFixed(6))).join(",");
   try{
-    const params=new URLSearchParams({in_bbox:bbox,codtypbien,page_size:"1000",fields:"all",anneemut_min:String(new Date().getFullYear()-2),anneemut_max:String(new Date().getFullYear())});
+    const params=new URLSearchParams({in_bbox:bbox,codtypbien,page_size:"1000",fields:"all",anneemut_min:String(Math.max(2023,DVF_LATEST_YEAR-2)),anneemut_max:String(DVF_LATEST_YEAR)});
     const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
     const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(10000)});
     if(!response.ok) throw new Error("Cerema DVF HTTP "+response.status);
@@ -581,7 +582,7 @@ async function fetchDvfRadiusSales(origin,property,cityCode){
   const type=String(property?.propertyType||"").toLowerCase();
   const typeLocal=/appartement|studio|duplex|loft/i.test(type)?"Appartement":/maison/i.test(type)?"Maison":"";
   const params=new URLSearchParams({
-    lat:String(origin.lat),lon:String(origin.lon),dist:"500",
+    lat:String(origin.lat),lon:String(origin.lon),dist:"3000",
     nature_mutation:"Vente"
   });
   if(typeLocal) params.set("type_local",typeLocal);
@@ -610,7 +611,7 @@ async function fetchDvfRadiusSales(origin,property,cityCode){
         distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,
         source:"DVF / CQuest"
       };
-    }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=0.5)
+    }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=3)
       .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3));
   }catch(error){
     console.warn("JML DVF CQuest:",error.message);
@@ -731,6 +732,7 @@ async function buildComparableSales(market,property){
   };
   // Les données Estimus sont testées d'abord, puis DVF+ complète la recherche.
   const estimus=await enrichDistances(Array.isArray(market?.recentSales)?market.recentSales:[]);
+  const diagnostics={origin:true,estimusRows:estimus.length,candidatesBeforeExternal:0,externalByTier:[],cquestFallbackRows:0,candidatesAfterExternal:0};
   for(const tier of tiers){
     for(const sale of estimus){
       const x=scoreSale(sale,tier);
@@ -746,6 +748,7 @@ async function buildComparableSales(market,property){
   if(!selectedTier || candidates.length<6){
     for(const tier of tiers){
       const external=await enrichDistances(await fetchCeremaDvfRadiusSales(origin,property,tier.radius));
+      diagnostics.externalByTier.push({tier:tier.label,rows:external.length});
       for(const sale of external){
         const x=scoreSale(sale,tier);
         if(!x) continue;
@@ -758,8 +761,10 @@ async function buildComparableSales(market,property){
     }
   }
 
+  diagnostics.candidatesBeforeExternal=candidates.length;
   if(!candidates.length){
     const external=await enrichDistances(await fetchDvfRadiusSales(origin,property,property?.cityCode));
+    diagnostics.cquestFallbackRows=external.length;
     for(const sale of external){
       const x=scoreSale(sale,tiers[tiers.length-1]);
       if(x)candidates.push(x);
@@ -800,8 +805,9 @@ async function buildComparableSales(market,property){
     searchScope:scope,
     origin,
     source:display.some(s=>/Cerema/i.test(s.source))?"DVF+ / Cerema + Estimus":"Estimus",
-    method:"Moteur estimation JML partagé — type + distance + récence + surface ±30 % + pièces ±2 + filtre IQR + pondération",
-    engineVersion:"estimator-shared-v1"
+    method:"Moteur JML Estimateur V7.4 partagé — ventes classiques, type strict, récence ≤24 mois, surface ±30 %, pièces ±2, score proximité/récence/similarité, IQR et pondération.",
+    engineVersion:"7.4.0-PRO-DVF",
+    diagnostics:{...diagnostics,candidatesAfterExternal:candidates.length}
   };
 }
 
