@@ -136,7 +136,7 @@ app.get("/api/commune-market", async (req,res) => {
       const escapedCity=normalizedCity.split(/\s+/).filter(Boolean).map(function(x){return x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}).join("\\s+");
       const nearbyRe=new RegExp(escapedCity+"[^0-9]{0,120}([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\s*/\\s*m²","i");
       const nearby=departmentText.match(nearbyRe);
-      const departmentMedian=nearby?Number(nearby[1].replace(/\\s/g,"")):null;
+      const departmentMedian=nearby?Number(nearby[1].replace(/\s/g,"")):null;
       if(departmentMedian && departmentMedian>=300 && departmentMedian<=6000){
         const parsed={
           city,found:true,price:departmentMedian,communalPrice:departmentMedian,
