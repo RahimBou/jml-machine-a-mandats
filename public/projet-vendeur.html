@@ -418,16 +418,16 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 <div class="full fb-actions"><span class="fb-small">Vos informations sont transmises à JML Immobilier uniquement pour le suivi de votre demande. Vous pouvez demander à tout moment que votre demande ne soit plus suivie.</span><button class="primary" type="submit">Échanger sur mon projet</button></div>
 </form>
 <div id="fbMessage" class="notice" style="margin-top:14px;display:none"></div>
-<!-- JML ROUTE GUARD: seller URL stays on seller space -->
+<!-- JML ROUTE GUARD: keep seller dashboard visible on direct refresh -->
 <script>
 (function(){
   try{
-    const m=location.pathname.match(/^\/espace-vendeur\/([^/]+)/);
-    if(!m)return;
-    const form=document.getElementById("fbLeadForm");
-    const success=document.getElementById("fbSuccess");
-    if(form)form.style.display="none";
-    if(success)success.style.display="block";
+    if(!/^\/espace-vendeur\/([^/]+)/.test(location.pathname))return;
+    document.documentElement.setAttribute("data-jml-seller-space","1");
+    const style=document.createElement("style");
+    style.id="jml-seller-route-guard";
+    style.textContent='[data-jml-seller-space="1"] #fbLeadForm{display:none!important}[data-jml-seller-space="1"] #fbSuccess{display:block!important}';
+    (document.head||document.documentElement).appendChild(style);
   }catch(_e){}
 })();
 </script>
@@ -932,7 +932,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  restoreSellerSubmittedView().then(refreshSellerSpaceUI);
  window.addEventListener("pageshow",function(){restoreSellerSubmittedView().then(refreshSellerSpaceUI)});
 
- const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};try{history.replaceState({sellerSpace:false},"","/projet-vendeur")}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
+ const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};document.documentElement.removeAttribute("data-jml-seller-space");try{history.replaceState({sellerSpace:false},"","/projet-vendeur")}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
 <div class="seller-modal" id="sellerModal" aria-hidden="true">
