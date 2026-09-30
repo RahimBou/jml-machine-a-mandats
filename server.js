@@ -588,19 +588,34 @@ function buildSellerReference(market,property){
 async function getNearbyCommunes(commune){
   const dep=String(commune?.departement?.code||"08");
   try{
-    const url="https://geo.api.gouv.fr/communes?codeDepartement="+encodeURIComponent(dep)+"&fields=nom,code,population,centre&format=json";
+    const url="https://geo.api.gouv.fr/departements/"+encodeURIComponent(dep)+"/communes?fields=nom,code,population,centre&format=json";
     const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(6000)});
     if(!response.ok) throw new Error("Geo API HTTP "+response.status);
-    const rows=await response.json(), origin=commune?.centre?.coordinates;
+    const rows=await response.json(),origin=commune?.centre?.coordinates;
     if(!Array.isArray(origin)||origin.length<2) return [];
     const o={lon:Number(origin[0]),lat:Number(origin[1])};
     return rows.map(x=>{
-      const p=x?.centre?.coordinates;
-      if(!Array.isArray(p)||p.length<2) return null;
+      const p=x?.centre?.coordinates;if(!Array.isArray(p)||p.length<2)return null;
       const d=haversineKm(o,{lon:Number(p[0]),lat:Number(p[1])});
       return d!=null?{name:x.nom,code:x.code,population:x.population,distanceKm:Number(d.toFixed(1))}:null;
     }).filter(Boolean).filter(x=>x.code!==commune.code&&x.distanceKm<=20).sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,6);
-  }catch(error){ console.warn("JML communes proches:",error.message); return []; }
+  }catch(error){
+    console.warn("JML communes proches Geo API:",error.message);
+    try{
+      const response=await fetch("https://www.mon-quartier-info.com/commune/"+String(commune?.code||""),{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
+      if(response.ok){
+        const html=await response.text(),out=[],seen=new Set();
+        const re=/<a[^>]+href=["']\\/commune\\/(\\d{5})["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+        let m;
+        while((m=re.exec(html))&&out.length<6){
+          const code=m[1],name=stripHtml(m[2]);
+          if(code!==String(commune?.code||"")&&!seen.has(code)&&name){seen.add(code);out.push({name,code,population:null,distanceKm:null});}
+        }
+        return out;
+      }
+    }catch(fallbackError){console.warn("JML communes proches secours:",fallbackError.message);}
+    return [];
+  }
 }
 
 app.get("/api/territory-summary", async (req,res) => {
