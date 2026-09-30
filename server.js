@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.2.0";
-const BUILD_MARKER = "seller-territory-v2-deploy-check";
+const VERSION = "3.3.0";
+const BUILD_MARKER = "immo-data-api-test";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -73,6 +73,58 @@ const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
 
 const communeMarketCache = new Map();
+
+const IMMO_DATA_API_BASE_URL = String(process.env.IMMO_DATA_API_BASE_URL || "https://api.immo-data.fr").replace(/\/+$/,"");
+
+async function immoDataRequest(endpoint, params = {}) {
+  const apiKey = String(process.env.IMMO_DATA_API_KEY || "").trim();
+  if (!apiKey) throw new Error("IMMO_DATA_API_KEY non configurée sur Render");
+  const url = new URL(IMMO_DATA_API_BASE_URL + endpoint);
+  Object.entries(params).forEach(([key,value]) => {
+    if (value !== undefined && value !== null && String(value) !== "") url.searchParams.set(key, String(value));
+  });
+  const response = await fetch(url, {
+    headers: {
+      "Authorization": "Bearer " + apiKey,
+      "Accept": "application/json",
+      "User-Agent": "JML-Projet-Vendeur/3.3.0"
+    },
+    signal: AbortSignal.timeout(10000)
+  });
+  const text = await response.text();
+  let payload = null;
+  try { payload = text ? JSON.parse(text) : null; } catch (_) {}
+  if (!response.ok) {
+    const detail = payload?.message || payload?.error || ("HTTP " + response.status);
+    throw new Error("Immo Data " + response.status + " — " + detail);
+  }
+  return payload;
+}
+
+// Test léger de la clé Render : le géocodage coûte seulement 0,001 €
+// et permet de vérifier simultanément l'URL, l'Authorization et la réponse API.
+app.get("/api/immo-data/test", async (req,res) => {
+  const city = clean(req.query.city || "Charleville-Mézières",100);
+  if (!process.env.IMMO_DATA_API_KEY) {
+    return res.status(503).json({ok:false,configured:false,error:"IMMO_DATA_API_KEY absente de l'environnement Render."});
+  }
+  try {
+    const data = await immoDataRequest("/v1/geocode", {q:city, geoLevel:"city", limit:1});
+    return res.json({
+      ok:true,
+      configured:true,
+      provider:"Immo Data",
+      endpoint:"/v1/geocode",
+      query:city,
+      resultCount:Array.isArray(data) ? data.length : Array.isArray(data?.data) ? data.data.length : null,
+      message:"Connexion Immo Data opérationnelle."
+    });
+  } catch (error) {
+    console.error("JML Immo Data test:", error.message);
+    return res.status(502).json({ok:false,configured:true,provider:"Immo Data",error:error.message});
+  }
+});
+
 
 
 /* ---------- Territoire : sécurité, risques et environnement ---------- */
