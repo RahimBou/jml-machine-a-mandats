@@ -255,7 +255,6 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
   .seller-status-steps b{width:22px;height:22px;flex-basis:22px}
   .seller-quick-grid{grid-template-columns:1fr 1fr}
 }
-<style>
 /* V4 — direction artistique inspirée du concept premium JML */
 :root{--jml-gold:#d8b76f;--jml-gold-dark:#9d7735;--jml-green:#0f3d34}
 body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);color:#173b31}
@@ -540,7 +539,41 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
       <div class="seller-event-list" id="sellerEventMiniList"><div class="seller-event-mini"><strong>Événements locaux</strong><span>Chargement selon votre secteur…</span></div><div class="seller-event-mini"><strong>Vie locale</strong><span>Informations locales à venir.</span></div><div class="seller-event-mini"><strong>Marché immobilier</strong><span>Données actualisées selon les sources disponibles.</span></div></div>
     </div>
   </div>
-  <div class="fb-appointment">
+  
+    <section class="seller-v2" id="sellerV2">
+      <div class="seller-v2-head">
+        <div class="seller-v2-kicker">JML IMMOBILIER · VOTRE BOÎTE À OUTILS</div>
+        <h4>Préparer votre vente, mais aussi votre prochain projet</h4>
+        <p>Votre espace évolue : simulateurs simples, conseils pratiques, préparation du logement et inspirations. Tout est conçu pour vous aider à avancer étape par étape, sans remplacer un conseil personnalisé.</p>
+        <div class="seller-v2-personal" id="sellerV2Personal">Ces outils seront adaptés aux informations renseignées dans votre espace.</div>
+      </div>
+      <div class="seller-v2-grid">
+        <button type="button" class="seller-v2-card" data-v2-open="sim-credit"><span class="ico">💶</span><strong>Simulateurs</strong><small>Mensualité, capacité, budget et frais de notaire.</small><b>Calculer →</b></button>
+        <button type="button" class="seller-v2-card" data-v2-open="conseils"><span class="ico">💡</span><strong>Conseils pour vendre</strong><small>Prix, négociation, visites, photos et dossier.</small><b>Voir les conseils →</b></button>
+        <button type="button" class="seller-v2-card" data-v2-open="amenagement"><span class="ico">🛋️</span><strong>Préparer mon logement</strong><small>Pièce par pièce : rangement, lumière, extérieur et présentation.</small><b>Préparer →</b></button>
+        <button type="button" class="seller-v2-card" data-v2-open="inspirations"><span class="ico">✨</span><strong>Inspirations & partenaires</strong><small>Déco, rangement, éclairage et petits équipements utiles.</small><b>Découvrir →</b></button>
+      </div>
+      <section class="seller-v2-section">
+        <h5>Les bons réflexes avant une mise en vente</h5>
+        <p>Quelques actions simples peuvent améliorer la présentation sans engager automatiquement de gros travaux.</p>
+        <div class="seller-v2-guide-grid">
+          <div class="seller-v2-guide"><strong>📸 Photos</strong><span>Lumière, pièces dégagées, volets ouverts et points forts visibles.</span><button type="button" data-v2-open="photos">Voir la checklist →</button></div>
+          <div class="seller-v2-guide"><strong>🧹 Désencombrement</strong><span>Donner une lecture claire des volumes et de la circulation.</span><button type="button" data-v2-open="amenagement">Voir les astuces →</button></div>
+          <div class="seller-v2-guide"><strong>📄 Dossier</strong><span>Réunir progressivement titre, diagnostics, taxe foncière et travaux.</span><button type="button" data-v2-open="documents">Voir la liste →</button></div>
+        </div>
+      </section>
+    </section>
+    <div class="seller-v2-modal" id="sellerV2Modal" aria-hidden="true">
+      <div class="seller-v2-backdrop" data-v2-close></div>
+      <div class="seller-v2-dialog" role="dialog" aria-modal="true" aria-labelledby="sellerV2Title">
+        <button class="seller-v2-close" type="button" data-v2-close aria-label="Fermer">×</button>
+        <h3 id="sellerV2Title">Votre boîte à outils</h3>
+        <p class="lead" id="sellerV2Lead"></p>
+        <div id="sellerV2Body"></div>
+      </div>
+    </div>
+
+<div class="fb-appointment">
 <h3>📅 Demander un rendez-vous</h3>
 <p>Choisissez directement parmi les créneaux actuellement proposés. <strong>Le rendez-vous sera confirmé par JML Immobilier après vérification.</strong></p>
 <form id="fbAppointmentForm">
