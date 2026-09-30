@@ -594,6 +594,24 @@ function buildSellerReference(market,property){
   };
 }
 
+async function getNearbyCommunes(commune){
+  const dep=String(commune?.departement?.code||"08");
+  try{
+    const url="https://geo.api.gouv.fr/communes?codeDepartement="+encodeURIComponent(dep)+"&fields=nom,code,population,centre&format=json";
+    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(6000)});
+    if(!response.ok) throw new Error("Geo API HTTP "+response.status);
+    const rows=await response.json(), origin=commune?.centre?.coordinates;
+    if(!Array.isArray(origin)||origin.length<2) return [];
+    const o={lon:Number(origin[0]),lat:Number(origin[1])};
+    return rows.map(x=>{
+      const p=x?.centre?.coordinates;
+      if(!Array.isArray(p)||p.length<2) return null;
+      const d=haversineKm(o,{lon:Number(p[0]),lat:Number(p[1])});
+      return d!=null?{name:x.nom,code:x.code,population:x.population,distanceKm:Number(d.toFixed(1))}:null;
+    }).filter(Boolean).filter(x=>x.code!==commune.code&&x.distanceKm<=20).sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,6);
+  }catch(error){ console.warn("JML communes proches:",error.message); return []; }
+}
+
 app.get("/api/territory-summary", async (req,res) => {
   const city=clean(req.query.city,100);
   const address=clean(req.query.address,180);
@@ -609,7 +627,7 @@ app.get("/api/territory-summary", async (req,res) => {
     const commune=candidates[0];
     const market=await getCommuneMarketData(commune.nom,commune.code);
     const comparable=await buildComparableSales(market,{address,propertyType,surface,city:commune.nom});
-    const nearby=Array.isArray(market.nearby)?market.nearby.slice(0,6):[];
+    const nearby=await getNearbyCommunes(commune);
     const sellerReference=buildSellerReference({...market,comparables:comparable},{address,propertyType,surface});
     return res.json({
       ok:true,commune,market:{...market,comparables:comparable},
