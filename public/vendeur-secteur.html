@@ -109,7 +109,7 @@
 <script>
 (function(){
   const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};
-  const d=read(),token=d.token||"",city=d.city||"";
+  const stored=read(),params=new URLSearchParams(location.search);\n  const d={...stored,city:stored.city||params.get("city")||"",address:stored.address||params.get("address")||"",propertyType:stored.propertyType||params.get("propertyType")||"",surface:stored.surface||params.get("surface")||"",dpe:stored.dpe||params.get("dpe")||""};\n  const token=d.token||"",city=d.city||"";
   const esc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const euro=v=>Number.isFinite(Number(v))?Number(v).toLocaleString("fr-FR")+" €/m²":"Non disponible";
   const num=v=>Number.isFinite(Number(v))?Number(v).toLocaleString("fr-FR"):"Non disponible";
