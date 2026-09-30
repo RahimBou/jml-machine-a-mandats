@@ -910,12 +910,42 @@ app.get("/api/territory-summary", async (req,res) => {
   if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
 
   try{
-    const geoUrl="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(city)+"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
-    const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(6000)});
-    if(!geoResponse.ok) throw new Error("Géo API HTTP "+geoResponse.status);
-    const candidates=await geoResponse.json();
-    if(!Array.isArray(candidates)||!candidates.length) throw new Error("Commune introuvable");
-    const commune=candidates[0];
+    let commune=null;
+    try{
+      const geoUrl="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(city)+"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
+      const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.1"},signal:AbortSignal.timeout(6000)});
+      if(geoResponse.ok){
+        const candidates=await geoResponse.json();
+        if(Array.isArray(candidates)&&candidates.length) commune=candidates[0];
+      }
+    }catch(error){
+      console.warn("JML geo.api.gouv.fr indisponible:",error.message);
+    }
+
+    // Secours BAN : on récupère au minimum le code INSEE et les coordonnées
+    // à partir de l'adresse. Cela évite qu'une panne de geo.api.gouv.fr
+    // bloque toute la page Mon secteur.
+    if(!commune){
+      const q=[address,city].filter(Boolean).join(", ");
+      const banUrl="https://api-adresse.data.gouv.fr/search/?q="+encodeURIComponent(q)+"&limit=5";
+      const banResponse=await fetch(banUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.1"},signal:AbortSignal.timeout(6000)});
+      if(!banResponse.ok) throw new Error("Géo et BAN indisponibles");
+      const payload=await banResponse.json();
+      const feature=(Array.isArray(payload?.features)?payload.features:[]).find(f=>/^\d{5}$/.test(String(f?.properties?.citycode||"")));
+      if(!feature) throw new Error("Commune introuvable");
+      const p=feature.properties||{}, coords=feature.geometry?.coordinates;
+      commune={
+        nom:String(p.city||city),
+        code:String(p.citycode),
+        population:null,
+        surface:null,
+        centre:{type:"Point",coordinates:Array.isArray(coords)?coords:[null,null]},
+        departement:{code:String(p.context||"").split(",")[0].trim().slice(0,2)||String(p.citycode).slice(0,2)},
+        region:null,
+        epci:null
+      };
+      console.log("JML commune résolue par BAN:",commune.nom,commune.code);
+    }
 
     // Chaque bloc est indépendant : une source secondaire en panne ne doit
     // jamais faire disparaître tout le rapport.
