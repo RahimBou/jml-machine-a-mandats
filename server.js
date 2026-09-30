@@ -6,8 +6,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "2.7.0";
-const BUILD_MARKER = "07f8c5d";
+const VERSION = "2.7.1";
+const BUILD_MARKER = "18f6529";
 
 app.disable("x-powered-by");
 app.get("/health", (req, res) => res.status(200).json({ ok:true, service:"jml-projet-vendeur", version:VERSION, build:BUILD_MARKER, sellerSpace:true, persistentDashboard:true }));
@@ -130,7 +130,30 @@ app.get("/api/commune-market", async (req,res) => {
     if(!departmentResponse.ok) throw new Error("Estimus département HTTP "+departmentResponse.status);
     const departmentHtml=await departmentResponse.text();
     const communeUrl=findEstimusCommuneUrl(departmentHtml,city);
-    if(!communeUrl) throw new Error("Commune Estimus introuvable pour "+city);
+    if(!communeUrl){
+      const normalizedCity=normalizeSearchCity(city);
+      const rowRe=/(?:^|\\n)\\s*(\\d{5})?\\s*([^|\\n]+?)\\s*\\|\\s*([0-9]{3,4}(?:\\s[0-9]{3})?)\\s*€\\/m²/gi;
+      let rowMatch, departmentMedian=null;
+      while((rowMatch=rowRe.exec(stripHtml(departmentHtml)))){
+        if(normalizeSearchCity(rowMatch[2]).replace(/^\\d{5}/,"").trim()===normalizedCity){
+          departmentMedian=Number(rowMatch[3].replace(/\\s/g,"")); break;
+        }
+      }
+      if(departmentMedian){
+        const parsed={
+          city,found:true,price:departmentMedian,communalPrice:departmentMedian,
+          housePrice:null,apartmentPrice:null,transactions:null,
+          source:"DVF — Estimus, tableau départemental",
+          sourceUrl:"https://estimus.fr/departement/08-ardennes",
+          period:"Dernières données DVF disponibles pour cette commune",
+          message:"Repère communal issu des données DVF publiées par Estimus. Les données par type de bien restent à préciser.",
+          caution:"Ce repère sert à préparer l'échange et ne constitue pas une estimation du bien."
+        };
+        communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
+        return res.json({ok:true,...parsed,cache:false});
+      }
+      throw new Error("Commune Estimus introuvable pour "+city);
+    }
 
     const communeResponse=await fetch(communeUrl,{
       headers:{"User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(7000)
@@ -506,6 +529,7 @@ app.get("/api/diagnostic", async (_req,res) => {
     const q=await db("SELECT COUNT(*)::int AS count FROM jml_prospects");
     const a=await db("SELECT COUNT(*)::int AS count FROM jml_activities");
     const l=await db("SELECT COUNT(*)::int AS count FROM jml_leads");
+    const ss=await db("SELECT COUNT(*)::int AS count FROM jml_seller_spaces");
     const last=await db("SELECT id,name,created_at,updated_at FROM jml_prospects ORDER BY created_at DESC LIMIT 5");
     res.json({
       ok:true,
@@ -514,6 +538,7 @@ app.get("/api/diagnostic", async (_req,res) => {
       prospects:q.rows[0].count,
       activities:a.rows[0].count,
       leads:l.rows[0].count,
+      sellerSpaces:ss.rows[0].count,
       lastProspects:last.rows
     });
   }catch(e){
@@ -1107,7 +1132,7 @@ app.get("/api/publication-ideas",(_req,res)=>res.json([
 ]));
 
 app.get("/guide",(_req,res)=>res.sendFile(path.join(__dirname,"public","guide.html")));
-app.get("*",(_req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
+app.get("*",(_req,res)=>res.redirect(302,"/projet-vendeur"));
 
 async function start(){
   // Render doit pouvoir valider le port/health check immédiatement.
