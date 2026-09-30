@@ -423,14 +423,24 @@ async function geocodeAddress(address,city){
   const raw=String(address||"").trim(), commune=String(city||"").trim();
   if(!raw||!commune) return null;
   const variants=[];
-  const add=(v)=>{v=String(v||"").trim();if(v&&!variants.includes(v))variants.push(v);};
+  const add=(v)=>{
+    v=String(v||"").trim();
+    if(v&&!variants.includes(v)) variants.push(v);
+  };
   add(raw);
-  // BAN is sometimes more reliable when the house number is removed.
-  add(raw.replace(/^\\s*\\d+(?:\\s*(?:bis|ter|quater))?\\s*/i,""));
-  // Accept common punctuation variants without inventing a different street name.
+  // BAN est parfois plus fiable sans le numéro.
+  add(raw.replace(/^\s*\d+(?:\s*(?:bis|ter|quater))?\s*/i,""));
   add(raw.replace(/-/g," "));
-  add(raw.replace(/\\s+/g," ").trim());
-  const key=normalizeSearchCity(variants[0]+" "+commune), cached=geocodeCache.get(key);
+  add(raw.replace(/\s+/g," ").trim());
+  // Certaines saisies abrégées ne reprennent pas le nom officiel de la voie.
+  if(/\b(?:bd|boulevard)\s+poirier\b/i.test(raw) && !/georges\s+poirier/i.test(raw)){
+    add(raw.replace(/\b(?:bd|boulevard)\s+poirier\b/i,"Boulevard Georges Poirier"));
+  }
+  if(/\bbd\s+georges\s+poirier\b/i.test(raw)){
+    add(raw.replace(/\bbd\b/i,"Boulevard"));
+  }
+  const key=normalizeSearchCity(variants[0]+" "+commune);
+  const cached=geocodeCache.get(key);
   if(cached && cached.expiresAt>Date.now()) return cached.value;
   let best=null;
   try{
@@ -441,9 +451,15 @@ async function geocodeAddress(address,city){
       const payload=await response.json();
       const features=Array.isArray(payload.features)?payload.features:[];
       for(const feature of features){
-        const coords=feature?.geometry?.coordinates, score=Number(feature?.properties?.score);
+        const coords=feature?.geometry?.coordinates;
+        const score=Number(feature?.properties?.score);
         if(!Array.isArray(coords)||coords.length<2) continue;
-        const value={lon:Number(coords[0]),lat:Number(coords[1]),score:Number.isFinite(score)?score:null,label:String(feature?.properties?.label||"")};
+        const value={
+          lon:Number(coords[0]),
+          lat:Number(coords[1]),
+          score:Number.isFinite(score)?score:null,
+          label:String(feature?.properties?.label||"")
+        };
         if(!Number.isFinite(value.lon)||!Number.isFinite(value.lat)) continue;
         if(!best || (value.score||0)>(best.score||0)) best=value;
       }
@@ -451,8 +467,10 @@ async function geocodeAddress(address,city){
     }
     geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value:best});
     return best;
-  }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
-}
+  }catch(error){
+    console.warn("JML géocodage adresse:",error.message);
+    return null;
+  }
 }
 
 async function fetchCeremaRecentSales(code){
