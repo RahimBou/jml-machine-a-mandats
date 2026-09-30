@@ -559,6 +559,20 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 </section>
 </div>
 <script>
+/* JML — conserver automatiquement l'espace vendeur après actualisation */
+(function(){
+  if(location.pathname==="/projet-vendeur" || location.pathname==="/"){
+    try{
+      const d=JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}");
+      if(d && d.submitted && d.token){
+        location.replace("/espace-vendeur/"+encodeURIComponent(d.token));
+        return;
+      }
+    }catch(_e){}
+  }
+})();
+</script>
+<script>
 (function(){
 const sellerSpaceKey="jml-seller-space-v1";
 const sellerSpaceRead=()=>{try{return JSON.parse(localStorage.getItem(sellerSpaceKey)||"{}")}catch(_e){return {}}};
