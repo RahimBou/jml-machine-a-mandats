@@ -426,19 +426,33 @@ app.get("/api/territory-summary", async (req,res) => {
     const market=await getCommuneMarketData(commune.nom,commune.code);
     const comparable=buildComparableSales(market,{address,propertyType,surface});
     const nearby=Array.isArray(market.nearby)?market.nearby.slice(0,6):[];
-    const [security,risks,environment]=await Promise.all([
-      getSecurityData(commune.code),
-      getGeoRisks(commune.code),
-      getLocalEnvironment(commune)
-    ]);
     return res.json({
       ok:true,commune,market:{...market,comparables:comparable},
-      nearby,security,risks,environment,
-      source:"geo.api.gouv.fr + DVF+ / Cerema (d’après DVF, DGFiP) via Estimus + SSMSI + Géorisques + OpenStreetMap"
+      nearby,
+      source:"geo.api.gouv.fr + DVF+ / Cerema (d’après DVF, DGFiP) via Estimus"
     });
   }catch(error){
     console.warn("JML territory-summary:",error.message);
     return res.status(502).json({ok:false,error:"Données territoriales temporairement indisponibles."});
+  }
+});
+
+app.get("/api/territory-enrichment", async (req,res) => {
+  const code=clean(req.query.code,10);
+  const lat=Number(req.query.lat);
+  const lon=Number(req.query.lon);
+  if(!/^\d{5}$/.test(code)) return res.status(400).json({ok:false,error:"Code commune requis."});
+  try{
+    const commune={code,centre:{coordinates:[lon,lat]}};
+    const [security,risks,environment]=await Promise.all([
+      getSecurityData(code),
+      getGeoRisks(code),
+      getLocalEnvironment(commune)
+    ]);
+    return res.json({ok:true,security,risks,environment});
+  }catch(error){
+    console.warn("JML territory-enrichment:",error.message);
+    return res.status(502).json({ok:false,error:"Enrichissements territoriaux temporairement indisponibles."});
   }
 });
 
