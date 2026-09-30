@@ -330,6 +330,42 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
  .seller-guide-grid a{grid-template-columns:64px 1fr}
  .seller-guide-grid a:before{width:64px}
 }
+
+/* V4.0 — espace vendeur interactif */
+.fb-extra-details{border:1px solid var(--line);border-radius:12px;background:#faf7ef;padding:11px 13px}
+.fb-extra-details summary{cursor:pointer;font-weight:800;color:#173b31;font-size:12px}
+.fb-extra-details summary span{font-weight:500;color:var(--muted)}
+.fb-extra-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+.fb-extra-grid input,.fb-extra-grid select{width:100%;box-sizing:border-box;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.fb-extra-note{margin:9px 0 0;color:var(--muted);font-size:10px;line-height:1.4}
+.seller-quick-card{transition:transform .18s ease,box-shadow .18s ease}
+.seller-quick-card:focus-visible{outline:3px solid rgba(184,148,78,.45);outline-offset:2px}
+.seller-quick-card:hover{box-shadow:0 10px 22px rgba(23,51,44,.08)}
+.seller-modal{position:fixed;inset:0;z-index:9999;display:none}
+.seller-modal.open{display:block}
+.seller-modal-backdrop{position:absolute;inset:0;background:rgba(8,36,30,.62);backdrop-filter:blur(4px)}
+.seller-modal-dialog{position:relative;max-width:760px;width:calc(100% - 28px);max-height:calc(100vh - 40px);overflow:auto;margin:20px auto;background:#fffdf8;border:1px solid #c9ad72;border-radius:22px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:24px}
+.seller-modal-close{position:absolute;right:14px;top:12px;width:36px;height:36px;border:0;border-radius:50%;background:#efe4c8;color:#173b31;font-size:25px;cursor:pointer}
+.seller-modal-kicker{font-size:9px;letter-spacing:.14em;font-weight:900;color:#8a6b2e}
+.seller-modal-dialog h3{margin:5px 42px 14px;color:#173b31;font-size:25px}
+.seller-map-frame{width:100%;height:340px;border:0;border-radius:16px;background:#e8e1d2}
+.seller-modal-address{margin:10px 0;padding:11px 13px;border-radius:11px;background:#f4eddf;color:#46504a;font-size:11px}
+.seller-map-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.seller-map-actions a,.seller-modal-action{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:0;border-radius:999px;padding:9px 12px;background:#efe4c8;color:#6f592b;font-size:10.5px;font-weight:800;cursor:pointer}
+.seller-map-actions a.primary,.seller-modal-action.primary{background:#173b31;color:#fff}
+.seller-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.seller-detail{padding:13px;border:1px solid var(--line);border-radius:13px;background:#faf7ef}
+.seller-detail span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.seller-detail strong{display:block;margin-top:5px;color:#173b31;font-size:16px}
+.seller-modal-note{margin-top:12px;padding:12px;border-left:3px solid #d8bb7a;background:#f7f1e4;color:#4d554f;font-size:11px;line-height:1.5}
+.seller-advice-list-modal{display:grid;gap:9px}
+.seller-advice-item-modal{padding:13px;border:1px solid var(--line);border-radius:13px;background:#faf7ef}
+.seller-advice-item-modal b{color:#8a6b2e;font-size:9px;letter-spacing:.06em}
+.seller-advice-item-modal strong{display:block;margin:5px 0;color:#173b31;font-size:14px}
+.seller-advice-item-modal p{margin:0;color:#555e58;font-size:10.5px;line-height:1.45}
+.seller-advice-item-modal a{display:inline-block;margin-top:7px;color:#8a6b2e;font-size:9.5px;font-weight:800;text-decoration:none}
+@media(max-width:600px){.fb-extra-grid{grid-template-columns:1fr 1fr}.seller-modal-dialog{margin:10px auto;max-height:calc(100vh - 20px);padding:18px}.seller-modal-dialog h3{font-size:22px}.seller-map-frame{height:280px}.seller-detail-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:430px){.fb-extra-grid{grid-template-columns:1fr}.seller-modal-dialog{width:calc(100% - 18px);border-radius:18px}.seller-map-actions a{flex:1 1 calc(50% - 7px);text-align:center}}
 </style>
 </style>
 </head>
@@ -355,6 +391,13 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 <div><label for="fbEmail">Email</label><input id="fbEmail" type="email" maxlength="180"></div>
 <div><label for="fbType">Type de bien</label><select id="fbType"><option>Maison</option><option>Appartement</option><option>Immeuble</option><option>Terrain</option><option>Commerce</option><option>Autre</option></select></div>
 <div><label for="fbHorizon">Projet de vente</label><select id="fbHorizon"><option value="0-3">Dans les 3 mois</option><option value="3-6">Dans 3 à 6 mois</option><option value="6-12">Dans 6 à 12 mois</option><option value="unknown">Je ne sais pas encore</option></select></div>
+<div class="full"><details class="fb-extra-details"><summary>Ajouter quelques caractéristiques du bien <span>(facultatif)</span></summary><div class="fb-extra-grid">
+<div><label for="fbAddress">Adresse du bien</label><input id="fbAddress" maxlength="180" placeholder="N° et rue"></div>
+<div><label for="fbSurface">Surface habitable</label><input id="fbSurface" inputmode="decimal" maxlength="20" placeholder="Ex. 120 m²"></div>
+<div><label for="fbRooms">Pièces / chambres</label><input id="fbRooms" maxlength="20" placeholder="Ex. 5 pièces / 3 ch."></div>
+<div><label for="fbDpe">DPE</label><select id="fbDpe"><option value="">Non renseigné</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option></select></div>
+<div><label for="fbTerrain">Terrain</label><input id="fbTerrain" maxlength="30" placeholder="Ex. 650 m²"></div>
+</div><p class="fb-extra-note">Ces informations restent facultatives. Elles servent surtout à personnaliser votre espace vendeur.</p></details></div>
 <div class="full"><label><input id="fbConsent" type="checkbox" style="width:auto" required> J’accepte que JML Immobilier utilise ces informations pour me recontacter au sujet de mon projet immobilier.</label></div>
 <div class="full fb-actions"><span class="fb-small">Vos informations sont transmises à JML Immobilier uniquement pour le suivi de votre demande. Vous pouvez demander à tout moment que votre demande ne soit plus suivie.</span><button class="primary" type="submit">Échanger sur mon projet</button></div>
 </form>
@@ -392,10 +435,10 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
     </div>
 
     <div class="seller-quick-grid">
-      <button type="button" class="seller-quick-card"><span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Nous préparerons les informations locales disponibles pour votre commune.</small></span><em>→</em></button>
-      <button type="button" class="seller-quick-card"><span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, terrain, état, travaux et équipements à préparer.</small></span><em>→</em></button>
-      <button type="button" class="seller-quick-card"><span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre calendrier sera pris en compte pour préparer la suite.</small></span><em>→</em></button>
-      <button type="button" class="seller-quick-card"><span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples pour préparer votre projet avant notre échange.</small></span><em>→</em></button>
+      <button type="button" class="seller-quick-card" id="sellerQuickSector"><span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Nous préparerons les informations locales disponibles pour votre commune.</small></span><em>→</em></button>
+      <button type="button" class="seller-quick-card" id="sellerQuickProperty"><span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, terrain, état, travaux et équipements à préparer.</small></span><em>→</em></button>
+      <button type="button" class="seller-quick-card" id="sellerQuickCalendar"><span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre calendrier sera pris en compte pour préparer la suite.</small></span><em>→</em></button>
+      <button type="button" class="seller-quick-card" id="sellerQuickAdvice"><span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples et utiles, adaptés à votre projet.</small></span><em>→</em></button>
     </div>
 
     <div class="seller-disclaimer"><strong>En attendant, voici déjà quelques repères utiles pour votre projet de vente.</strong><br>Les informations présentées ici sont indicatives. Les données de marché doivent être vérifiées et datées avant toute utilisation dans une décision de vente.</div>
@@ -460,6 +503,9 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 </div>
 <script>
 (function(){
+const sellerSpaceKey="jml-seller-space-v1";
+const sellerSpaceRead=()=>{try{return JSON.parse(localStorage.getItem(sellerSpaceKey)||"{}")}catch(_e){return {}}};
+const sellerSpaceWrite=(data)=>{try{localStorage.setItem(sellerSpaceKey,JSON.stringify(data))}catch(_e){}};
 const params=new URLSearchParams(location.search);
 const rawCampaign=params.get("campaign")||params.get("utm_campaign")||"organique";
 const rawContent=params.get("utm_content")||"";
@@ -478,6 +524,15 @@ form.addEventListener("submit",async function(e){
  const city=document.getElementById("fbCity").value.trim();
  const propertyType=document.getElementById("fbType").value;
  const horizon=document.getElementById("fbHorizon").value;
+ const sellerDetails={
+   city:city,address:document.getElementById("fbAddress")?.value.trim()||"",
+   propertyType:propertyType,horizon:horizon,
+   surface:document.getElementById("fbSurface")?.value.trim()||"",
+   rooms:document.getElementById("fbRooms")?.value.trim()||"",
+   dpe:document.getElementById("fbDpe")?.value||"",
+   terrain:document.getElementById("fbTerrain")?.value.trim()||""
+ };
+ sellerSpaceWrite(sellerDetails);
  const horizonLabel={"0-3":"dans les 3 mois","3-6":"dans 3 à 6 mois","6-12":"dans 6 à 12 mois","unknown":"sans calendrier défini pour le moment"}[horizon]||horizon;
  const propertyAdvice={"Maison":"Pour une maison, les surfaces, les extérieurs, les travaux récents et les équipements seront particulièrement utiles à préparer.","Appartement":"Pour un appartement, préparez notamment la surface, l’étage, les charges, le DPE et les informations disponibles sur la copropriété.","Immeuble":"Pour un immeuble, les surfaces, la composition des lots, les loyers éventuels et les informations techniques seront utiles.","Terrain":"Pour un terrain, préparez notamment la surface, la localisation et les informations d’urbanisme dont vous disposez.","Commerce":"Pour un commerce, préparez notamment la surface, la destination du local et les informations disponibles sur le bail.","Autre":"Nous adapterons les premiers échanges aux caractéristiques particulières de votre bien."};
  const personalIntro=document.getElementById("fbPersonalIntro"),sectorText=document.getElementById("fbSectorText"),propertyText=document.getElementById("fbPropertyText"),horizonText=document.getElementById("fbHorizonText");
@@ -575,6 +630,11 @@ loadSellerMarket(city,propertyType);
   name,city,phone,email,
   propertyType,
   horizon,
+  address:sellerDetails.address,
+  surface:sellerDetails.surface,
+  rooms:sellerDetails.rooms,
+  dpe:sellerDetails.dpe,
+  terrain:sellerDetails.terrain,
   source:sourceLabel,consent:true
  };
  try{
@@ -649,8 +709,50 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    }
  }
  loadSellerAdvice(city);
+ const sellerModal=document.getElementById("sellerModal"),sellerModalTitle=document.getElementById("sellerModalTitle"),sellerModalBody=document.getElementById("sellerModalBody");
+ function esc(v){return String(v??"").replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
+ function openSellerModal(title,body){if(!sellerModal)return;sellerModalTitle.textContent=title;sellerModalBody.innerHTML=body;sellerModal.classList.add("open");sellerModal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden"}
+ function closeSellerModal(){if(!sellerModal)return;sellerModal.classList.remove("open");sellerModal.setAttribute("aria-hidden","true");document.body.style.overflow=""}
+ document.querySelectorAll("[data-close-seller-modal]").forEach(function(el){el.addEventListener("click",closeSellerModal)});
+ document.addEventListener("keydown",function(e){if(e.key==="Escape")closeSellerModal()});
+ function getSellerSpace(){return sellerSpaceRead()}
+ function mapsSearch(query){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(query)+"&utm_source=JMLImmobilier&utm_campaign=espace_vendeur"}
+ function showSector(){
+   const d=getSellerSpace(),place=(d.address?d.address+", ":"")+(d.city||"Ardennes");
+   const mapUrl="https://www.google.com/maps?q="+encodeURIComponent(place)+"&output=embed";
+   const cats=["Commerces","Écoles","Pharmacies","Supermarchés","Transports","Parcs"];
+   openSellerModal("Votre secteur",'<div class="seller-modal-address">📍 <strong>'+esc(place)+'</strong><br><span>La carte s’ouvre sur votre adresse lorsque celle-ci a été renseignée, sinon sur votre commune.</span></div><iframe class="seller-map-frame" title="Carte du secteur" loading="lazy" src="'+mapUrl+'"></iframe><div class="seller-map-actions"><a class="primary" target="_blank" rel="noopener" href="'+mapsSearch(place)+'">Ouvrir la carte ↗</a>'+cats.map(function(cat){return '<a target="_blank" rel="noopener" href="'+mapsSearch(cat+" près de "+place)+'">'+cat+'</a>'}).join("")+'</div><div class="seller-modal-note">Vous pouvez ainsi regarder l’environnement immédiat du bien : services, écoles, commerces, transports et lieux de vie. La carte est fournie par Google Maps.</div>');
+ }
+ function showProperty(){
+   const d=getSellerSpace(),rows=[["Commune",d.city||"À préciser"],["Type",d.propertyType||"À préciser"],["Surface",d.surface||"À compléter"],["Pièces / chambres",d.rooms||"À compléter"],["DPE",d.dpe||"À compléter"],["Terrain",d.terrain||"À compléter"]];
+   openSellerModal("Votre bien",'<div class="seller-detail-grid">'+rows.map(function(r){return '<div class="seller-detail"><span>'+esc(r[0])+'</span><strong>'+esc(r[1])+'</strong></div>'}).join("")+'</div><div class="seller-modal-note">Cet aperçu reprend uniquement les informations que vous avez choisies de renseigner. Les caractéristiques définitives seront vérifiées lors de l’échange avec JML.</div><div class="seller-map-actions"><button class="seller-modal-action primary" type="button" id="sellerEditDetails">Compléter mes caractéristiques</button></div>');
+   const edit=document.getElementById("sellerEditDetails");if(edit)edit.onclick=function(){closeSellerModal();document.getElementById("fbSuccess").style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});const details=document.querySelector(".fb-extra-details");if(details)details.open=true;restoreSellerDetails()};
+ }
+ function restoreSellerDetails(){const d=getSellerSpace();["Address","Surface","Rooms","Terrain"].forEach(function(k){const el=document.getElementById("fb"+k);if(el)el.value=d[k.toLowerCase()]||""});const dpe=document.getElementById("fbDpe");if(dpe)dpe.value=d.dpe||""}
+ function showCalendar(){closeSellerModal();const appt=document.querySelector(".fb-appointment");if(appt)appt.scrollIntoView({behavior:"smooth",block:"start"});const date=document.getElementById("fbApptDate");if(date)date.focus({preventScroll:true})}
+ function showAdvice(){
+   const sourceCard=document.getElementById("sellerAdviceCard");
+   const title=sourceCard?.querySelector("h5")?.textContent||"Conseils vendeurs";
+   openSellerModal("Conseils vendeurs",'<div class="seller-advice-list-modal"><div class="seller-advice-item-modal"><b>💡 JML</b><strong>'+esc(title)+'</strong><p>Les conseils affichés dans votre espace sont issus de sources professionnelles et sont actualisés lorsque de nouvelles informations utiles sont disponibles.</p><a href="#sellerAdviceCard" id="sellerAdviceGo">Voir le conseil détaillé dans votre espace ↓</a></div><div class="seller-advice-item-modal"><b>📊 MARCHÉ</b><strong>Prix, transactions et contexte local</strong><p>Croisez toujours les données de marché avec le type de bien, sa surface, son état et sa localisation précise.</p></div><div class="seller-advice-item-modal"><b>⚡ DPE</b><strong>Préparez les informations énergétiques</strong><p>Gardez votre DPE et les diagnostics disponibles à portée de main avant le rendez-vous.</p></div><div class="seller-advice-item-modal"><b>🏦 FINANCEMENT</b><strong>Le financement des acquéreurs compte</strong><p>Les conditions de crédit influencent directement la capacité d’achat et donc le marché des vendeurs.</p></div></div>');
+   const go=document.getElementById("sellerAdviceGo");if(go)go.onclick=function(e){e.preventDefault();closeSellerModal();sourceCard?.scrollIntoView({behavior:"smooth",block:"center"})}
+ }
+ document.getElementById("sellerQuickSector")?.addEventListener("click",showSector);
+ document.getElementById("sellerQuickProperty")?.addEventListener("click",showProperty);
+ document.getElementById("sellerQuickCalendar")?.addEventListener("click",showCalendar);
+ document.getElementById("sellerQuickAdvice")?.addEventListener("click",showAdvice);
+ restoreSellerDetails();
+
  const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
+<div class="seller-modal" id="sellerModal" aria-hidden="true">
+  <div class="seller-modal-backdrop" data-close-seller-modal></div>
+  <div class="seller-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="sellerModalTitle">
+    <button type="button" class="seller-modal-close" data-close-seller-modal aria-label="Fermer">×</button>
+    <div class="seller-modal-kicker">JML IMMOBILIER · ESPACE VENDEUR</div>
+    <h3 id="sellerModalTitle">Votre espace</h3>
+    <div id="sellerModalBody"></div>
+  </div>
+</div>
 </body>
 </html>
