@@ -177,6 +177,7 @@ async function getSecurityData(code){
 async function getGeoRisks(code){
   const cleanCode=String(code||"").trim();
   if(!/^\d{5}$/.test(cleanCode)) return {available:false,message:"Code INSEE non disponible."};
+  const reportUrl="https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2/"+cleanCode+"/commune/00000";
   try{
     const url="https://www.georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+encodeURIComponent(cleanCode);
     const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"application/json"},signal:AbortSignal.timeout(8000)});
@@ -194,7 +195,7 @@ async function getGeoRisks(code){
     };
   }catch(error){
     console.warn("JML Géorisques:",error.message);
-    return {available:false,message:"Les données Géorisques sont temporairement indisponibles."};
+    return {available:false,message:"Les données Géorisques sont temporairement indisponibles.",reportUrl};
   }
 }
 
