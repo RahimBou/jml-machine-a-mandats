@@ -4,6 +4,9 @@ body{background:#f7f2e7;color:#173b31}.page{max-width:1040px;margin:auto;padding
 (function(){
 const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};
 const d=read();
+const token=d.token||"";
+document.querySelectorAll('a[href*="__TOKEN__"]').forEach(a=>{if(token)a.href=a.getAttribute("href").replace("__TOKEN__",encodeURIComponent(token));});
+const map=document.getElementById("map");if(map&&d.city){map.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent((d.address?d.address+", ":"")+d.city); }
 document.querySelectorAll("[data-city]").forEach(e=>e.textContent=d.city||"Votre secteur");
 document.querySelectorAll("[data-type]").forEach(e=>e.textContent=d.propertyType||"Votre bien");
 document.querySelectorAll("[data-surface]").forEach(e=>e.textContent=d.surface?d.surface+" m²":"À compléter");
