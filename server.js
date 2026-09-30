@@ -151,24 +151,27 @@ async function getSecurityData(code){
   try{
     await loadSsmsiSecurityDataset();
     const record=ssmsiSecurityCache.get(cleanCode);
-    if(!record) return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"Aucune donnée communale SSMSI diffusée pour ce code."};
-    const preferred=[
-      "Cambriolages de logement","Vols de véhicule","Vols dans les véhicules",
-      "Destructions et dégradations volontaires","Vols sans violence contre des personnes",
-      "Violences physiques intrafamiliales","Violences physiques hors cadre familial",
-      "Violences sexuelles","Escroqueries et fraudes aux moyens de paiement"
-    ];
-    const indicators=preferred.map(k=>record.indicators[k]).filter(Boolean);
-    return {
-      available:true,year:record.year,population:record.population,logements:record.logements,
-      indicators,source:SSMSI_SECURITY_SOURCE,
-      sourceUrl:"https://www.data.gouv.fr/datasets/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales",
-      note:"Les chiffres portent sur les faits enregistrés par la police et la gendarmerie, au lieu de commission. Une donnée « non diffusée » relève du secret statistique et ne signifie pas zéro."
-    };
-  }catch(error){
-    console.warn("JML SSMSI:",error.message);
-    return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"La base SSMSI n'est pas disponible pour le moment.",error:error.message};
-  }
+    if(record){
+      const preferred=["Cambriolages de logement","Vols de véhicule","Vols dans les véhicules","Destructions et dégradations volontaires","Vols sans violence contre des personnes","Violences physiques intrafamiliales","Violences physiques hors cadre familial","Violences sexuelles","Escroqueries et fraudes aux moyens de paiement"];
+      const indicators=preferred.map(k=>record.indicators[k]).filter(Boolean);
+      return {available:true,year:record.year,population:record.population,logements:record.logements,indicators,source:SSMSI_SECURITY_SOURCE,sourceUrl:"https://www.data.gouv.fr/datasets/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales",note:"Faits enregistrés par la police et la gendarmerie. Une donnée non diffusée relève du secret statistique et ne signifie pas zéro."};
+    }
+  }catch(error){ console.warn("JML SSMSI dataset:",error.message); }
+  try{
+    const response=await fetch("https://www.mon-quartier-info.com/commune/"+cleanCode,{headers:{"User-Agent":"JML-Projet-Vendeur/3.1"},signal:AbortSignal.timeout(8000)});
+    if(response.ok){
+      const text=stripHtml(await response.text());
+      const labels=["Destructions et dégradations volontaires","Vols sans violence contre des personnes","Cambriolages de logement","Vols de véhicule","Vols dans les véhicules","Vols d'accessoires sur véhicules","Violences physiques intrafamiliales","Violences physiques hors cadre familial","Violences sexuelles","Escroqueries et fraudes aux moyens de paiement"];
+      const indicators=[];
+      for(const label of labels){
+        const re=new RegExp(label+"\\s+([0-9\\s]+)\\s+(?:faits|victimes|véhicules)\\s+([0-9]+(?:[.,][0-9]+)?)","i");
+        const m=text.match(re);
+        if(m) indicators.push({label,indicator:label,count:Number(m[1].replace(/\\s/g,"")),rate:Number(m[2].replace(",",".")),unit:label==="Cambriolages de logement"?"‰ logements":"‰ habitants",available:true});
+      }
+      if(indicators.length) return {available:true,year:2025,indicators,source:"SSMSI / Ministère de l’Intérieur — extraction de secours depuis une source publique",sourceUrl:"https://www.data.gouv.fr/datasets/bases-statistiques-communale-departementale-et-regionale-de-la-delinquance-enregistree-par-la-police-et-la-gendarmerie-nationales",note:"Données SSMSI 2025. La source de secours ne remplace pas le fichier officiel ; aucun score n'est calculé."};
+    }
+  }catch(error){ console.warn("JML sécurité secours:",error.message); }
+  return {available:false,year:2025,source:SSMSI_SECURITY_SOURCE,message:"Données de sécurité temporairement indisponibles."};
 }
 
 async function getGeoRisks(code){
@@ -204,8 +207,8 @@ async function getLocalEnvironment(commune){
   const cached=localEnvironmentCache.get(key);
   if(cached && cached.expiresAt>Date.now()) return cached.data;
   try{
-    const query='[out:json][timeout:12];(nwr(around:3500,'+lat+','+lon+')["amenity"~"school|pharmacy|hospital|clinic|post_office"];nwr(around:3500,'+lat+','+lon+')["shop"~"supermarket|bakery|convenience"];nwr(around:3500,'+lat+','+lon+')["railway"~"station|halt"];nwr(around:3500,'+lat+','+lon+')["highway"="bus_stop"];);out center tags;';
-    const response=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"text/plain","User-Agent":"JML-Projet-Vendeur/3.0"},body:query,signal:AbortSignal.timeout(15000)});
+    const query='[out:json][timeout:12];(nwr(around:2000,'+lat+','+lon+')["amenity"~"school|pharmacy|hospital|clinic|post_office"];nwr(around:3500,'+lat+','+lon+')["shop"~"supermarket|bakery|convenience"];nwr(around:3500,'+lat+','+lon+')["railway"~"station|halt"];nwr(around:3500,'+lat+','+lon+')["highway"="bus_stop"];);out center tags;';
+    const response=await fetch("https://overpass.kumi.systems/api/interpreter",{method:"POST",headers:{"Content-Type":"text/plain","User-Agent":"JML-Projet-Vendeur/3.0"},body:query,signal:AbortSignal.timeout(10000)});
     if(!response.ok) throw new Error("Overpass HTTP "+response.status);
     const payload=await response.json();
     const elements=Array.isArray(payload.elements)?payload.elements:[];
