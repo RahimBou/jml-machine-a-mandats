@@ -418,6 +418,19 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 <div class="full fb-actions"><span class="fb-small">Vos informations sont transmises à JML Immobilier uniquement pour le suivi de votre demande. Vous pouvez demander à tout moment que votre demande ne soit plus suivie.</span><button class="primary" type="submit">Échanger sur mon projet</button></div>
 </form>
 <div id="fbMessage" class="notice" style="margin-top:14px;display:none"></div>
+<!-- JML ROUTE GUARD: seller URL stays on seller space -->
+<script>
+(function(){
+  try{
+    const m=location.pathname.match(/^\/espace-vendeur\/([^/]+)/);
+    if(!m)return;
+    const form=document.getElementById("fbLeadForm");
+    const success=document.getElementById("fbSuccess");
+    if(form)form.style.display="none";
+    if(success)success.style.display="block";
+  }catch(_e){}
+})();
+</script>
 <div id="fbSuccess" class="fb-success" style="display:none">
   <div class="fb-success-head">
     <div class="eyebrow">JML IMMOBILIER · DEMANDE ENREGISTRÉE</div>
@@ -833,7 +846,12 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
        sellerSubmissionWrite(saved);
      }catch(e){
        console.warn("JML seller space load:",e);
-       if(!d.submitted||d.token!==pathToken)return false;
+       // If the database/API is temporarily unavailable, keep the seller space from local storage.
+       if(d.submitted && d.token===pathToken){
+         saved=saved||{submitted:true,lead:{city:d.city||""},prospectId:"",spaceToken:pathToken};
+       }else{
+         return false;
+       }
      }
    }
    if((!saved||saved.submitted!==true)&&!d.submitted)return false;
