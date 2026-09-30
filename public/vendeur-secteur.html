@@ -91,8 +91,9 @@ details.innerHTML='<div class="type-card"><div class="type-icon">⌂</div><div><
 const a=Array.isArray(x.nearby)?x.nearby:[];
 near.innerHTML=a.length?a.map(v=>'<div class="nearby-item"><div class="nearby-top"><strong>'+esc(v.nom)+'</strong><span class="nearby-price">'+(v.price?euro(v.price):"Prix non disponible")+'</span></div><p>'+Number(v.distanceKm||0).toLocaleString("fr-FR",{maximumFractionDigits:1})+' km · '+num(v.population)+' habitants'+(v.transactions?" · "+num(v.transactions)+" transactions":"")+'</p></div>').join(""):'<div class="nearby-loading">Aucune donnée voisine exploitable.</div>';
 }).catch(()=>{
-details.innerHTML='<div class="row"><strong>Données temporairement indisponibles</strong><p>Aucun chiffre estimé n’est affiché.</p></div>';
-near.innerHTML="";
+facts.innerHTML='<div class="stat"><span>Prix médian</span><strong>Indisponible</strong><small>Source DVF non joignable</small></div><div class="stat"><span>Transactions</span><strong>—</strong><small>Pas de donnée fiable</small></div><div class="stat"><span>Population</span><strong>'+esc(city)+'</strong><small>Commune enregistrée</small></div><div class="stat"><span>Commune</span><strong>'+esc(city)+'</strong><small>Données à actualiser</small></div>';
+details.innerHTML='<div class="territory-note"><b>Données immobilières temporairement indisponibles</b><span>La source publique n’a pas répondu. Aucun chiffre estimé n’est affiché.</span></div>';
+near.innerHTML='<div class="nearby-loading">Les communes proches seront affichées dès que la source territoriale répondra.</div>';
 });
 })();
 </script></body></html>
