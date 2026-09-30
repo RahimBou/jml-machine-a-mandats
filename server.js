@@ -390,8 +390,12 @@ async function getCommuneMarketData(city,code){
     const parsed=parseEstimusCommunePage(communeHtml,cleanCity);
     if(!parsed) throw new Error("Médiane communale non trouvée pour "+cleanCity);
     if(!Array.isArray(parsed.recentSales)||!parsed.recentSales.length){
+      const fallbackSales=await fetchCeremaRecentSales(code);
+      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF+ / Cerema";}
+    }
+    if(!Array.isArray(parsed.recentSales)||!parsed.recentSales.length){
       const fallbackSales=await fetchImmoDvfRecentSales(cleanCity,code);
-      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF / DataFonciere";}
+      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF / source publique de secours";}
     }
     parsed.sourceUrl=communeUrl;
     communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
@@ -425,6 +429,32 @@ async function geocodeAddress(address,city){
     geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value});
     return value;
   }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
+}
+
+async function fetchCeremaRecentSales(code){
+  if(!/^\d{5}$/.test(String(code||""))) return [];
+  try{
+    const params=new URLSearchParams({code_insee:String(code),codtypbien:"111,121",anneemut_min:"2023",fields:"all",page_size:"500"});
+    const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
+    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(9000)});
+    if(!response.ok) throw new Error("Cerema recent DVF HTTP "+response.status);
+    const payload=await response.json(),features=Array.isArray(payload?.features)?payload.features:[];
+    return features.map(f=>{
+      const p=f?.properties||{};
+      const price=Number(p.valeurfonc??p.valeur_fonciere);
+      const surface=Number(p.sbati??p.surface_reelle_bati??p.surface);
+      const psm=price>0&&surface>0?price/surface:null;
+      return {
+        type:p.libtypbien||p.type_local||"",
+        codtypbien:p.codtypbien||"",
+        address:p.adresse||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
+        date:p.datemut||p.date_mutation||null,
+        surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales)||null,
+        price,pricePerM2:psm,source:"DVF+ / Cerema"
+      };
+    }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000)
+      .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,12);
+  }catch(error){console.warn("JML Cerema recent sales:",error.message);return [];}
 }
 
 async function fetchImmoDvfRecentSales(city,code){
@@ -474,7 +504,7 @@ async function fetchCeremaDvfRadiusSales(origin,property){
       const price=Number(p.valeurfonc??p.valeur_fonciere), surface=Number(p.sbati??p.surface_reelle_bati??p.surface);
       const distanceKm=Number.isFinite(lat)&&Number.isFinite(lon)?haversineKm(origin,{lat,lon}):null;
       const psm=price>0&&surface>0?price/surface:null;
-      return {type:p.libtypbien||p.type_local||"",address:p.adresse||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",date:p.datemut||p.date_mutation||null,surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales)||null,price,pricePerM2:psm,distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,source:"DVF+ / Cerema"};
+      return {type:p.libtypbien||p.type_local||"",codtypbien:p.codtypbien||"",address:p.adresse||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",date:p.datemut||p.date_mutation||null,surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales)||null,price,pricePerM2:psm,distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,source:"DVF+ / Cerema"};
     }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=0.5)
       .filter(s=>!Number.isFinite(surfaceWanted)||surfaceWanted<=0||(s.surface>=surfaceWanted*0.7&&s.surface<=surfaceWanted*1.3));
   }catch(error){ console.warn("JML DVF+ Cerema:",error.message); return []; }
@@ -532,6 +562,14 @@ function haversineKm(a,b){
   return 6371*2*Math.asin(Math.sqrt(h));
 }
 
+function classifyDvfType(value,code){
+  const raw=String(value||"").toLowerCase();
+  const c=String(code||"");
+  if(/^12/.test(c)||/appartement|studio|duplex|loft/.test(raw)) return "Appartement";
+  if(/^11/.test(c)||/maison/.test(raw)) return "Maison";
+  return null;
+}
+
 async function buildComparableSales(market,property){
   const sales=Array.isArray(market?.recentSales)?market.recentSales:[];
   const wantedType=String(property?.propertyType||"").toLowerCase();
@@ -543,7 +581,7 @@ async function buildComparableSales(market,property){
   let sourceSales=sales;
   let externalSource=sourceSales.length?"Estimus":"";
   const buildRanked=async source=>{
-    const candidates=source.filter(s=>!typeWanted||s.type===typeWanted),geocoded=[];
+    const candidates=source.filter(s=>!typeWanted||classifyDvfType(s.type,s.codtypbien)===typeWanted),geocoded=[];
     for(const sale of candidates){
       let distanceKm=Number.isFinite(Number(sale.distanceKm))?Number(sale.distanceKm):null;
       if(distanceKm===null){
@@ -570,7 +608,7 @@ async function buildComparableSales(market,property){
     sourceSales=await fetchDvfRadiusSales(origin,property);
     if(sourceSales.length){externalSource="DVF / CQuest";ranked=await buildRanked(sourceSales);}
   }
-  const candidates=sourceSales.filter(s=>!typeWanted||s.type===typeWanted), geocoded=[];
+  const candidates=sourceSales.filter(s=>!typeWanted||classifyDvfType(s.type,s.codtypbien)===typeWanted), geocoded=[];
   const prices=ranked.map(s=>Number(s.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
   const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:Math.round((prices[prices.length/2-1]+prices[prices.length/2])/2)):null;
   return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length,radiusKm:0.5,origin,source:externalSource||"DVF"};
