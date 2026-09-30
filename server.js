@@ -391,7 +391,7 @@ async function getCommuneMarketData(city,code){
     if(!parsed) throw new Error("Médiane communale non trouvée pour "+cleanCity);
     if(!Array.isArray(parsed.recentSales)||!parsed.recentSales.length){
       const fallbackSales=await fetchImmoDvfRecentSales(cleanCity,code);
-      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF / Immo-DVF";}
+      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF / DataFonciere";}
     }
     parsed.sourceUrl=communeUrl;
     communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
@@ -430,20 +430,20 @@ async function geocodeAddress(address,city){
 async function fetchImmoDvfRecentSales(city,code){
   const slug=normalizeSearchCity(city).replace(/\s+/g,"-");
   if(!slug||!/^08\d{3}$/.test(String(code||""))) return [];
-  const url="https://www.immo-dvf.fr/prix-immobilier/grand-est/ardennes/"+slug+"-08000/";
+  const url="https://datafonciere.fr/analyse/08-ardennes/"+slug;
   try{
     const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(8000)});
-    if(!response.ok) throw new Error("Immo-DVF HTTP "+response.status);
+    if(!response.ok) throw new Error("DataFonciere HTTP "+response.status);
     const html=await response.text(),text=stripHtml(html);
     const section=(text.split(/Dernières transactions immobilières enregistrées/i)[1]||text).split(/Pourquoi certaines rues|Prix moyen vs prix médian|©/i)[0];
     const re=/(\d{1,2}\/\d{1,2}\/\d{4})\s+(Appartement|Maison)\s+([0-9\s]+)\s*m²\s+([0-9\s]+)\s*€\s+([0-9\s]+)\s*€/m²/gi;
     const out=[];let m;
     while((m=re.exec(section))&&out.length<12){
       const surface=Number(m[3].replace(/\s/g,"")),price=Number(m[4].replace(/\s/g,"")),psm=Number(m[5].replace(/\s/g,""));
-      if(surface>0&&price>0&&psm>=300&&psm<=6000) out.push({type:m[2],address:"Commune · adresse publiée par DVF",date:m[1],surface,rooms:null,price,pricePerM2:psm,source:"DVF / Immo-DVF"});
+      if(surface>0&&price>0&&psm>=300&&psm<=6000) out.push({type:m[2],address:"Commune · adresse publiée par DVF",date:m[1],surface,rooms:null,price,pricePerM2:psm,source:"DVF / DataFonciere"});
     }
     return out;
-  }catch(error){console.warn("JML Immo-DVF fallback:",error.message);return [];}
+  }catch(error){console.warn("JML DataFonciere fallback:",error.message);return [];}
 }
 
 async function fetchCeremaDvfRadiusSales(origin,property){
