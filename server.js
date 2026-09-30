@@ -605,7 +605,7 @@ async function getNearbyCommunes(commune){
       const response=await fetch("https://www.mon-quartier-info.com/commune/"+String(commune?.code||""),{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
       if(response.ok){
         const html=await response.text(),out=[],seen=new Set();
-        const re=/<a[^>]+href=["']\\/commune\\/(\\d{5})["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+        const re=/<a[^>]+href=["\']\/commune\/(\d{5})["\'][^>]*>([\s\S]*?)<\/a>/gi;
         let m;
         while((m=re.exec(html))&&out.length<6){
           const code=m[1],name=stripHtml(m[2]);
