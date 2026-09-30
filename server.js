@@ -1088,23 +1088,40 @@ app.get("/api/territory-summary", async (req,res) => {
     }
 
     stage="seller-reference";
-    let sellerReference;
-    try{
-      sellerReference=buildSellerReference(
-        {...market,comparables:comparable},
-        {address,propertyType,surface}
-      );
-    }catch(error){
-      console.warn("JML seller reference isolated:",error.message);
-      sellerReference={
-        available:false,type:propertyType||"Non renseigné",
-        basePriceM2:null,surface:Number(surface)||null,referenceValue:null,
-        range:{low:null,high:null,marginPct:15},
-        transactions:market.transactions||null,history:market.history||[],
-        comparables:comparable,
-        explanation:"Le repère personnalisé sera calculé lorsque les données de marché seront disponibles."
-      };
-    }
+    // Calcul du repère vendeur directement ici.
+    // On ne dépend plus de buildSellerReference() afin qu'une erreur interne
+    // de cette fonction ne puisse plus faire tomber Mon secteur.
+    const propertyTypeText=String(propertyType||"").toLowerCase();
+    const sellerIsApartment=/appartement|studio|duplex|loft/i.test(propertyTypeText);
+    const sellerIsHouse=/maison/i.test(propertyTypeText);
+    const sellerType=sellerIsApartment?"Appartement":sellerIsHouse?"Maison":"Tous biens";
+    const sellerBase=sellerIsApartment
+      ? Number(market?.apartmentPrice)
+      : sellerIsHouse
+        ? Number(market?.housePrice)
+        : Number(market?.communalPrice);
+    const sellerSurface=Number(surface);
+    const sellerHasBase=Number.isFinite(sellerBase)&&sellerBase>0;
+    const sellerHasSurface=Number.isFinite(sellerSurface)&&sellerSurface>0;
+    const sellerValue=sellerHasBase&&sellerHasSurface?Math.round(sellerBase*sellerSurface):null;
+    const sellerReference={
+      available:sellerHasBase,
+      type:sellerType,
+      basePriceM2:sellerHasBase?sellerBase:null,
+      surface:sellerHasSurface?sellerSurface:null,
+      referenceValue:sellerValue,
+      range:{
+        low:sellerValue!==null?Math.round(sellerValue*0.85):null,
+        high:sellerValue!==null?Math.round(sellerValue*1.15):null,
+        marginPct:15
+      },
+      transactions:Number.isFinite(Number(market?.transactions))?Number(market.transactions):null,
+      history:Array.isArray(market?.history)?market.history:[],
+      comparables:comparable,
+      explanation:sellerHasBase&&sellerHasSurface
+        ?"Repère mathématique construit à partir du prix médian du type de bien et de la surface renseignée. Il ne constitue pas une estimation certifiée."
+        :"Le repère personnalisé sera calculé dès que le type de bien et les données de marché seront disponibles."
+    };
 
     return res.json({
       ok:true,version:VERSION,build:BUILD_MARKER,commune,
