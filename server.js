@@ -434,39 +434,41 @@ async function geocodeAddress(address,city){
   }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
 }
 
-async function fetchGeoRegistrySales(property,city){
-  const address=String(property?.address||"").trim(), commune=String(city||"").trim();
-  if(!address||!commune) return [];
+async function fetchCeremaDvfRadiusSales(origin,property){
+  if(!origin) return [];
   const type=String(property?.propertyType||"").toLowerCase();
-  const typeCode=/appartement|studio|duplex|loft/i.test(type)?"2":/maison/i.test(type)?"1":"";
+  const codtypbien=/appartement|studio|duplex|loft/i.test(type)?"121":/maison/i.test(type)?"111":"111,121";
+  const latDelta=500/111320;
+  const lonDelta=500/(111320*Math.max(0.2,Math.cos(origin.lat*Math.PI/180)));
+  const bbox=[origin.lon-lonDelta,origin.lat-latDelta,origin.lon+lonDelta,origin.lat+latDelta].map(v=>Number(v.toFixed(6))).join(",");
   try{
-    const params=new URLSearchParams({adresse:address+" "+commune,radius:"500",limit:"50"});
-    if(typeCode) params.set("type_local",typeCode);
-    const response=await fetch("https://georegistry.fr/api/v1/dvf/ventes/address?"+params.toString(),{
-      headers:{"User-Agent":"JML-Projet-Vendeur/2.8","Accept":"application/json"},
-      signal:AbortSignal.timeout(7000)
-    });
-    if(!response.ok) throw new Error("GeoRegistry HTTP "+response.status);
+    const params=new URLSearchParams({in_bbox:bbox,codtypbien,page_size:"500",fields:"all"});
+    const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
+    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/2.8"},signal:AbortSignal.timeout(9000)});
+    if(!response.ok) throw new Error("Cerema DVF HTTP "+response.status);
     const payload=await response.json();
-    const rows=Array.isArray(payload?.data)?payload.data:[];
-    const surface=Number(property?.surface);
-    return rows.map(s=>({
-      type:s.type_local||"",
-      address:s.adresse||"Adresse non renseignée",
-      date:s.mutation_date||s.date_mutation||null,
-      surface:Number(s.surface_bati??s.surface_reelle_bati),
-      rooms:Number(s.nombre_pieces_principales)||null,
-      price:Number(s.valeur_fonciere),
-      pricePerM2:Number(s.prix_m2)||(Number(s.valeur_fonciere)>0&&Number(s.surface_bati)>0?Number(s.valeur_fonciere)/Number(s.surface_bati):null),
-      distanceKm:Number.isFinite(Number(s.distance_m))?Number((Number(s.distance_m)/1000).toFixed(3)):null,
-      source:"DVF / GeoRegistry"
-    })).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=0.5)
-      .filter(s=>!Number.isFinite(surface)||surface<=0||(s.surface>=surface*0.7&&s.surface<=surface*1.3));
-  }catch(error){
-    console.warn("JML DVF GeoRegistry:",error.message);
-    return [];
-  }
+    const features=Array.isArray(payload?.features)?payload.features:[];
+    const surfaceWanted=Number(property?.surface);
+    return features.map(f=>{
+      const p=f?.properties||{}, geom=f?.geometry;
+      const coords=Array.isArray(geom?.coordinates)?geom.coordinates:[];
+      let lon=Number(p.lon??p.longitude),lat=Number(p.lat??p.latitude);
+      if(!Number.isFinite(lon)||!Number.isFinite(lat)){
+        const flat=[];
+        const walk=v=>{if(Array.isArray(v)){if(v.length>=2&&Number.isFinite(Number(v[0]))&&Number.isFinite(Number(v[1]))&&Math.abs(Number(v[0]))<=180&&Math.abs(Number(v[1]))<=90) flat.push([Number(v[0]),Number(v[1])]); else v.forEach(walk);}};
+        walk(coords);
+        if(flat.length){lon=flat.reduce((s,v)=>s+v[0],0)/flat.length;lat=flat.reduce((s,v)=>s+v[1],0)/flat.length;}
+      }
+      const price=Number(p.valeurfonc??p.valeur_fonciere), surface=Number(p.sbati??p.surface_reelle_bati??p.surface);
+      const distanceKm=Number.isFinite(lat)&&Number.isFinite(lon)?haversineKm(origin,{lat,lon}):null;
+      const psm=price>0&&surface>0?price/surface:null;
+      return {type:p.libtypbien||p.type_local||"",address:p.adresse||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",date:p.datemut||p.date_mutation||null,surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales)||null,price,pricePerM2:psm,distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,source:"DVF+ / Cerema"};
+    }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&s.distanceKm!=null&&s.distanceKm<=0.5)
+      .filter(s=>!Number.isFinite(surfaceWanted)||surfaceWanted<=0||(s.surface>=surfaceWanted*0.7&&s.surface<=surfaceWanted*1.3));
+  }catch(error){ console.warn("JML DVF+ Cerema:",error.message); return []; }
 }
+
+
 
 async function fetchDvfRadiusSales(origin,property,cityCode){
   if(!origin) return [];
@@ -530,8 +532,8 @@ async function buildComparableSales(market,property){
   let sourceSales=sales;
   let externalSource="";
   if(!sourceSales.length){
-    sourceSales=await fetchGeoRegistrySales(property,city);
-    if(sourceSales.length) externalSource="GeoRegistry";
+    sourceSales=await fetchCeremaDvfRadiusSales(origin,property);
+    if(sourceSales.length) externalSource="DVF+ / Cerema";
   }
   if(!sourceSales.length){
     sourceSales=await fetchDvfRadiusSales(origin,property);
