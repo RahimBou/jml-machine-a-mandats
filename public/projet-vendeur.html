@@ -767,7 +767,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  restoreSellerDetails();
 
  async function restoreSellerSubmittedView(){
-   const pathMatch=location.pathname.match(/^\\/espace-vendeur\\/([^/]+)/);
+   const pathMatch=location.pathname.match(/^\/espace-vendeur\/([^/]+)/);
    const pathToken=pathMatch?decodeURIComponent(pathMatch[1]):"";
    let saved=sellerSubmissionRead();
    let d=getSellerSpace();
@@ -835,7 +835,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  restoreSellerSubmittedView().then(refreshSellerSpaceUI);
  window.addEventListener("pageshow",function(){restoreSellerSubmittedView().then(refreshSellerSpaceUI)});
 
- const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};try{const u=new URL(location.href);u.searchParams.delete("espace");history.replaceState({sellerSpace:false},"",u.href)}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
+ const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};try{history.replaceState({sellerSpace:false},"","/projet-vendeur")}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
 })();
 </script>
 <div class="seller-modal" id="sellerModal" aria-hidden="true">
