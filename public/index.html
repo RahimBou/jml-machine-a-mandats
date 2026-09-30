@@ -16,6 +16,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 <header class="pro-top">
 <div class="pro-brand"><strong>JML Immobilier</strong><span>ESPACE PROFESSIONNEL · ARDENNES</span></div>
 <nav class="pro-nav">
+<a href="#prospects">Prospects</a>
 <a href="/projet-vendeur" target="_blank">Formulaire vendeur ↗</a>
 <a class="secondary" href="/guide" target="_blank">Lead Magnet ↗</a>
 </nav>
@@ -38,7 +39,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 <a class="pro-action" href="/projet-vendeur"><strong>👤 Tester l’espace vendeur</strong><span>Créer une demande de test puis ouvrir l’espace personnel généré.</span></a>
 </div></section>
 </div>
-<section class="pro-card" style="margin-top:14px"><h2>📋 Parcours JML</h2><p>Attirer → capter → qualifier → relancer → rendez-vous → mandat.</p>
+<section id="prospects" class="pro-card" style="margin-top:14px"><h2>👥 Mes prospects vendeurs</h2><p>Retrouver ici les propriétaires captés par le formulaire et suivre leur statut.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="refreshProspects" type="button" style="border:1px solid #d8bb7a;background:#f7f1e4;color:#173b31;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer">↻ Actualiser</button><a class="pro-action" style="padding:9px 12px" href="/projet-vendeur"><strong>＋ Nouveau prospect</strong><span>Ouvrir le formulaire vendeur</span></a></div><div id="prospectsBox" class="pro-list"><div class="pro-item">Chargement des prospects…</div></div></section><section class="pro-card" style="margin-top:14px"><h2>📋 Parcours JML</h2><p>Attirer → capter → qualifier → relancer → rendez-vous → mandat.</p>
 <div class="pro-actions">
 <a class="pro-action" href="/projet-vendeur"><strong>1 · Capter un propriétaire</strong><span>Le formulaire public crée automatiquement le lead et son espace personnel.</span></a>
 <a class="pro-action" href="/api/mandat-intelligence" target="_blank"><strong>2 · Intelligence commerciale</strong><span>Consulter les priorités calculées par le serveur.</span></a>
@@ -49,11 +50,16 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 </main></div>
 <script>
 (async function(){
- try{
+ async function loadProspects(){
   const r=await fetch("/api/prospects",{cache:"no-store"});const d=await r.json();const p=Array.isArray(d.prospects)?d.prospects:[];
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=String(v)};
   set("nProspects",p.length);set("nHot",p.filter(x=>x.horizon==="0-3"||x.horizon==="3-6").length);set("nRdv",p.filter(x=>x.status==="RDV pris").length);set("nMandats",p.filter(x=>x.status==="Mandat").length);
- }catch(e){console.warn(e)}
+  const box=document.getElementById("prospectsBox"); if(!box)return;
+  if(!p.length){box.innerHTML="<div class=\"pro-item\"><div><strong>Aucun prospect enregistré</strong><small>Les nouveaux propriétaires apparaîtront ici.</small></div></div>";return;}
+  box.innerHTML=p.map(x=>"<div class=\"pro-item\"><div><strong>"+esc(x.name||"Sans nom")+"</strong><small>"+esc(x.city||"Ville non renseignée")+" · "+esc(x.phone||"Téléphone non renseigné")+" · "+esc(x.property_type||"Bien non renseigné")+"</small><small>"+esc(x.source||"Source non renseignée")+" · horizon "+esc(x.horizon||"—")+"</small></div><div><select data-id=\""+esc(x.id)+"\" class=\"prospect-status\"><option"+(x.status==="Nouveau"?" selected":"")+">Nouveau</option><option"+(x.status==="À contacter"?" selected":"")+">À contacter</option><option"+(x.status==="Contacté"?" selected":"")+">Contacté</option><option"+(x.status==="RDV pris"?" selected":"")+">RDV pris</option><option"+(x.status==="Mandat"?" selected":"")+">Mandat</option><option"+(x.status==="Perdu"?" selected":"")+">Perdu</option></select></div></div>").join("");
+  box.querySelectorAll(".prospect-status").forEach(select=>select.addEventListener("change",async()=>{try{await fetch("/api/prospects/"+encodeURIComponent(select.dataset.id)+"/status",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:select.value})});await loadProspects();}catch(e){console.warn(e)}}));
+ }
+ try{await loadProspects();document.getElementById("refreshProspects")?.addEventListener("click",loadProspects)}catch(e){console.warn(e)}
  try{
   const r=await fetch("/api/mandat-intelligence",{cache:"no-store"});const d=await r.json();const items=Array.isArray(d.priorities)?d.priorities:[];
   const box=document.getElementById("priority");
