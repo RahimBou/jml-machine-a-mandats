@@ -315,15 +315,25 @@ function parseEstimusHistory(html,text){
   const out=new Map();
   const source=String(html||"");
   const patterns=[
-    /["']?(20(?:1[4-9]|2[0-5]))["']?\\s*[:=,]\\s*["']?([0-9]{3,5}(?:[.,][0-9]+)?)["']?/g,
-    /["']?year["']?\\s*[:=]\\s*(20(?:1[4-9]|2[0-5]))[\\s\\S]{0,80}?["']?(?:value|price|median|pricePerM2)["']?\\s*[:=]\\s*["']?([0-9]{3,5}(?:[.,][0-9]+)?)/gi,
-    /(?:20(?:1[4-9]|2[0-5]))\\s*[-–:]\\s*([0-9]{3,5}(?:[.,][0-9]+)?)\\s*€\\s*\\/\\s*m²/gi
+    /["']?(20(?:1[4-9]|2[0-5]))["']?\s*[:=,]\s*["']?([0-9]{3,5}(?:[.,][0-9]+)?)["']?/g,
+    /["']?year["']?\s*[:=]\s*(20(?:1[4-9]|2[0-5]))[\s\S]{0,80}?["']?(?:value|price|median|pricePerM2)["']?\s*[:=]\s*["']?([0-9]{3,5}(?:[.,][0-9]+)?)/gi,
+    /(20(?:1[4-9]|2[0-5]))\s*[-–:]\s*([0-9]{3,5}(?:[.,][0-9]+)?)\s*€\s*\/\s*m²/gi
   ];
-  for(const re of patterns){ let m; while((m=re.exec(source))){ const year=Number(m[1]); const value=Number(String(m[2]).replace(/\\s/g,"").replace(",",".")); if(year>=2014&&year<=2025&&value>=300&&value<=6000) out.set(year,Math.round(value)); } }
+  for(const re of patterns){
+    let m;
+    while((m=re.exec(source))){
+      const year=Number(m[1]);
+      const value=Number(String(m[2]).replace(/\s/g,"").replace(",",".")); 
+      if(year>=2014&&year<=2025&&value>=300&&value<=6000) out.set(year,Math.round(value));
+    }
+  }
   if(out.size<4){
     const textSource=String(text||"");
-    const evolution=textSource.match(/Entre\\s+2014\\s+et\\s+2025,?[^.]*?passé de\\s+([0-9]{1,3}(?:\\s[0-9]{3})?)\\s*€\\/m² à\\s+([0-9]{1,3}(?:\\s[0-9]{3})?)/i);
-    if(evolution){out.set(2014,Number(evolution[1].replace(/\\s/g,"")));out.set(2025,Number(evolution[2].replace(/\\s/g,"")));}
+    const evolution=textSource.match(/Entre\s+2014\s+et\s+2025,?[^.]*?passé de\s+([0-9]{1,3}(?:\s[0-9]{3})?)\s*€\/m² à\s+([0-9]{1,3}(?:\s[0-9]{3})?)/i);
+    if(evolution){
+      out.set(2014,Number(evolution[1].replace(/\s/g,"")));
+      out.set(2025,Number(evolution[2].replace(/\s/g,"")));
+    }
   }
   return [...out.entries()].sort((a,b)=>a[0]-b[0]).map(([year,value])=>({year,value}));
 }
