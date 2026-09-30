@@ -15,7 +15,7 @@ app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => res.redirect(302, "/projet-vendeur"));
 app.get("/projet-vendeur", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
-app.get("/espace-vendeur/:token", (req, res) => res.sendFile(path.join(__dirname, "public", "projet-vendeur.html")));
+app.get("/espace-vendeur/:token", (req, res) => res.sendFile(path.join(__dirname, "public", "espace-vendeur.html")));
 app.get("/facebook", (req, res) => {
   const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
   res.redirect(302, `/projet-vendeur${qs}`);
