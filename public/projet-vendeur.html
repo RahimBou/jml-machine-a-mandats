@@ -426,7 +426,7 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
     document.documentElement.setAttribute("data-jml-seller-space","1");
     const style=document.createElement("style");
     style.id="jml-seller-route-guard";
-    style.textContent='[data-jml-seller-space="1"] #fbLeadForm{display:none!important}[data-jml-seller-space="1"] #fbSuccess{display:block!important}';
+    style.textContent='[data-jml-seller-space="1"] .fb-hero{display:none!important}[data-jml-seller-space="1"] .fb-card>h2,[data-jml-seller-space="1"] .fb-card>p.muted,[data-jml-seller-space="1"] #fbLeadForm,[data-jml-seller-space="1"] #fbMessage{display:none!important}[data-jml-seller-space="1"] #fbSuccess{display:block!important}';
     (document.head||document.documentElement).appendChild(style);
   }catch(_e){}
 })();
@@ -572,17 +572,12 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 </section>
 </div>
 <script>
-/* JML — conserver automatiquement l'espace vendeur après actualisation */
+/* JML — la page publique reste toujours accessible à la racine.
+   L'espace vendeur personnel est ouvert uniquement via /espace-vendeur/:token. */
 (function(){
-  if(location.pathname==="/projet-vendeur" || location.pathname==="/"){
-    try{
-      const d=JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}");
-      if(d && d.submitted && d.token){
-        location.replace("/espace-vendeur/"+encodeURIComponent(d.token));
-        return;
-      }
-    }catch(_e){}
-  }
+  /* Aucun redirect depuis "/" ou "/projet-vendeur".
+     Ainsi le lien Render ouvre toujours le formulaire public,
+     même après avoir testé un espace vendeur dans ce navigateur. */
 })();
 </script>
 <script>
