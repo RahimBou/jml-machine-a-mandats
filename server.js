@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.0.0";
-const BUILD_MARKER = "seller-geoplateforme-geocodage-v1";
+const VERSION = "3.0.1";
+const BUILD_MARKER = "seller-geoplateforme-robust-resolver-v2";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -911,41 +911,76 @@ app.get("/api/territory-summary", async (req,res) => {
 
   try{
     let commune=null;
-    try{
-      const geoUrl="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(city)+"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
-      const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.1"},signal:AbortSignal.timeout(6000)});
-      if(geoResponse.ok){
-        const candidates=await geoResponse.json();
-        if(Array.isArray(candidates)&&candidates.length) commune=candidates[0];
+
+    // 1) Résolution directe de la commune par le nouveau géocodeur IGN.
+    // On essaie plusieurs requêtes : adresse complète, adresse + code postal,
+    // puis uniquement la commune. Une panne ou une réponse vide ne doit pas
+    // bloquer tout le rapport.
+    const geoCandidates=[];
+    const addGeoQuery=(value)=>{
+      const v=String(value||"").trim();
+      if(v&&!geoCandidates.includes(v)) geoCandidates.push(v);
+    };
+    const postal=(address.match(/\\b\\d{5}\\b/)||[])[0]||"";
+    addGeoQuery([address,city].filter(Boolean).join(", "));
+    addGeoQuery([address,postal].filter(Boolean).join(", "));
+    addGeoQuery([city,postal].filter(Boolean).join(", "));
+    addGeoQuery(city);
+
+    for(const query of geoCandidates){
+      try{
+        const geoUrl="https://data.geopf.fr/geocodage/search?q="+encodeURIComponent(query)+"&limit=5";
+        const geoResponse=await fetch(geoUrl,{
+          headers:{"User-Agent":"JML-Projet-Vendeur/3.0.1","Accept":"application/json"},
+          signal:AbortSignal.timeout(6000)
+        });
+        if(!geoResponse.ok) continue;
+        const payload=await geoResponse.json();
+        const features=Array.isArray(payload?.features)?payload.features:[];
+        const feature=features.find(f=>{
+          const p=f?.properties||{};
+          return /^\\d{5}$/.test(String(p.citycode||"")) ||
+            /^\\d{5}$/.test(String(p.cityCode||"")) ||
+            /^\\d{5}$/.test(String(p.citycode_insee||""));
+        });
+        if(!feature) continue;
+
+        const p=feature.properties||{};
+        const coords=feature.geometry?.coordinates;
+        const cityCode=String(p.citycode||p.cityCode||p.citycode_insee||"").trim();
+        const label=String(p.label||p.name||city).trim();
+        commune={
+          nom:String(p.city||p.commune||city).trim()||city,
+          code:cityCode,
+          population:null,
+          surface:null,
+          centre:{type:"Point",coordinates:Array.isArray(coords)?coords:[null,null]},
+          departement:{code:String(p.context||"").split(",")[0].trim().slice(0,2)||cityCode.slice(0,2)},
+          region:null,
+          epci:null
+        };
+        console.log("JML commune résolue par Géoplateforme:",commune.nom,commune.code,label);
+        break;
+      }catch(error){
+        console.warn("JML Géoplateforme query échouée:",query,error.message);
       }
-    }catch(error){
-      console.warn("JML geo.api.gouv.fr indisponible:",error.message);
     }
 
-    // Secours BAN : on récupère au minimum le code INSEE et les coordonnées
-    // à partir de l'adresse. Cela évite qu'une panne de geo.api.gouv.fr
-    // bloque toute la page Mon secteur.
+    // 2) Secours : ancienne API geo.api.gouv.fr si elle répond encore.
     if(!commune){
-      const q=[address,city].filter(Boolean).join(", ");
-      const banUrl="https://data.geopf.fr/geocodage/search/?q="+encodeURIComponent(q)+"&limit=5";
-      const banResponse=await fetch(banUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.1"},signal:AbortSignal.timeout(6000)});
-      if(!banResponse.ok) throw new Error("Géo et BAN indisponibles");
-      const payload=await banResponse.json();
-      const feature=(Array.isArray(payload?.features)?payload.features:[]).find(f=>/^\d{5}$/.test(String(f?.properties?.citycode||"")));
-      if(!feature) throw new Error("Commune introuvable");
-      const p=feature.properties||{}, coords=feature.geometry?.coordinates;
-      commune={
-        nom:String(p.city||city),
-        code:String(p.citycode),
-        population:null,
-        surface:null,
-        centre:{type:"Point",coordinates:Array.isArray(coords)?coords:[null,null]},
-        departement:{code:String(p.context||"").split(",")[0].trim().slice(0,2)||String(p.citycode).slice(0,2)},
-        region:null,
-        epci:null
-      };
-      console.log("JML commune résolue par BAN:",commune.nom,commune.code);
+      try{
+        const geoUrl="https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(city)+"&boost=population&fields=nom,code,population,surface,centre,departement,region,epci&format=json";
+        const geoResponse=await fetch(geoUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0.1"},signal:AbortSignal.timeout(5000)});
+        if(geoResponse.ok){
+          const candidates=await geoResponse.json();
+          if(Array.isArray(candidates)&&candidates.length) commune=candidates[0];
+        }
+      }catch(error){
+        console.warn("JML geo.api.gouv.fr secours:",error.message);
+      }
     }
+
+    if(!commune) throw new Error("Commune introuvable via les services géographiques publics.");
 
     // Chaque bloc est indépendant : une source secondaire en panne ne doit
     // jamais faire disparaître tout le rapport.
