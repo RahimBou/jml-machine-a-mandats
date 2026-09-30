@@ -487,7 +487,7 @@ async function fetchCeremaRecentSales(code){
       const surface=Number(p.sbati??p.surface_reelle_bati??p.surface);
       const psm=price>0&&surface>0?price/surface:null;
       return {
-        type:p.libtypbien||p.type_local||"",
+        type:classifyDvfType(p.libtypbien||p.type_local,p.codtypbien)||p.libtypbien||p.type_local||"",
         codtypbien:p.codtypbien||"",
         address:p.adresse||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
         date:p.datemut||p.date_mutation||null,
