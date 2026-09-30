@@ -44,7 +44,7 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
 .seller-brand:after{content:"";position:absolute;right:-70px;top:-100px;width:230px;height:230px;border:24px solid rgba(216,187,122,.12);border-radius:50%}
 .seller-brand-logo{width:175px;height:76px;object-fit:contain;object-position:left center;filter:drop-shadow(0 4px 8px rgba(0,0,0,.16));border-radius:10px}
 .seller-brand-copy{padding-right:18px}.seller-brand-copy strong{font-size:16px}.seller-brand-copy span{font-size:8px}
-.seller-hero{min-height:250px;padding:0;display:flex;align-items:flex-end;background:linear-gradient(180deg,rgba(12,44,37,.08),rgba(12,44,37,.78)),url("/assets/guide-hero.svg") center/cover;border-color:#b8944e}
+.seller-hero{min-height:250px;padding:0;display:flex;align-items:flex-end;background:linear-gradient(180deg,rgba(12,44,37,.08),rgba(12,44,37,.78)),url("/assets/seller-hero-ardenne.svg") center/cover;border-color:#b8944e}
 .seller-hero-content{position:relative;z-index:2;width:100%;padding:26px;color:#fff}.seller-hero-content h3{font-size:29px;text-shadow:0 2px 8px rgba(0,0,0,.28)}.seller-hero-content p{color:#f2f1ea;max-width:560px}.seller-hero .seller-meta{margin-top:16px}.seller-hero .seller-pill{background:rgba(255,255,255,.92);color:#17332c}
 .seller-kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(184,148,78,.94);color:#17332c;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
 .seller-section{position:relative}.seller-section-head>div:nth-child(2){flex:1}.seller-section-head .seller-arrow{cursor:pointer;transition:.2s}.seller-section-head .seller-arrow:hover{transform:translateX(2px);background:#c8aa6d}
@@ -255,6 +255,82 @@ body{min-height:100vh;background:var(--cream)}.fb-wrap{max-width:720px;margin:0 
   .seller-status-steps b{width:22px;height:22px;flex-basis:22px}
   .seller-quick-grid{grid-template-columns:1fr 1fr}
 }
+<style>
+/* V4 — direction artistique inspirée du concept premium JML */
+:root{--jml-gold:#d8b76f;--jml-gold-dark:#9d7735;--jml-green:#0f3d34}
+body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);color:#173b31}
+.fb-wrap{max-width:1100px;padding:26px 20px 72px}
+.fb-success{margin-top:22px}
+.fb-success-head{padding:0 6px 20px}
+.fb-success-head h2{font-size:29px!important;letter-spacing:-.02em}
+.seller-space{margin-top:4px}
+.seller-dashboard-hero{
+ min-height:455px;border-radius:30px;border:1px solid rgba(184,148,78,.8);
+ background:
+ linear-gradient(90deg,rgba(5,38,32,.82) 0%,rgba(5,38,32,.42) 46%,rgba(5,38,32,.08) 82%),
+ url("/assets/seller-hero-ardenne.svg") center/cover;
+ box-shadow:0 22px 55px rgba(13,49,42,.18);
+}
+.seller-dashboard-hero:after{content:"";position:absolute;inset:auto 0 0;height:5px;background:linear-gradient(90deg,#9d7735,#f1d68e,#9d7735)}
+.seller-dashboard-overlay{padding:42px;justify-content:flex-end}
+.seller-dashboard-kicker{display:inline-flex;width:max-content;padding:7px 11px;border:1px solid rgba(238,211,151,.45);border-radius:999px;background:rgba(8,49,41,.48);font-size:10px;letter-spacing:.18em}
+.seller-dashboard-overlay h3{font-family:Georgia,"Times New Roman",serif;font-size:54px;max-width:760px;letter-spacing:-.035em;text-shadow:0 4px 20px rgba(0,0,0,.35);margin:10px 0 10px}
+.seller-dashboard-overlay p{font-size:16px;max-width:690px;text-shadow:0 2px 8px rgba(0,0,0,.28)}
+.seller-dashboard-pills span{border:1px solid rgba(23,59,49,.08);box-shadow:0 5px 14px rgba(0,0,0,.1)}
+.seller-status{margin-top:14px;padding:17px 22px;border-radius:18px;background:rgba(255,253,248,.96);box-shadow:0 8px 25px rgba(23,51,44,.06)}
+.seller-status-copy strong:before{content:"✓";display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:#b8944e;color:#173b31;font-size:13px}
+.seller-quick-grid{margin-top:14px;gap:12px}
+.seller-quick-card{position:relative;overflow:hidden;min-height:152px;padding:17px 16px 13px;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;background:#fffdf8}
+.seller-quick-card em{position:absolute;right:13px;bottom:12px;padding:4px 8px;border-radius:999px;background:#f1e4c4}
+.seller-quick-card:after{content:"";position:absolute;right:0;bottom:0;width:104px;height:58px;opacity:.9;background-position:center;background-size:cover;border-radius:48px 0 0 0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.seller-quick-card:nth-child(1):after{background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/guide-hero.svg")}
+.seller-quick-card:nth-child(2):after{background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/guide-project-photo.svg")}
+.seller-quick-card:nth-child(3):after{background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/guide-calendar-photo.svg")}
+.seller-quick-card:nth-child(4):after{background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/guide-summary-photo.svg")}
+.seller-quick-card small{padding-right:6px}
+.seller-disclaimer{background:rgba(247,241,228,.8);font-size:11px}
+.seller-dashboard-grid{grid-template-columns:1.55fr .95fr;gap:14px}
+.seller-panel{background:rgba(255,253,248,.94);border-radius:20px;padding:21px;box-shadow:0 10px 30px rgba(23,51,44,.055)}
+.seller-market-tabs{border:1px solid #e7dfcf}
+.seller-market-tabs span{font-size:10px}
+.seller-market-big .seller-metric{background:#fff;border-color:#e7dfcf}
+.seller-metric strong{font-size:21px}
+.seller-chart{border-color:#e7dfcf;background:#fffdf9}
+.seller-bar i{background:linear-gradient(90deg,#123f35,#d2ad63)}
+.seller-advice-card{background:linear-gradient(145deg,#fffdf8,#f4ecdb);box-shadow:inset 0 0 0 1px rgba(184,148,78,.08)}
+.seller-guide-grid{gap:12px}
+.seller-guide-grid a{position:relative;overflow:hidden;min-height:170px;padding:0 13px 13px 13px;display:grid;grid-template-columns:82px 1fr;grid-template-rows:auto auto 1fr;column-gap:11px;background:#fffdf8}
+.seller-guide-grid a:before{content:"";grid-row:1/-1;width:82px;height:100%;background-position:center;background-size:cover;border-radius:12px;display:block}
+.seller-guide-grid a:nth-child(1):before{background-image:url("/assets/guide-project-photo.svg")}
+.seller-guide-grid a:nth-child(2):before{background-image:url("/assets/guide-documents-photo.svg")}
+.seller-guide-grid a:nth-child(3):before{background-image:url("/assets/guide-calendar-photo.svg")}
+.seller-guide-grid a>span{display:none}
+.seller-guide-grid a strong{padding-top:16px;font-size:13px}
+.seller-guide-grid a small{margin-top:5px}
+.seller-guide-grid a b{align-self:end;padding-bottom:3px}
+.seller-appointment-preview{margin-top:14px;border-radius:20px;padding:24px 26px;background:linear-gradient(120deg,#103e34,#173f35 60%,#0d302a);box-shadow:0 12px 30px rgba(15,61,52,.14)}
+.fb-appointment{margin-top:14px;border-radius:20px;padding:24px;background:rgba(255,253,248,.96);box-shadow:0 10px 30px rgba(23,51,44,.05)}
+.fb-appointment button.primary{background:#103e34;border-color:#103e34}
+@media(max-width:760px){
+ .fb-wrap{padding:16px 12px 48px}
+ .seller-dashboard-hero{min-height:360px;border-radius:24px}
+ .seller-dashboard-overlay{padding:24px 20px}
+ .seller-dashboard-overlay h3{font-size:37px}
+ .seller-dashboard-overlay p{font-size:13px}
+ .seller-quick-card{min-height:138px}
+ .seller-guide-grid a{min-height:145px;grid-template-columns:70px 1fr}
+ .seller-guide-grid a:before{width:70px}
+}
+@media(max-width:430px){
+ .seller-dashboard-hero{min-height:330px}
+ .seller-dashboard-overlay h3{font-size:31px}
+ .seller-dashboard-pills{gap:6px}
+ .seller-dashboard-pills span{font-size:9.5px;padding:7px 9px}
+ .seller-quick-card{min-height:150px}
+ .seller-guide-grid a{grid-template-columns:64px 1fr}
+ .seller-guide-grid a:before{width:64px}
+}
+</style>
 </style>
 </head>
 <body>
