@@ -223,7 +223,7 @@ function buildComparableSales(market,property){
     return {...s,sameStreet,matchScore:(sameStreet?3:0)+(Math.max(0,1-surfaceGap))};
   }).sort((a,b)=>b.matchScore-a.matchScore).slice(0,6);
   const prices=ranked.map(s=>s.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);
-  const median=prices.length?prices[Math.floor(prices.length/2)]:null;
+  const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:Math.round((prices[prices.length/2-1]+prices[prices.length/2])/2)):null;
   return {sales:ranked,sameStreet:ranked.filter(s=>s.sameStreet),median,matchCount:ranked.length};
 }
 
