@@ -7,6 +7,21 @@
 <link rel="stylesheet" href="/styles.css?v=1.8.0">
 <style>
 body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-top{background:#153b32;color:#fff;padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:18px}.pro-brand strong{display:block;font:700 23px Georgia,serif}.pro-brand span{display:block;color:#d8bb7a;font-size:10px;letter-spacing:.14em;margin-top:4px}.pro-nav{display:flex;gap:8px;flex-wrap:wrap}.pro-nav a{color:#173b31;background:#d8bb7a;text-decoration:none;padding:9px 12px;border-radius:9px;font-size:11px;font-weight:800}.pro-nav a.secondary{background:#fff;color:#173b31}.pro-wrap{max-width:1180px;margin:auto;padding:24px 18px 50px}.pro-head{margin-bottom:18px}.pro-head .eyebrow{color:#8a6b2e;font-weight:900;letter-spacing:.12em;font-size:10px}.pro-head h1{margin:6px 0;font:700 34px Georgia,serif}.pro-head p{margin:0;color:#69716b;font-size:13px}.pro-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.pro-stat{background:#fffdf8;border:1px solid #e3dbc9;border-radius:15px;padding:16px}.pro-stat span{display:block;color:#69716b;font-size:10px}.pro-stat strong{display:block;font-size:27px;margin-top:5px}.pro-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:14px}.pro-card{background:#fffdf8;border:1px solid #e3dbc9;border-radius:17px;padding:18px}.pro-card h2{margin:0 0 5px;font-size:19px}.pro-card p{margin:0;color:#69716b;font-size:11px;line-height:1.5}.pro-list{margin-top:13px;display:grid;gap:8px}.pro-item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px;border-radius:11px;background:#f7f2e7;border:1px solid #e8dfcf}.pro-item strong{font-size:12px}.pro-item small{display:block;color:#69716b;margin-top:3px;font-size:10px}.pro-badge{padding:5px 8px;border-radius:999px;background:#efe4c8;color:#6f592b;font-size:9px;font-weight:900;white-space:nowrap}.pro-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.pro-action{display:block;text-decoration:none;color:#173b31;border:1px solid #e3dbc9;border-radius:13px;background:#faf7ef;padding:13px}.pro-action strong{display:block;font-size:12px}.pro-action span{display:block;color:#69716b;font-size:10px;margin-top:4px;line-height:1.4}.pro-note{margin-top:14px;padding:12px 14px;border-left:3px solid #d8bb7a;background:#f7f1e4;color:#56605a;font-size:10.5px;line-height:1.5}.pro-footer{margin-top:18px;color:#8a8f89;font-size:9px;text-align:center}
+.prospect-row{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:13px;border-radius:12px;background:#f7f2e7;border:1px solid #e8dfcf}
+.prospect-main{min-width:0;flex:1}.prospect-main strong{font-size:12px}.prospect-main small{display:block;color:#69716b;margin-top:3px;font-size:10px;line-height:1.35}
+.prospect-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.prospect-status{border:1px solid #d8bb7a;background:#fffdf8;color:#173b31;border-radius:8px;padding:7px 8px;font-size:10px;font-weight:800}
+.prospect-buttons{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.prospect-btn{border:1px solid #d9cfbd;background:#fffdf8;color:#173b31;border-radius:8px;padding:7px 8px;font-size:10px;font-weight:800;cursor:pointer;text-decoration:none;white-space:nowrap}
+.prospect-btn.primary{background:#173b31;color:#fff;border-color:#173b31}.prospect-btn.danger{color:#9a3b32;border-color:#dfb9b3}
+.prospect-empty{padding:18px;text-align:center;color:#69716b;font-size:11px}
+.jml-modal{position:fixed;inset:0;background:rgba(15,34,29,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:1000}
+.jml-modal.open{display:flex}.jml-modal-card{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fffdf8;border-radius:18px;border:1px solid #e3dbc9;box-shadow:0 20px 60px rgba(0,0,0,.22);padding:20px}
+.jml-modal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.jml-modal-head h3{margin:0;font:700 24px Georgia,serif}.jml-close{border:0;background:#f1eadb;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:900}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:15px 0}.detail-field{background:#f7f2e7;border:1px solid #e8dfcf;border-radius:10px;padding:10px}.detail-field span{display:block;color:#69716b;font-size:9px}.detail-field strong{display:block;margin-top:3px;font-size:12px;word-break:break-word}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.form-grid label{font-size:10px;font-weight:800;color:#52605a}.form-grid input,.form-grid select,.form-grid textarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;border:1px solid #d9cfbd;border-radius:9px;background:#fff;padding:9px;color:#173b31;font:inherit}.form-grid textarea{min-height:90px;resize:vertical}.form-full{grid-column:1/-1}
+.modal-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:15px}.activity-list{display:grid;gap:7px;margin-top:10px}.activity-item{padding:10px;border-left:3px solid #d8bb7a;background:#f7f2e7;border-radius:0 9px 9px 0}.activity-item strong{font-size:10px}.activity-item small{display:block;color:#69716b;font-size:9px;margin-top:3px}
+@media(max-width:650px){.prospect-row{align-items:flex-start;flex-direction:column}.prospect-right{width:100%;justify-content:flex-start}.detail-grid,.form-grid{grid-template-columns:1fr}.form-full{grid-column:auto}}
 @media(max-width:760px){.pro-top{align-items:flex-start;flex-direction:column}.pro-stats{grid-template-columns:1fr 1fr}.pro-grid{grid-template-columns:1fr}}
 @media(max-width:430px){.pro-wrap{padding:18px 12px}.pro-stats{grid-template-columns:1fr 1fr}.pro-actions{grid-template-columns:1fr}.pro-head h1{font-size:29px}}
 </style>
@@ -39,7 +54,8 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 <a class="pro-action" href="/projet-vendeur"><strong>👤 Tester l’espace vendeur</strong><span>Créer une demande de test puis ouvrir l’espace personnel généré.</span></a>
 </div></section>
 </div>
-<section id="prospects" class="pro-card" style="margin-top:14px"><h2>👥 Mes prospects vendeurs</h2><p>Retrouver ici les propriétaires captés par le formulaire et suivre leur statut.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="refreshProspects" type="button" style="border:1px solid #d8bb7a;background:#f7f1e4;color:#173b31;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer">↻ Actualiser</button><a class="pro-action" style="padding:9px 12px" href="/projet-vendeur"><strong>＋ Nouveau prospect</strong><span>Ouvrir le formulaire vendeur</span></a></div><div id="prospectsBox" class="pro-list"><div class="pro-item">Chargement des prospects…</div></div></section><section class="pro-card" style="margin-top:14px"><h2>📋 Parcours JML</h2><p>Attirer → capter → qualifier → relancer → rendez-vous → mandat.</p>
+<section id="prospects" class="pro-card" style="margin-top:14px"><h2>👥 Mes prospects vendeurs</h2><p>Retrouver ici les propriétaires captés par le formulaire et piloter chaque contact jusqu'au mandat.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="refreshProspects" type="button" class="prospect-btn primary">↻ Actualiser</button><a class="prospect-btn" href="/projet-vendeur">＋ Nouveau prospect</a></div><div id="prospectsBox" class="pro-list"><div class="pro-item">Chargement des prospects…</div></div></section>
+<div id="prospectModal" class="jml-modal" aria-hidden="true"><div class="jml-modal-card"><div class="jml-modal-head"><div><div class="eyebrow">JML · FICHE PROSPECT</div><h3 id="modalTitle">Prospect</h3></div><button type="button" class="jml-close" id="closeModal">✕</button></div><div id="modalBody"></div></div></div><section class="pro-card" style="margin-top:14px"><h2>📋 Parcours JML</h2><p>Attirer → capter → qualifier → relancer → rendez-vous → mandat.</p>
 <div class="pro-actions">
 <a class="pro-action" href="/projet-vendeur"><strong>1 · Capter un propriétaire</strong><span>Le formulaire public crée automatiquement le lead et son espace personnel.</span></a>
 <a class="pro-action" href="/api/mandat-intelligence" target="_blank"><strong>2 · Intelligence commerciale</strong><span>Consulter les priorités calculées par le serveur.</span></a>
@@ -50,23 +66,96 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 </main></div>
 <script>
 (async function(){
- async function loadProspects(){
-  const r=await fetch("/api/prospects",{cache:"no-store"});const d=await r.json();const p=Array.isArray(d.prospects)?d.prospects:[];
-  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=String(v)};
-  set("nProspects",p.length);set("nHot",p.filter(x=>x.horizon==="0-3"||x.horizon==="3-6").length);set("nRdv",p.filter(x=>x.status==="RDV pris").length);set("nMandats",p.filter(x=>x.status==="Mandat").length);
-  const box=document.getElementById("prospectsBox"); if(!box)return;
-  if(!p.length){box.innerHTML="<div class=\"pro-item\"><div><strong>Aucun prospect enregistré</strong><small>Les nouveaux propriétaires apparaîtront ici.</small></div></div>";return;}
-  box.innerHTML=p.map(x=>"<div class=\"pro-item\"><div><strong>"+esc(x.name||"Sans nom")+"</strong><small>"+esc(x.city||"Ville non renseignée")+" · "+esc(x.phone||"Téléphone non renseigné")+" · "+esc(x.property_type||"Bien non renseigné")+"</small><small>"+esc(x.source||"Source non renseignée")+" · horizon "+esc(x.horizon||"—")+"</small></div><div><select data-id=\""+esc(x.id)+"\" class=\"prospect-status\"><option"+(x.status==="Nouveau"?" selected":"")+">Nouveau</option><option"+(x.status==="À contacter"?" selected":"")+">À contacter</option><option"+(x.status==="Contacté"?" selected":"")+">Contacté</option><option"+(x.status==="RDV pris"?" selected":"")+">RDV pris</option><option"+(x.status==="Mandat"?" selected":"")+">Mandat</option><option"+(x.status==="Perdu"?" selected":"")+">Perdu</option></select></div></div>").join("");
-  box.querySelectorAll(".prospect-status").forEach(select=>select.addEventListener("change",async()=>{try{await fetch("/api/prospects/"+encodeURIComponent(select.dataset.id)+"/status",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:select.value})});await loadProspects();}catch(e){console.warn(e)}}));
- }
- try{await loadProspects();document.getElementById("refreshProspects")?.addEventListener("click",loadProspects)}catch(e){console.warn(e)}
- try{
-  const r=await fetch("/api/mandat-intelligence",{cache:"no-store"});const d=await r.json();const items=Array.isArray(d.priorities)?d.priorities:[];
-  const box=document.getElementById("priority");
-  box.innerHTML=items.length?items.map((x,i)=>'<div class="pro-item"><div><strong>'+esc(x.name)+'</strong><small>'+esc(x.city||"")+' · '+esc(x.nextAction||"À traiter")+'</small></div><span class="pro-badge">#'+(i+1)+'</span></div>').join(""):'<div class="pro-item"><div><strong>Aucune priorité</strong><small>Le moteur n’a pas identifié d’action urgente.</small></div></div>';
- }catch(e){document.getElementById("priority").innerHTML='<div class="pro-item"><strong>Intelligence indisponible</strong></div>'}
+ const STATUS=["À qualifier","Contacté","À relancer","RDV pris","Estimation","Mandat","Pas de projet"];
+ let prospects=[];
+ const $=id=>document.getElementById(id);
  function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+ function enc(v){return encodeURIComponent(String(v??""))}
+ function fmtDate(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"})}
+ function openModal(){ $("prospectModal").classList.add("open");$("prospectModal").setAttribute("aria-hidden","false") }
+ function closeModal(){ $("prospectModal").classList.remove("open");$("prospectModal").setAttribute("aria-hidden","true") }
+ $("closeModal")?.addEventListener("click",closeModal);$("prospectModal")?.addEventListener("click",e=>{if(e.target.id==="prospectModal")closeModal()});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+ function set(id,v){const e=$(id);if(e)e.textContent=String(v)}
+ function statusOptions(current){return STATUS.map(s=>'<option value="'+esc(s)+'"'+(current===s?" selected":"")+'>'+esc(s)+'</option>').join("")}
+ async function api(url,options={}){const r=await fetch(url,{cache:"no-store",...options});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||"Erreur serveur");return d}
+
+ async function loadProspects(){
+  try{
+   const d=await api("/api/prospects");prospects=Array.isArray(d.prospects)?d.prospects:[];
+   set("nProspects",prospects.length);set("nHot",prospects.filter(x=>x.horizon==="0-3"||x.horizon==="3-6").length);set("nRdv",prospects.filter(x=>x.status==="RDV pris").length);set("nMandats",prospects.filter(x=>x.status==="Mandat").length);
+   const box=$("prospectsBox");if(!box)return;
+   if(!prospects.length){box.innerHTML='<div class="prospect-empty">Aucun prospect enregistré.<br>Les nouveaux propriétaires apparaîtront ici.</div>';return}
+   box.innerHTML=prospects.map(p=>`
+    <div class="prospect-row" data-id="${esc(p.id)}">
+      <div class="prospect-main"><strong>${esc(p.name||"Sans nom")}</strong><small>${esc(p.city||"Ville non renseignée")} · ${esc(p.phone||"Téléphone non renseigné")} · ${esc(p.propertyType||"Bien non renseigné")}</small><small>${esc(p.source||"Source non renseignée")} · horizon ${esc(p.horizon||"—")} · dernière activité ${fmtDate(p.lastContactAt)}</small></div>
+      <div class="prospect-right">
+        <select class="prospect-status" data-action="status" data-id="${esc(p.id)}">${statusOptions(p.status)}</select>
+        <div class="prospect-buttons">
+          <button type="button" class="prospect-btn primary" data-action="detail" data-id="${esc(p.id)}">Détail</button>
+          ${p.phone?'<a class="prospect-btn" href="tel:'+esc(p.phone)+'">📞 Appeler</a>':''}
+          ${p.phone?'<a class="prospect-btn" href="sms:'+esc(p.phone)+'">💬 SMS</a>':''}
+          ${p.email?'<a class="prospect-btn" href="mailto:'+esc(p.email)+'">✉ Email</a>':''}
+          <button type="button" class="prospect-btn" data-action="activity" data-id="${esc(p.id)}">+ Action</button>
+          <button type="button" class="prospect-btn" data-action="edit" data-id="${esc(p.id)}">Modifier</button>
+          <button type="button" class="prospect-btn danger" data-action="delete" data-id="${esc(p.id)}">Supprimer</button>
+        </div>
+      </div>
+    </div>`).join("");
+  }catch(e){console.warn(e);$("prospectsBox").innerHTML='<div class="prospect-empty">Impossible de charger les prospects. Réessayez.</div>'}
+ }
+
+ function findProspect(id){return prospects.find(p=>String(p.id)===String(id))}
+ async function showDetail(id){
+  const p=findProspect(id);if(!p)return;
+  openModal();$("modalTitle").textContent=p.name||"Prospect";
+  $("modalBody").innerHTML='<div class="detail-grid">'+
+   [['Ville',p.city],['Téléphone',p.phone],['Email',p.email],['Bien',p.propertyType],['Horizon',p.horizon],['Source',p.source],['Statut',p.status],['Priorité',p.priority||"À calculer"],['Score',p.score!=null?p.score+"/100":"—"],['Dernier contact',fmtDate(p.lastContactAt)],['Créé le',fmtDate(p.createdAt)],['Mis à jour',fmtDate(p.updatedAt)]].map(x=>'<div class="detail-field"><span>'+esc(x[0])+'</span><strong>'+esc(x[1]||"—")+'</strong></div>').join("")+
+   '</div><div class="detail-field"><span>Notes</span><strong>'+esc(p.notes||"Aucune note")+'</strong></div><div class="modal-actions">'+
+   (p.phone?'<a class="prospect-btn primary" href="tel:'+esc(p.phone)+'">📞 Appeler</a>':'')+
+   (p.phone?'<a class="prospect-btn" href="sms:'+esc(p.phone)+'">💬 SMS</a>':'')+
+   (p.email?'<a class="prospect-btn" href="mailto:'+esc(p.email)+'">✉ Email</a>':'')+
+   '<button type="button" class="prospect-btn" data-modal-action="activity" data-id="'+esc(p.id)+'">+ Enregistrer une action</button><button type="button" class="prospect-btn" data-modal-action="followup" data-id="'+esc(p.id)+'">📅 Programmer relance</button><button type="button" class="prospect-btn" data-modal-action="edit" data-id="'+esc(p.id)+'">✏ Modifier</button><button type="button" class="prospect-btn" data-modal-action="qualify" data-id="'+esc(p.id)+'">🎯 Qualifier</button>'+
+   '</div><h4 style="margin:18px 0 5px">Historique</h4><div id="activityList" class="activity-list"><div class="activity-item">Chargement…</div></div>';
+  try{const d=await api("/api/prospects/"+enc(p.id)+"/activities");const a=Array.isArray(d.activities)?d.activities:[];const list=$("activityList");list.innerHTML=a.length?a.map(x=>'<div class="activity-item"><strong>'+esc(x.type||"Action")+(x.outcome?" · "+esc(x.outcome):"")+'</strong><small>'+fmtDate(x.created_at)+(x.appointment_at?" · RDV "+fmtDate(x.appointment_at):"")+'</small><small>'+esc(x.note||"")+'</small></div>').join(""):'<div class="activity-item">Aucune action enregistrée.</div>'}catch(e){$("activityList").innerHTML='<div class="activity-item">Historique indisponible.</div>'}
+ }
+ function editProspect(id){
+  const p=findProspect(id);if(!p)return;openModal();$("modalTitle").textContent="Modifier · "+(p.name||"Prospect");
+  $("modalBody").innerHTML='<form id="editForm"><div class="form-grid">'+
+   '<label>Nom / prénom<input name="name" required value="'+esc(p.name)+'"></label><label>Ville<input name="city" value="'+esc(p.city)+'"></label>'+
+   '<label>Téléphone<input name="phone" value="'+esc(p.phone)+'"></label><label>Email<input name="email" type="email" value="'+esc(p.email)+'"></label>'+
+   '<label>Type de bien<input name="property_type" value="'+esc(p.propertyType)+'"></label><label>Horizon<select name="horizon"><option value="0-3">0-3 mois</option><option value="3-6">3-6 mois</option><option value="6-12">6-12 mois</option><option value="unknown">À préciser</option></select></label>'+
+   '<label>Source<input name="source" value="'+esc(p.source)+'"></label><label>Base de contact<input name="contact_basis" value="'+esc(p.contactBasis)+'"></label>'+
+   '<label>Statut<select name="status">'+statusOptions(p.status)+'</select></label><label>Consentement<select name="contact_consent"><option value="false">Non</option><option value="true">Oui</option></select></label>'+
+   '<label class="form-full">Notes<textarea name="notes">'+esc(p.notes)+'</textarea></label></div><div class="modal-actions"><button class="prospect-btn primary" type="submit">💾 Enregistrer</button><button class="prospect-btn" type="button" id="cancelEdit">Annuler</button></div></form>';
+  $("editForm").elements.horizon.value=p.horizon||"unknown";$("editForm").elements.contact_consent.value=p.contactConsent?"true":"false";
+  $("cancelEdit").onclick=()=>showDetail(id);
+  $("editForm").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);const body=Object.fromEntries(f.entries());body.contact_consent=body.contact_consent==="true";try{await api("/api/prospects/"+enc(id),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});await loadProspects();await showDetail(id)}catch(err){alert(err.message)}};
+ }
+ function activityForm(id){
+  const p=findProspect(id);if(!p)return;openModal();$("modalTitle").textContent="Nouvelle action · "+(p.name||"Prospect");
+  $("modalBody").innerHTML='<form id="activityForm"><div class="form-grid"><label>Type<select name="type"><option>Appel</option><option>SMS</option><option>Email</option><option>RDV</option><option>Visite</option><option>Note</option></select></label><label>Résultat<select name="outcome"><option value="">— Aucun</option><option>Pas de réponse</option><option>Intéressé</option><option>À rappeler</option><option>RDV pris</option><option>Pas de projet</option><option>Refus</option></select></label><label class="form-full">Note<textarea name="note" placeholder="Compte rendu de l'échange…"></textarea></label><label>Date du RDV (optionnel)<input name="appointmentAt" type="datetime-local"></label><label>Lieu du RDV (optionnel)<input name="appointmentLocation"></label></div><div class="modal-actions"><button class="prospect-btn primary" type="submit">💾 Enregistrer l'action</button></div></form>';
+  $("activityForm").onsubmit=async e=>{e.preventDefault();const body=Object.fromEntries(new FormData(e.currentTarget).entries());try{await api("/api/prospects/"+enc(id)+"/activity",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});await loadProspects();await showDetail(id)}catch(err){alert(err.message)}};
+ }
+ function followupForm(id){
+  const p=findProspect(id);if(!p)return;openModal();$("modalTitle").textContent="Programmer une relance · "+(p.name||"Prospect");
+  const defaultDate=p.nextActionAt?new Date(p.nextActionAt).toISOString().slice(0,16):"";
+  $("modalBody").innerHTML='<form id="followForm"><div class="form-grid"><label class="form-full">Prochaine action<input name="nextAction" value="'+esc(p.nextAction||"Rappeler le prospect")+'"></label><label>Date / heure<input name="nextActionAt" type="datetime-local" value="'+defaultDate+'"></label></div><div class="modal-actions"><button class="prospect-btn primary" type="submit">📅 Enregistrer la relance</button></div></form>';
+  $("followForm").onsubmit=async e=>{e.preventDefault();const body=Object.fromEntries(new FormData(e.currentTarget).entries());try{await api("/api/prospects/"+enc(id)+"/follow-up",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});await loadProspects();await showDetail(id)}catch(err){alert(err.message)}};
+ }
+ async function qualify(id){try{await api("/api/prospects/"+enc(id)+"/qualify",{method:"POST"});await loadProspects();await showDetail(id)}catch(e){alert(e.message)}}
+ async function removeProspect(id){const p=findProspect(id);if(!p)return;if(!confirm("Supprimer définitivement le prospect « "+(p.name||"Sans nom")+" » ?\nCette action supprime aussi son historique d'activités associé."))return;try{await api("/api/prospects/"+enc(id),{method:"DELETE"});closeModal();await loadProspects()}catch(e){alert(e.message)}}
+
+ $("prospectsBox")?.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b)return;const id=b.dataset.id;const a=b.dataset.action;if(a==="detail")showDetail(id);if(a==="edit")editProspect(id);if(a==="activity")activityForm(id);if(a==="delete")removeProspect(id)});
+ $("prospectsBox")?.addEventListener("change",async e=>{const s=e.target.closest("[data-action='status']");if(!s)return;try{await api("/api/prospects/"+enc(s.dataset.id)+"/status",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:s.value})});await loadProspects()}catch(err){alert(err.message);await loadProspects()}});
+ $("modalBody")?.addEventListener("click",e=>{const b=e.target.closest("[data-modal-action]");if(!b)return;const id=b.dataset.id;const a=b.dataset.modalAction;if(a==="activity")activityForm(id);if(a==="followup")followupForm(id);if(a==="edit")editProspect(id);if(a==="qualify")qualify(id)});
+
+ try{await loadProspects();$("refreshProspects")?.addEventListener("click",loadProspects)}catch(e){console.warn(e)}
+ try{
+  const r=await api("/api/mandat-intelligence");const items=Array.isArray(r.priorities)?r.priorities:[];
+  const box=$("priority");box.innerHTML=items.length?items.map((x,i)=>'<div class="pro-item"><div><strong>'+esc(x.name)+'</strong><small>'+esc(x.city||"")+' · '+esc(x.nextAction||"À traiter")+'</small></div><span class="pro-badge">#'+(i+1)+'</span></div>').join(""):'<div class="pro-item"><div><strong>Aucune priorité</strong><small>Le moteur n’a pas identifié d’action urgente.</small></div></div>';
+ }catch(e){$("priority").innerHTML='<div class="pro-item"><strong>Intelligence indisponible</strong></div>'}
 })();
-</script>
+</script>>
 </body>
 </html>
