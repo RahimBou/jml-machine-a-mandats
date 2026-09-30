@@ -691,8 +691,22 @@ async function buildComparableSales(market,property){
   };
 
   const seen=new Set(), candidates=[];
+  // Les données communales peuvent ne pas fournir de coordonnées. On les géocode
+  // ponctuellement afin de conserver le même calcul de distance que l'estimateur.
+  const enrichDistances=async (rows)=>{
+    const list=Array.isArray(rows)?rows:[];
+    return (await Promise.all(list.map(async sale=>{
+      if(Number.isFinite(Number(sale?.distanceKm))) return sale;
+      const label=String(sale?.address||"").trim();
+      if(!label||/commune|adresse cadastrale non renseignée|adresse non renseignée/i.test(label)) return sale;
+      const point=await geocodeAddress(label,city);
+      if(!point) return sale;
+      const distanceKm=haversineKm(origin,point);
+      return distanceKm!=null?{...sale,distanceKm:Number(distanceKm.toFixed(3))}:sale;
+    }))).filter(Boolean);
+  };
   // Les données Estimus sont testées d'abord, puis DVF+ complète la recherche.
-  const estimus=Array.isArray(market?.recentSales)?market.recentSales:[];
+  const estimus=await enrichDistances(Array.isArray(market?.recentSales)?market.recentSales:[]);
   for(const tier of tiers){
     for(const sale of estimus){
       const x=scoreSale(sale,tier);
@@ -707,7 +721,7 @@ async function buildComparableSales(market,property){
   let selectedTier=tiers.find(t=>candidates.some(x=>x.tier===t.label))||null;
   if(!selectedTier || candidates.length<6){
     for(const tier of tiers){
-      const external=await fetchCeremaDvfRadiusSales(origin,property,tier.radius);
+      const external=await enrichDistances(await fetchCeremaDvfRadiusSales(origin,property,tier.radius));
       for(const sale of external){
         const x=scoreSale(sale,tier);
         if(!x) continue;
@@ -721,7 +735,7 @@ async function buildComparableSales(market,property){
   }
 
   if(!candidates.length){
-    const external=await fetchDvfRadiusSales(origin,property);
+    const external=await enrichDistances(await fetchDvfRadiusSales(origin,property,property?.cityCode));
     for(const sale of external){
       const x=scoreSale(sale,tiers[tiers.length-1]);
       if(x)candidates.push(x);
