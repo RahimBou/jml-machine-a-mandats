@@ -770,7 +770,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
      renderAdviceItems(fallbackItems);
    }
  }
- loadSellerAdvice(city);
+ loadSellerAdvice((sellerSpaceRead()||{}).city || document.getElementById("fbCity")?.value.trim() || "");
  const sellerModal=document.getElementById("sellerModal"),sellerModalTitle=document.getElementById("sellerModalTitle"),sellerModalBody=document.getElementById("sellerModalBody");
  function esc(v){return String(v??"").replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
  function openSellerModal(title,body){if(!sellerModal)return;sellerModalTitle.textContent=title;sellerModalBody.innerHTML=body;sellerModal.classList.add("open");sellerModal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden"}
