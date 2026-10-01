@@ -810,9 +810,8 @@ async function buildComparableSales(market,property){
   // nombre de pièces proche, puis proximité et récence. On élargit uniquement
   // si le nombre de ventes strictes est insuffisant.
   const tiers=[
-    {radius:800,months:18,surfaceGap:.15,roomsGap:1,label:"800 m / 18 mois · critères serrés"},
-    {radius:1500,months:24,surfaceGap:.20,roomsGap:1,label:"1,5 km / 24 mois · critères proches"},
-    {radius:3000,months:24,surfaceGap:.25,roomsGap:2,label:"3 km / 24 mois · élargissement prudent"}
+    {radius:500,months:24,surfaceGap:.20,roomsGap:2,label:"500 m / 24 mois · comparables proches"},
+    {radius:1000,months:24,surfaceGap:.25,roomsGap:2,label:"1 km / 24 mois · élargissement maximum"}
   ];
   let local=[];
   try{
@@ -885,7 +884,7 @@ async function buildComparableSales(market,property){
   const closeSales=display.filter(x=>Number(x.distanceKm)<=0.8);
   const minPriceM2=values.length?Math.round(values[0]):null;
   const maxPriceM2=values.length?Math.round(values[values.length-1]):null;
-  const strictCount=display.filter(x=>String(x.tier).includes("critères serrés")).length;
+  const strictCount=display.filter(x=>String(x.tier).includes("500 m")).length;
   const closeCount=closeSales.length;
 
   return {
@@ -898,8 +897,8 @@ async function buildComparableSales(market,property){
     searchScope:display.length?display[display.length-1].tier:"Aucun comparable répondant aux critères",
     origin,originSource,
     source:"DVF local JML / PostgreSQL",
-    method:"Comparables priorisés sur le même type de bien, une surface proche (±15 % puis ±20 % puis ±25 %), un nombre de pièces proche (±1 puis ±2), avec priorité à la proximité et à la récence. Élargissement progressif uniquement si nécessaire.",
-    criteria:{type:typeWanted||null,surface:surface||null,rooms:rooms||null},
+    method:"Comparables recherchés sur le même type de bien, avec surface et nombre de pièces proches, dans un rayon de 500 m puis 1 km maximum. Les ventes les plus proches et les plus récentes sont privilégiées.",
+    criteria:{type:typeWanted||null,surface:surface||null,rooms:rooms||null,maxRadiusKm:1},
     engineVersion:"8.1.0-PG-DVF-COMPARABLES",
     diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0}
   };
