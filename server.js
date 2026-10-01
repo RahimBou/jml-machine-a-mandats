@@ -754,7 +754,7 @@ app.get("/api/territory-summary", async (req,res) => {
     return res.json({
       ok:true,version:VERSION,build:BUILD_MARKER,commune,
       market:{...market,comparables},sellerReference,nearby,
-      source:"API Géo + Géoplateforme IGN/BAN + DVF+ / Cerema / DVF",
+      source:"API Géo + Géoplateforme IGN/BAN + DVF PostgreSQL",
       diagnostics:{
         communeResolver:"geo.api.gouv.fr par code postal/nom, puis Géoplateforme",
         communeCode:commune.code,communeName:commune.nom,
@@ -778,7 +778,7 @@ app.get("/api/territory-summary", async (req,res) => {
       build:BUILD_MARKER,
       diagnostics:{
         stage,
-        likelySource:stage==="resolve-commune"?"Géo API / Géoplateforme":stage==="market"?"Marché / DVF / Estimus":stage==="comparables"?"Géocodage adresse / DVF local / Cerema":"Calcul Mon secteur"
+        likelySource:stage==="resolve-commune"?"Géo API / Géoplateforme":stage==="market"?"Marché / DVF PostgreSQL":stage==="comparables"?"Géocodage adresse / DVF PostgreSQL":"Calcul Mon secteur"
       }
     });
   }
