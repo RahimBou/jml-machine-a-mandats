@@ -25,6 +25,17 @@ app.get("/health", (req, res) => {
     persistentDashboard:true
   });
 });
+app.get("/api/bpe-status", async (req,res) => {
+  res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
+  if(!pool) return res.status(200).json({ok:true,ready:false,total:0,reason:"database_unavailable"});
+  try{
+    const result=await db("SELECT COUNT(*)::int AS total, COUNT(DISTINCT commune_code)::int AS communes, MAX(imported_at) AS imported_at FROM jml_bpe_assets WHERE year=2025 AND commune_code LIKE '08%'",[]);
+    const row=result.rows[0]||{};
+    res.status(200).json({ok:true,ready:Number(row.total||0)>0,total:Number(row.total||0),communes:Number(row.communes||0),importedAt:row.imported_at||null,source:"INSEE BPE 2025",department:"08"});
+  }catch(error){
+    res.status(200).json({ok:false,ready:false,total:0,reason:String(error?.message||error)});
+  }
+});
 app.get("/api/territory-version", (req,res) => {
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
   res.status(200).json({
