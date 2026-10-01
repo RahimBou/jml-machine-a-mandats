@@ -1313,14 +1313,25 @@ async function getNearbyAssets(lat,lon){
 );
 out center tags;`;
   try{
-    const response=await fetch("https://overpass-api.de/api/interpreter",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded","User-Agent":"JML-Projet-Vendeur/3.3.2"},
-      body:"data="+encodeURIComponent(q),
-      signal:AbortSignal.timeout(10000)
-    });
-    if(!response.ok) throw new Error("Overpass HTTP "+response.status);
-    const payload=await response.json();
+    const endpoints=[
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter"
+    ];
+    let payload=null, lastError=null;
+    for(const endpoint of endpoints){
+      try{
+        const response=await fetch(endpoint,{
+          method:"POST",
+          headers:{"Content-Type":"application/x-www-form-urlencoded","User-Agent":"JML-Projet-Vendeur/3.3.2 (mon-secteur)"},
+          body:"data="+encodeURIComponent(q),
+          signal:AbortSignal.timeout(8000)
+        });
+        if(!response.ok) throw new Error("Overpass HTTP "+response.status);
+        payload=await response.json();
+        break;
+      }catch(error){ lastError=error; }
+    }
+    if(!payload) throw lastError||new Error("Aucune instance Overpass disponible");
     const elements=Array.isArray(payload?.elements)?payload.elements:[];
     const out={
       available:true,source:"OpenStreetMap / Overpass",radiusKm:1.5,
@@ -1364,12 +1375,21 @@ out center tags;`;
 }
 
 app.get("/api/territory-assets", async (req,res) => {
-  const lat=Number(req.query.lat), lon=Number(req.query.lon);
+  let lat=Number(req.query.lat), lon=Number(req.query.lon);
+  const address=clean(req.query.address,180);
+  const city=clean(req.query.city,100);
   try{
+    // Ne dépend plus de territory-summary : le bloc "Atouts" doit pouvoir fonctionner seul.
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)){
+      const geo=await geocodeAddress(address,city);
+      if(!geo) return res.status(404).json({ok:false,available:false,error:"Adresse non géolocalisée.",message:"L'adresse n'a pas pu être géolocalisée précisément."});
+      lat=Number(geo.lat); lon=Number(geo.lon);
+    }
     const data=await getNearbyAssets(lat,lon);
-    return res.json({ok:true,...data});
+    return res.json({ok:true,lat,lon,...data});
   }catch(error){
-    return res.status(502).json({ok:false,error:"Équipements locaux temporairement indisponibles."});
+    console.warn("JML territory-assets:",error.message);
+    return res.status(502).json({ok:false,available:false,error:"Équipements locaux temporairement indisponibles.",message:"Le service cartographique n'a pas répondu. Une nouvelle tentative est possible."});
   }
 });
 
