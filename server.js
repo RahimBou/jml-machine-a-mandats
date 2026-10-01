@@ -93,7 +93,7 @@ async function getEducationAssets(lat,lon,communeCode){
 }
 
 async function getBpeAssets(lat,lon,communeCode){
-  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^d{5}$/.test(String(communeCode||""))) return [];
+  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^\d{5}$/.test(String(communeCode||""))) return [];
   const key=String(communeCode)+"|"+lat.toFixed(4)+"|"+lon.toFixed(4);
   const cached=territoryAssetCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return cached.data;
@@ -1404,6 +1404,25 @@ async function initDb() {
       consent BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS jml_bpe_assets (
+      id BIGSERIAL PRIMARY KEY,
+      year INTEGER NOT NULL,
+      commune_code TEXT NOT NULL,
+      domain TEXT,
+      subdomain TEXT,
+      type_code TEXT,
+      type_label TEXT,
+      name TEXT,
+      latitude DOUBLE PRECISION,
+      longitude DOUBLE PRECISION,
+      address TEXT,
+      source TEXT NOT NULL DEFAULT 'INSEE BPE 2025',
+      imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(year,commune_code,type_code,name,latitude,longitude)
+    );
+    CREATE INDEX IF NOT EXISTS idx_jml_bpe_commune ON jml_bpe_assets(commune_code);
+    CREATE INDEX IF NOT EXISTS idx_jml_bpe_geo ON jml_bpe_assets(latitude,longitude);
 
     CREATE TABLE IF NOT EXISTS jml_dvf_sales (
       id BIGSERIAL PRIMARY KEY, mutation_id TEXT NOT NULL, sale_date DATE,
