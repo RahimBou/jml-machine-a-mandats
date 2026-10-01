@@ -332,18 +332,16 @@ async function run(){
   $("#sales").innerHTML='<div class="error">Les transactions communales n’ont pas pu être chargées. Cela n’empêche pas la recherche des comparables.</div>';
  }
 
- // 1bis. Atouts géolocalisés : appel indépendant du marché.
+ // 1bis. Atouts géolocalisés : totalement indépendant du moteur marché.
  try{
-  const territory=await getData("/api/territory-summary?"+base.toString(),7000);
-  const origin=territory.market?.comparables?.origin;
-  const coords=origin&&Number.isFinite(Number(origin.lat))&&Number.isFinite(Number(origin.lon))
-    ?[Number(origin.lon),Number(origin.lat)]
-    :territory.commune?.centre?.coordinates;
-  if(Array.isArray(coords)&&coords.length>=2){
-    const assets=await getData("/api/territory-assets?"+new URLSearchParams({lat:String(coords[1]),lon:String(coords[0])}).toString(),12000);
-    renderAssets(assets);
-  }else renderAssets(null);
- }catch(e){ renderAssets({available:false,message:"Les équipements autour de l'adresse n'ont pas pu être chargés."}); }
+  const assetParams=new URLSearchParams();
+  if(space.address) assetParams.set("address",space.address);
+  if(space.city) assetParams.set("city",space.city);
+  const assets=await getData("/api/territory-assets?"+assetParams.toString(),13500);
+  renderAssets(assets);
+ }catch(e){
+  renderAssets({available:false,message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+"."});
+ }
 
  // 2. Comparables : appel séparé.
  try{
@@ -362,7 +360,7 @@ async function run(){
   const territory=await getData("/api/territory-summary?"+base.toString(),5000);
   const c=territory.commune;
   const coords=c?.centre?.coordinates;
-  if(/^d{5}$/.test(String(c?.code||""))&&Array.isArray(coords)&&coords.length>=2){
+  if(/^\d{5}$/.test(String(c?.code||""))&&Array.isArray(coords)&&coords.length>=2){
    const q=new URLSearchParams({code:c.code,lat:String(coords[1]),lon:String(coords[0])});
    const env=await getData("/api/territory-enrichment?"+q.toString(),10500);
    renderRows("#security",env.security);
