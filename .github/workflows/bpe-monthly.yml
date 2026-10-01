@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "scripts/import-bpe.js"
+      - "data/BPE25_Ardennes.csv"
       - ".github/workflows/bpe-monthly.yml"
   schedule:
     - cron: "45 4 1 * *"
@@ -22,7 +23,8 @@ jobs:
 
       - run: npm install --no-audit --no-fund
 
-      - name: Importer le BPE 2025 INSEE pour les Ardennes
+      - name: Importer le BPE 2025 Ardennes depuis le fichier local
+
         run: node scripts/import-bpe.js
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
