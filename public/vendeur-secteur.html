@@ -237,17 +237,22 @@ function renderAssets(data){
   ["services","🏪 Services","Poste, banque, bibliothèque, restauration et services."]
  ];
  box.innerHTML=order.map(([key,title,desc])=>{
-  const c=cats[key]||{count:0,items:[]};
+  const c=cats[key]||{count:0,items:[],available:false};
+  const known=c.available!==false;
+  const countLabel=known?String(c.count||0):"—";
   const items=(c.items||[]).slice(0,4).map(x=>'<li>'+esc(x.name||"Équipement")+' <span class="distance">'+esc(x.distanceKm)+" km</span></li>").join("");
-  return '<article class="asset"><div class="asset-head"><h3>'+title+'</h3><span class="asset-count">'+esc(c.count||0)+'</span></div><p>'+desc+'</p><ul>'+(items||'<li>Aucun équipement identifié dans le rayon.</li>')+'</ul></article>';
+  const body=known
+    ? (items||'<li>Aucun équipement identifié dans le rayon.</li>')
+    : '<li><b>Non renseigné</b> — la source officielle n’est pas encore disponible pour ce territoire.</li>';
+  return '<article class="asset"><div class="asset-head"><h3>'+title+'</h3><span class="asset-count">'+esc(countLabel)+'</span></div><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||"Source officielle")+'</small></article>';
  }).join("");
- const total=k=>Number(cats[k]?.count||0);
+ const total=k=>cats[k]?.available===false?null:Number(cats[k]?.count||0);
  const schools=total("schools"),shops=total("commerces"),transport=total("transport"),parks=total("parks"),health=total("health");
  const proofs=[
-  ["Proximité",parks+shops+schools>0?"Équipements accessibles":"À vérifier"],
-  ["Vie quotidienne",shops>0?shops+" commerces identifiés":"À compléter"],
-  ["Mobilité",transport>0?transport+" points de transport":"À vérifier"],
-  ["Famille / loisirs",schools+parks>0?(schools+parks)+" repères identifiés":"À vérifier"]
+  ["Proximité",(parks??shops??schools) ? "Équipements accessibles" : "À vérifier"],
+  ["Vie quotidienne",shops===null?"À compléter":(shops>0?shops+" commerces identifiés":"Aucun identifié")],
+  ["Mobilité",transport===null?"À vérifier":(transport>0?transport+" points de transport":"Aucun identifié")],
+  ["Famille / loisirs",schools!==null&&parks!==null?(schools+parks)+" repères identifiés":(schools!==null?schools+" repères scolaires":"À vérifier")]
  ];
  $("#proof").innerHTML=proofs.map(x=>'<div><b>'+x[0]+'</b><strong>'+esc(x[1])+'</strong></div>').join("");
  const parts=[];
