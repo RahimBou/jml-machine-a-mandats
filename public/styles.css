@@ -23,3 +23,57 @@
 /* V2.3 — architecture Ardennaise / Charleville-Mézières */
 .jml-architecture{background-image:linear-gradient(90deg,rgba(23,59,50,.94) 0%,rgba(23,59,50,.68) 48%,rgba(23,59,50,.16) 100%),url('/assets/charleville-place-ducale.svg')!important;background-size:cover!important;background-position:center!important}
 .jml-architecture:after{content:"";position:absolute;inset:auto 0 0;height:5px;background:linear-gradient(90deg,transparent,#c9a85e 15%,#f1d78e 50%,#c9a85e 85%,transparent);z-index:3}
+
+/* V2.4 — cohérence visuelle locale : architecture Ardennaise partout */
+.seller-dashboard-hero{
+  background-image:linear-gradient(180deg,rgba(8,48,39,.10),rgba(8,48,39,.82)),url("/assets/charleville-place-ducale.svg")!important;
+  background-position:center!important;
+  background-size:cover!important;
+}
+.seller-event-feature{
+  background-image:linear-gradient(145deg,rgba(18,58,48,.90),rgba(18,58,48,.48)),url("/assets/charleville-place-ducale.svg")!important;
+  background-position:center!important;
+  background-size:cover!important;
+}
+.seller-video{
+  background-image:linear-gradient(135deg,rgba(15,59,48,.94),rgba(15,59,48,.52)),url("/assets/charleville-hero.svg")!important;
+  background-position:center!important;
+  background-size:cover!important;
+}
+.seller-quick-card:nth-child(1):after{
+  background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/charleville-place-ducale.svg")!important;
+}
+.seller-quick-card:nth-child(2):after{
+  background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/charleville-hero.svg")!important;
+}
+.seller-quick-card:nth-child(3):after{
+  background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/charleville-place-ducale.svg")!important;
+}
+.seller-quick-card:nth-child(4):after{
+  background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/charleville-hero.svg")!important;
+}
+.seller-guide-grid a:nth-child(1):before,
+.seller-guide-grid a:nth-child(2):before,
+.seller-guide-grid a:nth-child(3):before{
+  background-image:url("/assets/charleville-place-ducale.svg")!important;
+}
+.guide-hero-photo img,
+.guide-visual img,
+.guide-summary-photo img{
+  opacity:0!important;
+}
+.guide-hero-photo,
+.guide-visual,
+.guide-summary-photo{
+  background-position:center!important;
+  background-size:cover!important;
+}
+.guide-hero-photo{background-image:linear-gradient(90deg,rgba(23,59,50,.70),rgba(23,59,50,.18)),url("/assets/charleville-hero.svg")!important}
+.guide-visual:nth-of-type(1),
+.guide-topic:nth-child(1) .guide-visual,
+.guide-topic:nth-child(3) .guide-visual,
+.guide-topic:nth-child(5) .guide-visual{background-image:url("/assets/charleville-place-ducale.svg")!important}
+.guide-topic:nth-child(2) .guide-visual,
+.guide-topic:nth-child(4) .guide-visual,
+.guide-topic:nth-child(6) .guide-visual{background-image:url("/assets/charleville-hero.svg")!important}
+.guide-summary-photo{background-image:url("/assets/charleville-place-ducale.svg")!important}
