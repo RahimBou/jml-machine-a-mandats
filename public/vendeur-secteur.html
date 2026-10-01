@@ -400,7 +400,7 @@ async function run(){
   if(territory.ok!==false) $("#status").textContent="Données marché + comparables chargés";
   else $("#status").textContent="Marché communal chargé · comparables en mode dégradé";
   try{
-    const nearby=await getData("/api/territory-summary?"+new URLSearchParams({city:d.city,address:d.address}).toString(),8000,"Communes proches");
+    const nearby=await getData("/api/territory-nearby?"+new URLSearchParams({city:d.city,address:d.address}).toString(),9000,"Communes proches");
     if(Array.isArray(nearby.nearby))renderNearby(nearby.nearby);
   }catch(_nearbyError){
     $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
@@ -421,7 +421,7 @@ async function run(){
   const coords=c?.centre?.coordinates;
   if(/^\d{5}$/.test(String(c?.code||""))&&Array.isArray(coords)&&coords.length>=2){
    const q=new URLSearchParams({code:c.code,lat:String(coords[1]),lon:String(coords[0])});
-   const env=await getData("/api/territory-enrichment?"+q.toString(),10500,"Sécurité / risques / services");
+   const env=await getData("/api/territory-enrichment?"+q.toString(),17000,"Sécurité / risques / services");
    renderRows("#security",env.security);
    renderRows("#risks",env.risks);
    renderRows("#environment",env.environment);
