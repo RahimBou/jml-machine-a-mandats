@@ -82,6 +82,24 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 @media(max-width:430px){.nearby{grid-template-columns:1fr;}}
 .comps-note{margin:0 0 10px;padding:10px 12px;background:#f5f1e7;border:1px solid #e7decd;border-radius:9px;color:#5f6862;font-size:12px;line-height:1.45;}
 .env-unavailable{display:none!important;}
+<style id="seller-location-v2">
+.location-reading{position:relative;overflow:hidden}
+.location-reading:after{content:"";position:absolute;right:-45px;top:-55px;width:170px;height:170px;border:1px solid rgba(201,168,91,.28);border-radius:50%}
+.location-kicker,.benefit-kicker{font-size:8px;font-weight:900;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:5px}
+.location-reading h2{margin-top:2px!important}
+.location-reading strong{color:#f2dfae}
+.asset-intro{background:#fffdf8;border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin-top:10px}
+.asset-intro b{font-size:12px;color:var(--g)}
+.asset-intro p{font-size:8.5px!important;line-height:1.55;margin:5px 0 0!important;color:var(--muted)}
+.highlight-item{position:relative;align-items:flex-start}
+.highlight-item .highlight-role{display:inline-block;margin-top:3px;font-size:6.5px;font-weight:800;color:#7b6a42;background:#f2ead8;border-radius:999px;padding:3px 5px}
+.benefit-main{background:linear-gradient(135deg,#fffdf8,#f7f2e8)}
+.benefit-kicker{color:#8a6c2e}
+.method-separation{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.method-separation>div{background:#f7f2e8;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+.method-separation strong{display:block;font-size:9px;color:var(--g);margin-bottom:4px}
+.method-separation span{display:block;font-size:8px;line-height:1.5;color:var(--muted)}
+@media(max-width:650px){.method-separation{grid-template-columns:1fr}}
 </style>
 <style id="ardenne-identity-final">.ardenne-visual{background-image:linear-gradient(90deg,rgba(23,59,50,.96) 0%,rgba(23,59,50,.82) 48%,rgba(23,59,50,.42) 100%),url('/assets/itineraire-jml.svg')!important;background-size:cover!important;background-position:center!important}</style></head>
 <body>
@@ -110,22 +128,26 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 <section class="section">
  <div class="head"><div><div class="eyebrow">01 · LES ATOUTS DE L'ADRESSE</div><h2>Pourquoi ce bien peut séduire</h2></div><div class="source">Données publiques officielles · rayon 1,5 km</div></div>
  <div class="card">
-  <div class="value-intro">
-   <h2>Les éléments concrets qui peuvent soutenir la valeur</h2>
-   <p>On ne regarde pas seulement le prix au m² : on identifie aussi les éléments du quotidien qu'un acheteur peut valoriser autour de l'adresse.</p>
+  <div class="value-intro location-reading">
+   <div class="location-kicker">LECTURE DE L'EMPLACEMENT</div>
+   <h2>Les atouts concrets autour du bien</h2>
+   <p>Ces informations décrivent le cadre de vie autour de l'adresse. Elles servent à préparer la présentation du bien et à expliquer son environnement ; <strong>elles ne sont pas converties automatiquement en €/m² et ne gonflent pas la valeur de référence.</strong></p>
   </div>
   <div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
   <details class="diag" id="diagnostics"><summary>🔎 Diagnostic des sources</summary><div id="diagRows"><div class="diag-row"><span>Initialisation</span><b class="diag-code">JML-D000</b></div></div></details>
   <div class="benefit-grid">
-   <div class="benefit"><h3>🗣️ Arguments à reprendre dans la présentation</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs et vérifiables.</p></div>
-   <div class="benefit"><h3>📌 Repères vendeur</h3><div class="proof" id="proof"><div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div></div></div>
+   <div class="benefit benefit-main"><div class="benefit-kicker">💬 POUR LE RENDEZ-VOUS</div><h3>Comment présenter l'emplacement</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs, concrets et vérifiables.</p></div>
+   <div class="benefit"><div class="benefit-kicker">📍 REPÈRES DE PROXIMITÉ</div><div class="proof" id="proof"><div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div></div></div>
   </div>
   <div class="post-card">
-   <div class="post-head"><div><div class="eyebrow">TEXTE PRÊT À UTILISER</div><h3>📣 Expliquer le prix et mettre en avant le secteur</h3></div><button id="copyPost" type="button">Copier le texte</button></div>
+   <div class="post-head"><div><div class="eyebrow">ARGUMENTAIRE VENDEUR</div><h3>📣 Un texte prêt à reprendre en rendez-vous</h3></div><button id="copyPost" type="button">Copier le texte</button></div>
    <div class="post-text" id="sellerPost">Le texte de présentation sera généré à partir des données réelles du bien, du marché et de son environnement.</div>
-   <div class="post-note">Le texte distingue le repère de prix issu des données de marché des atouts concrets du secteur. Il évite de présenter les équipements comme une garantie de valeur.</div>
+   <div class="post-note">Le texte sépare clairement <strong>le repère de prix</strong> issu des ventes et <strong>les qualités d'emplacement</strong>. Aucun équipement n'est transformé artificiellement en supplément de prix.</div>
   </div>
-  <div class="message" style="margin-top:10px">Les distances sont calculées autour de l'adresse géolocalisée, dans un rayon de 1,5 km. Une présence d'équipement décrit l'environnement : elle ne constitue pas, à elle seule, une preuve de surcote immobilière.</div>
+  <div class="method-separation" style="margin-top:10px">
+   <div><strong>📊 Ce qui sert à établir le prix</strong><span>Ventes DVF comparables · type de bien · surface · pièces · distance · récence.</span></div>
+   <div><strong>📍 Ce qui sert à présenter le secteur</strong><span>Écoles · commerces · santé · mobilité · loisirs et autres services vérifiés autour de l'adresse.</span></div>
+  </div>
  </div>
 </section>
 
@@ -259,124 +281,17 @@ async function loadServerSpace(){
 }
 
 const pageData={market:null,reference:null,assets:null,comparables:null,space:null};
-const PAGE_BUILD="2026-10-01-mon-secteur-rebuild-3";
+const PAGE_BUILD="2026-10-01-mon-secteur-emplacement-v4";
 const diagnostics=[];
 function addDiag(source,code,detail){
  diagnostics.push({source,code,detail:String(detail||"")});
  const box=$("#diagRows");
- if(box) box.innerHTML=diagnostics.map(x=>'<div class="diag-row"><span class="diag-source">'+esc(x.source)+'</span><b class="diag-code">'+esc(x.code)+'</b><span>'+esc(x.detail)+'</span></div>').join("");
-}
-async function getData(url,ms,source="API JML"){
- const ctl=new AbortController();
- const timer=setTimeout(()=>ctl.abort(),ms);
- const started=performance.now();
- try{
-  const r=await fetch(url,{cache:"no-store",signal:ctl.signal});
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){
-   const err=new Error(j.error||("HTTP "+r.status));
-   err.code=j.code||("JML-HTTP-"+r.status);
-   err.httpStatus=r.status;
-   err.payload=j;
-   throw err;
-  }
-  addDiag(source,"JML-OK-"+r.status,Math.round(performance.now()-started)+" ms");
-  return j;
- }catch(e){
-  if(e.name==="AbortError"){
-   e.code="JML-TIMEOUT";
-   e.message="Délai dépassé après "+ms+" ms";
-  }else if(!e.code){
-   e.code="JML-NETWORK";
-  }
-  addDiag(source,e.code,e.message||"Erreur réseau");
-  throw e;
- }finally{clearTimeout(timer)}
-}
-
-function setProject(d){
- $("#city").textContent=d.city||"Votre commune";
- $("#address").textContent=d.address||"Adresse non renseignée";
- $("#type").textContent=d.propertyType||"Non renseigné";
- $("#surface").textContent=d.surface?d.surface+" m²":"Non renseignée";
- $("#rooms").textContent=d.rooms?d.rooms+" pièce"+(Number(d.rooms)>1?"s":""):"Non renseigné";
- $("#dpe").textContent=d.dpe||"Non renseigné";
- if(d.token) $("#back").href="/espace-vendeur/"+encodeURIComponent(d.token);
- if(d.address||d.city) $("#map").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([d.address,d.city].filter(Boolean).join(", "));
-}
-
-function sellerAssetHighlights(){
- const d=pageData.space||{}, cats=pageData.assets?.categories||{};
- const isHouse=/maison/i.test(d.propertyType||"");
- const keys=isHouse?["family","daily","health","leisure","mobility"]:["daily","health","mobility","family","leisure"];
- const out=[];
- keys.forEach(key=>{
-  const items=Array.isArray(cats[key]?.items)?cats[key].items:[];
-  if(!items.length)return;
-  const x=items[0];
-  out.push({
-   key,
-   label:x.type||cats[key].label||"Équipement",
-   name:x.name&&x.name!==x.type?x.name:"",
-   distance:x.distanceLabel||((Number(x.distanceKm)||0).toFixed(2)+" km"),
-   distanceKm:Number(x.distanceKm)||99
-  });
- });
- return out.slice(0,5);
-}
-function renderSellerPost(){
- const d=pageData.space||{}, ref=pageData.reference||{}, comps=pageData.comparables||{};
- const base=Number(ref.basePriceM2), compM2=Number(comps.weightedPriceM2||comps.median), refValue=Number(ref.referenceValue);
- const type=d.propertyType||"bien", commune=d.city||"ce secteur";
- const priceLine=Number.isFinite(refValue)&&refValue>0
-   ?"Le repère indicatif ressort autour de "+Math.round(refValue).toLocaleString("fr-FR")+" €, à partir de "+Math.round(base).toLocaleString("fr-FR")+" €/m²."
-   :"Le repère de prix est construit à partir des transactions réelles disponibles.";
- const compLine=Number.isFinite(compM2)&&compM2>0
-   ?"Les ventes comparables retenues apportent un second repère à "+Math.round(compM2).toLocaleString("fr-FR")+" €/m²."
-   :"Les ventes comparables sont utilisées lorsqu'elles sont disponibles.";
- const highlights=sellerAssetHighlights();
- const sectorLine=highlights.length
-   ?"À proximité, on relève notamment "+highlights.slice(0,4).map(x=>x.label+" "+x.distance).join(", ")+"."+((highlights.length>4)?"":"")
-   :"L'environnement du bien pourra être complété avec les atouts vérifiés lors de la visite.";
- const post=[
-  "🏡 "+type+" à "+commune+" : les repères utiles pour comprendre le prix",
-  "",
-  priceLine,
-  compLine,
-  "",
-  sectorLine,
-  "",
-  "Les équipements décrivent le cadre de vie autour du bien ; ils ne sont pas utilisés comme supplément automatique de valeur.",
-  "",
-  "📍 Des données locales, des ventes réelles et des éléments de proximité vérifiables."
- ].join("\n");
- const el=$("#sellerPost"); if(el)el.textContent=post;
-}
-function renderAssets(data){
- pageData.assets=data||null;
- const box=$("#assets");
- if(!data||!data.available){
-  const code=data?.code||data?.errorCode||"JML-ASSET-UNAVAILABLE";
-  addDiag("Équipements / source locale",code,data?.message||"Réponse indisponible");
-  box.innerHTML='<div class="empty"><b>'+esc(code)+'</b> · '+esc(data?.message||"Les équipements autour de l'adresse sont indisponibles pour cette session.")+'</div>';
-  return;
- }
- addDiag(data.source||"Équipements / source locale","JML-ASSET-OK",String(data.provider||"source répondante"));
- const highlights=sellerAssetHighlights();
- const cats=data.categories||{};
- const order=[
-  ["family","🎓 Famille","Écoles, crèches et établissements utiles à un ménage."],
-  ["daily","🛒 Quotidien","Alimentation et commerces utiles au quotidien."],
-  ["health","⚕️ Santé","Professionnels et services de santé proches."],
-  ["mobility","🚌 Mobilité","Repères de transport autour du bien."],
-  ["leisure","🌳 Loisirs","Équipements utiles à la vie de quartier."]
- ];
- box.innerHTML=
-  "<div class=\"asset-intro\"><b>Les 5 atouts de proximité à retenir</b><p>La sélection privilégie les équipements concrets proches de l'adresse. Le nombre brut de services de la commune n'est volontairement pas utilisé.</p></div>"+
+ if(box) box.innerHTML=
+  "<div class="asset-intro"><b>5 repères de proximité vérifiés</b><p>La sélection retient les éléments les plus proches et les plus lisibles pour un acquéreur. Ils décrivent l'environnement ; ils ne participent pas directement au calcul du prix.</p></div>"+
   '<div class="highlight-list">'+highlights.map((x,i)=>
-    '<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p></div></div>'
+    '<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>'
   ).join("")+'</div>'+
-  '<details class="asset-details"><summary>Voir le détail par catégorie</summary>'+
+  '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary>'+
   '<div class="asset-grid">'+order.map(([key,title,desc])=>{
     const c=cats[key]||{items:[],available:false};
     const items=(c.items||[]).slice(0,3);
@@ -390,7 +305,7 @@ function renderAssets(data){
    ?proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("")
    :'<div><b>Proximité</b><strong>À compléter</strong></div>';
  $("#sellingPitch").textContent=highlights.length
-   ?"Pour le vendeur, les arguments de proximité les plus concrets sont : "+highlights.slice(0,4).map(x=>x.label+" "+x.distance).join(", ")+". À présenter comme des éléments de confort et de vie quotidienne, sans leur attribuer automatiquement une valeur financière."
+   ?"L'adresse bénéficie de plusieurs services accessibles à proximité : "+highlights.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+" . Ces éléments peuvent être utilisés pour décrire concrètement le quotidien d'un acquéreur, sans les présenter comme une majoration automatique du prix."
    :"Aucun repère de proximité suffisamment pertinent n'a pu être identifié automatiquement dans le rayon retenu.";
  renderSellerPost();
 }
