@@ -1,5 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><defs>
-<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#173b32"/><stop offset=".58" stop-color="#285448"/><stop offset="1" stop-color="#c9a85e"/></linearGradient>
-<linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f7d98b"/><stop offset="1" stop-color="#c9a85e"/></linearGradient>
-<filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity=".18"/></filter>
-</defs><rect width="640" height="360" fill="#dfe7dd"/><rect width="640" height="215" fill="url(#sun)"/><path d="M0 235 Q160 180 320 230 T640 220V360H0Z" fill="#3e6958"/><g filter="url(#shadow)"><path d="M185 280V150l135-100 135 100v130Z" fill="#f5f1e8"/><path d="M155 155L320 28l165 127-23 26L320 72 178 181Z" fill="#173b32"/><rect x="280" y="208" width="58" height="72" fill="#c9a85e"/><rect x="215" y="175" width="45" height="43" fill="#b9d4d0"/><rect x="380" y="175" width="45" height="43" fill="#b9d4d0"/></g><circle cx="535" cy="65" r="38" fill="#f6e3a5" opacity=".85"/><path d="M0 305 Q100 270 200 305 T400 300 T640 290V360H0Z" fill="#173b32"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#e5eee8"/><stop offset="1" stop-color="#f0dfbd"/></linearGradient><linearGradient id="r" x2="0" y2="1"><stop stop-color="#405450"/><stop offset="1" stop-color="#1d3532"/></linearGradient></defs>
+<rect width="640" height="360" fill="url(#bg)"/>
+<path d="M0 240 Q120 190 250 225 T500 220 T640 195V360H0Z" fill="#6d8878"/>
+<g transform="translate(115 55)">
+<rect x="0" y="85" width="410" height="170" fill="#d8c09a"/>
+<path d="M-25 88L205 -5L435 88Z" fill="url(#r)"/>
+<path d="M5 82L205 8L405 82" fill="none" stroke="#d9b96e" stroke-width="5"/>
+<g stroke="#8b6948" stroke-width="8"><path d="M70 90V255M135 90V255M205 65V255M275 90V255M340 90V255"/><path d="M20 145H390M20 205H390"/></g>
+<g fill="#f5e7ca" stroke="#72533f" stroke-width="3"><rect x="42" y="112" width="45" height="45"/><rect x="105" y="112" width="45" height="45"/><rect x="165" y="98" width="48" height="59"/><rect x="228" y="112" width="45" height="45"/><rect x="291" y="112" width="45" height="45"/></g>
+<rect x="178" y="185" width="54" height="70" rx="3" fill="#704f3b"/>
+</g>
+<circle cx="545" cy="62" r="26" fill="#e3c77f" opacity=".8"/>
+</svg>
