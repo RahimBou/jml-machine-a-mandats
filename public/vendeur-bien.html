@@ -14,7 +14,8 @@ body{background:#f7f2e7;color:#173b31}.page{max-width:1040px;margin:auto;padding
 .check.ok{background:#f2f6ef;border-color:#d9e5db;}
 @media(max-width:800px){.property-card .grid{grid-template-columns:repeat(2,1fr);}.property-card .fact-wide{grid-column:span 2;}}
 @media(max-width:650px){.property-card .grid,.checklist{grid-template-columns:1fr;}.property-card .fact-wide{grid-column:auto;}.top h1{font-size:29px;}}
-</style></head><body><main class="page">
+
+.owner-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:10px;font-weight:900;color:#58635d}.field input,.field select,.field textarea{width:100%;box-sizing:border-box;border:1px solid #ddd5c7;border-radius:11px;background:#fffdf8;color:#173b31;padding:12px;font:inherit;font-size:13px}.field textarea{min-height:80px;resize:vertical}.small-btn,.save-btn{padding:11px 14px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer}.small-btn{margin-top:12px;border:1px solid #d8c69e;background:#f8f3e8;color:#173b31}.save-btn{border:0;background:#173b31;color:#fff}.owner-item{margin-top:12px;padding:14px;border:1px solid #e2dccf;border-radius:14px;background:#f8f3e8}.owner-head{display:flex;justify-content:space-between;align-items:center}.remove-owner{border:0;background:transparent;color:#8b5d45;font-weight:800}.project-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.save-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}.save-msg{font-size:11px;color:#52605a}.privacy{margin-top:12px;font-size:11px;line-height:1.5;color:#68716b}@media(max-width:650px){.owner-grid,.project-grid{grid-template-columns:1fr}}</style></head><body><main class="page">
 <section class="top"><div class="k">JML IMMOBILIER · VOTRE BIEN</div><h1>Votre bien, votre point de départ</h1><p>Les informations renseignées servent à préparer un échange plus précis et à croiser votre bien avec les références disponibles dans votre secteur.</p><nav class="nav"><a data-space href="/espace-vendeur">← Mon espace</a><a class="alt" data-sector href="/vendeur-secteur.html">Voir le secteur</a></nav></section>
 <section class="card property-card">
  <div class="section-k">VOTRE DOSSIER</div>
@@ -46,6 +47,32 @@ body{background:#f7f2e7;color:#173b31}.page{max-width:1040px;margin:auto;padding
  <a class="cta" data-sector href="/vendeur-secteur.html">Voir l'analyse du marché autour du bien →</a>
 </section>
 
+<section class="card" id="identityCard">
+ <div class="section-k">VOTRE IDENTITÉ</div>
+ <h2>👤 Votre identité</h2>
+ <p class="intro">Ces informations sont renseignées directement par vous pour constituer votre dossier vendeur.</p>
+ <div class="owner-grid">
+  <div class="field"><label for="ownerRole">Vous êtes</label><select id="ownerRole"><option>Propriétaire</option><option>Indivision</option><option>Société</option><option>Autre</option></select></div>
+  <div class="field"><label for="ownerCount">Nombre de propriétaires</label><input id="ownerCount" type="number" min="1" max="10" value="1"></div>
+ </div>
+ <div id="owners"></div>
+ <button class="small-btn" id="addOwner" type="button">+ Ajouter un autre propriétaire</button>
+ <p class="privacy">Les informations saisies servent à constituer votre dossier vendeur. Elles ne servent pas au calcul de la valeur de référence.</p>
+</section>
+<section class="card" id="projectCard">
+ <div class="section-k">VOTRE PROJET</div>
+ <h2>🏠 Votre projet de vente</h2>
+ <p class="intro">Ces réponses permettent de préparer l'échange. Votre prix souhaité reste distinct de l'analyse du marché.</p>
+ <div class="project-grid">
+  <div class="field"><label for="saleHorizon">Quand envisagez-vous de vendre ?</label><select id="saleHorizon"><option value="">À définir</option><option value="0-3">Dès que possible / 3 mois</option><option value="3-6">3 à 6 mois</option><option value="6-12">6 à 12 mois</option></select></div>
+  <div class="field"><label for="expectedPrice">Prix que vous envisagez</label><input id="expectedPrice" inputmode="numeric" placeholder="Votre prix souhaité"></div>
+  <div class="field"><label for="alreadyEstimated">Bien déjà estimé ?</label><select id="alreadyEstimated"><option value="">—</option><option>Oui</option><option>Non</option></select></div>
+  <div class="field"><label for="alreadyProfessional">Déjà accompagné par un professionnel ?</label><select id="alreadyProfessional"><option value="">—</option><option>Oui</option><option>Non</option></select></div>
+  <div class="field" style="grid-column:1/-1"><label for="saleReason">Pourquoi envisagez-vous de vendre ?</label><textarea id="saleReason" placeholder="Quelques mots suffisent…"></textarea></div>
+ </div>
+ <div class="note"><b>Important :</b> le prix indiqué ici est votre prix envisagé. Il reste séparé du calcul de la référence de marché.</div>
+ <div class="save-row"><button class="save-btn" id="saveSeller" type="button">💾 Enregistrer mon dossier</button><span class="save-msg" id="saveMsg"></span></div>
+</section>
 <section class="card checklist-card">
  <div class="section-k">POUR PRÉPARER L'ÉCHANGE</div>
  <h2>📋 Les informations qui peuvent encore affiner le dossier</h2>
