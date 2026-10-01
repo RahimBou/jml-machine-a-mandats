@@ -7,8 +7,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.2";
-const BUILD_MARKER = "dvf-postgres-monthly-03";
+const VERSION = "3.4.3";
+const BUILD_MARKER = "dvf-postgres-monthly-04";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -722,7 +722,7 @@ app.get("/api/territory-comparables", async (req,res) => {
     const comparable=await buildComparableSales(market,{address,propertyType,surface,rooms,city:commune.nom});
     return res.json({
       ok:true,version:VERSION,build:BUILD_MARKER,commune,
-      comparables,
+      comparables:comparable,
       source:"DVF local JML / PostgreSQL"
     });
   }catch(error){
