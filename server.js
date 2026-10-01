@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.7";
-const BUILD_MARKER = "dvf-postgres-monthly-08";
+const VERSION = "3.4.8";
+const BUILD_MARKER = "dvf-postgres-monthly-09-seller-assets";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -103,10 +103,31 @@ async function getEducationAssets(lat,lon,communeCode){
   }).filter(Boolean).filter(x=>x.distanceKm<=10).sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,12);
 }
 
-async function getBpeAssets(lat,lon,communeCode){
-  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^\d{5}$/.test(String(communeCode||""))) {
-    return {rows:[],ready:false,importedAt:null};
+const SELLER_BPE_TYPES = {
+  daily: {
+    label:"Commerces du quotidien",
+    codes:{B101:"Hypermarché",B102:"Supermarché",B103:"Grande surface de bricolage",B201:"Supérette",B202:"Épicerie",B203:"Boulangerie",B204:"Boucherie / charcuterie",B316:"Station-service"}
+  },
+  health: {
+    label:"Santé de proximité",
+    codes:{D201:"Médecin généraliste",D221:"Chirurgien-dentiste",D232:"Infirmier",D233:"Masseur-kinésithérapeute",D307:"Pharmacie",D302:"Laboratoire d'analyses"}
+  },
+  family: {
+    label:"Famille & éducation",
+    codes:{D502:"Crèche",C107:"École maternelle",C108:"École primaire",C109:"École élémentaire",C201:"Collège",C301:"Lycée général / technologique",C302:"Lycée professionnel"}
+  },
+  leisure: {
+    label:"Loisirs & vie locale",
+    codes:{F102:"Boulodrome",F103:"Tennis",F109:"Parcours sportif / santé",F111:"Terrain ou plateau multisports",F113:"Terrain de grands jeux",F117:"Roller / skate / vélo",F307:"Bibliothèque",F303:"Cinéma",F116:"Salle multisports",F121:"Salle multisports"}
   }
+};
+const SELLER_BPE_CODE_TO_GROUP = Object.entries(SELLER_BPE_TYPES).reduce((acc,[group,data])=>{
+  Object.entries(data.codes).forEach(([code,label])=>{acc[code]={group,label};});
+  return acc;
+}, {});
+
+async function getBpeAssets(lat,lon,communeCode){
+  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^d{5}$/.test(String(communeCode||""))) return {rows:[],ready:false,importedAt:null};
   const key=String(communeCode)+"|"+lat.toFixed(4)+"|"+lon.toFixed(4);
   const cached=territoryAssetCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return cached.data;
@@ -119,22 +140,28 @@ async function getBpeAssets(lat,lon,communeCode){
     return empty;
   }
   const result=await db(`
-    SELECT name,domain,type_label,latitude,longitude,
-      ROUND((6371*2*ASIN(SQRT(
-        POWER(SIN(RADIANS(latitude-$1)/2),2)+COS(RADIANS($1))*COS(RADIANS(latitude))*POWER(SIN(RADIANS(longitude-$2)/2),2)
-      )))::numeric,2) AS distance_km
+    SELECT name,domain,subdomain,type_code,type_label,latitude,longitude,
+      ROUND((6371*2*ASIN(SQRT(POWER(SIN(RADIANS(latitude-$1)/2),2)+COS(RADIANS($1))*COS(RADIANS(latitude))*POWER(SIN(RADIANS(longitude-$2)/2),2))))::numeric,2) AS distance_km
     FROM jml_bpe_assets
-    WHERE commune_code=$3
-      AND latitude IS NOT NULL AND longitude IS NOT NULL
-      AND latitude BETWEEN $1-0.02 AND $1+0.02
+    WHERE commune_code=$3 AND latitude IS NOT NULL AND longitude IS NOT NULL
+      AND latitude BETWEEN $1-0.02 AND $1+0.03
       AND longitude BETWEEN $2-0.03 AND $2+0.03
-    ORDER BY distance_km
-    LIMIT 500
+    ORDER BY distance_km LIMIT 1000
   `,[lat,lon,communeCode]);
-  const rows=result.rows.map(x=>({name:x.name||x.type_label||"Équipement",domain:x.domain,type:x.type_label,distanceKm:Number(x.distance_km)})).filter(x=>Number.isFinite(x.distanceKm)&&x.distanceKm<=1.5);
+  const rows=result.rows.map(x=>{
+    const code=String(x.type_code||"").trim();
+    const mapped=SELLER_BPE_CODE_TO_GROUP[code];
+    return {name:x.name||null,domain:x.domain,subdomain:x.subdomain||null,typeCode:code,type:x.type_label||mapped?.label||null,sellerGroup:mapped?.group||null,distanceKm:Number(x.distance_km)};
+  }).filter(x=>Number.isFinite(x.distanceKm)&&x.distanceKm<=1.5);
   const data={rows,ready:true,importedAt};
   territoryAssetCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
   return data;
+}
+
+function sellerDistanceLabel(km){
+  if(km<0.3) return "moins de 300 m";
+  if(km<0.8) return "moins de 800 m";
+  return "à moins de 1,5 km";
 }
 
 async function getOfficialTerritoryAssets(lat,lon,communeCode){
@@ -143,28 +170,25 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
   const bpeData=bpe.status==="fulfilled"?bpe.value:{rows:[],ready:false,importedAt:null};
   const bpeRows=bpeData.rows||[];
   const bpeReady=Boolean(bpeData.ready);
-  const byDomain=(domain)=>bpeRows.filter(x=>x.domain===domain);
+  const bpeGroup=(group)=>bpeRows.filter(x=>x.sellerGroup===group && x.distanceKm<=0.8);
+  const nearest=(rows,limit=5)=>rows.slice().sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,limit);
+  const family=nearest(schools.map(x=>({...x,group:"family",distanceLabel:sellerDistanceLabel(x.distanceKm)})).concat(
+    bpeGroup("family").map(x=>({...x,group:"family",distanceLabel:sellerDistanceLabel(x.distanceKm)}))
+  ),6);
   const categories={
-    schools:{label:"Écoles & établissements",count:schools.length,available:education.status==="fulfilled",items:schools.slice(0,5),source:"Éducation nationale"},
-    commerces:{label:"Commerces de proximité",count:byDomain("B").length,available:bpeReady,items:byDomain("B").slice(0,5),source:"INSEE BPE 2025"},
-    transport:{label:"Transports & mobilité",count:byDomain("E").length,available:bpeReady,items:byDomain("E").slice(0,5),source:"INSEE BPE 2025"},
-    parks:{label:"Sports, loisirs & culture",count:byDomain("F").length,available:bpeReady,items:byDomain("F").slice(0,5),source:"INSEE BPE 2025"},
-    health:{label:"Santé",count:byDomain("D").length,available:bpeReady,items:byDomain("D").slice(0,5),source:"INSEE BPE 2025"},
-    services:{label:"Services du quotidien",count:byDomain("A").length,available:bpeReady,items:byDomain("A").slice(0,5),source:"INSEE BPE 2025"}
+    daily:{label:"Commerces du quotidien",count:bpeGroup("daily").length,available:bpeReady,items:nearest(bpeGroup("daily").map(x=>({...x,group:"daily",distanceLabel:sellerDistanceLabel(x.distanceKm)})),6),source:"INSEE BPE 2025"},
+    family:{label:"Écoles & famille",count:family.length,available:education.status==="fulfilled"||bpeReady,items:family,source:"Éducation nationale + INSEE BPE 2025"},
+    health:{label:"Santé de proximité",count:bpeGroup("health").length,available:bpeReady,items:nearest(bpeGroup("health").map(x=>({...x,group:"health",distanceLabel:sellerDistanceLabel(x.distanceKm)})),6),source:"INSEE BPE 2025"},
+    mobility:{label:"Mobilité",count:bpeRows.filter(x=>x.domain==="E"&&x.distanceKm<=0.8).length,available:bpeReady,items:nearest(bpeRows.filter(x=>x.domain==="E"&&x.distanceKm<=1.5).map(x=>({...x,group:"mobility",type:x.type||"Équipement de mobilité",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"},
+    leisure:{label:"Loisirs & vie locale",count:bpeGroup("leisure").length,available:bpeReady,items:nearest(bpeGroup("leisure").map(x=>({...x,group:"leisure",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"}
   };
-  const available=education.status==="fulfilled"||bpeReady;
   return {
-    available,
+    available:education.status==="fulfilled"||bpeReady,
     provider:"Données publiques officielles",
     source:"Éducation nationale + INSEE BPE 2025",
     sourceUrl:"https://www.insee.fr/fr/statistiques/8217525",
-    radiusKm:1.5,
-    importedAt:bpeData.importedAt,
-    categories,
-    diagnostics:{
-      education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),
-      bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible")
-    }
+    radiusKm:1.5,sellerRadiusKm:0.8,importedAt:bpeData.importedAt,categories,
+    diagnostics:{education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible")}
   };
 }
 
