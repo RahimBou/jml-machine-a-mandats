@@ -1,14 +1,16 @@
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
+const zlib = require("zlib");
+const readline = require("readline");
 const { Readable } = require("stream");
 const { Pool } = require("pg");
 const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.5";
-const BUILD_MARKER = "dvf-postgres-monthly-06";
+const VERSION = "3.4.6";
+const BUILD_MARKER = "dvf-postgres-monthly-07";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -254,8 +256,13 @@ async function getGeoRisks(code){
     const response=await fetch("https://www.georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+encodeURIComponent(cleanCode),{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"application/json"},signal:AbortSignal.timeout(6000)});
     if(response.ok){
       const payload=await response.json();
-      const rows=Array.isArray(payload)?payload:(Array.isArray(payload.data)?payload.data:(Array.isArray(payload.resultats)?payload.resultats:[]));
-      const labels=[...new Set(rows.map(r=>String(r.libelle||r.nom||r.libelle_risque||r.risque||"").trim()).filter(Boolean))].slice(0,12);
+      const rawRows=Array.isArray(payload)?payload:(Array.isArray(payload.data)?payload.data:(Array.isArray(payload.resultats)?payload.resultats:[]));
+      const rows=[];
+      for(const row of rawRows){
+        if(Array.isArray(row?.risques_detail)) rows.push(...row.risques_detail);
+        else rows.push(row);
+      }
+      const labels=[...new Set(rows.map(r=>String(r.libelle_risque_long||r.libelle_risque_jo||r.libelle||r.nom||r.libelle_risque||r.risque||"").trim()).filter(Boolean))].slice(0,12);
       if(labels.length) return {available:true,source:"Géorisques / BRGM",sourceUrl:"https://www.georisques.gouv.fr/",risks:labels,count:labels.length,note:"Information à l'échelle communale. Vérification à l'adresse/parcelle recommandée."};
     }
   }catch(error){console.warn("JML Géorisques API:",error.message);}
@@ -292,6 +299,38 @@ async function getLocalEnvironment(commune){
       return data;
     }
   }catch(error){console.warn("JML services source publique:",error.message);}
+  // Secours indépendant : OpenStreetMap / Overpass autour du centre communal.
+  // Cela évite que la panne de Mon Quartier Info rende tout le bloc vide.
+  try{
+    const coords=commune?.centre?.coordinates;
+    if(Array.isArray(coords)&&coords.length>=2){
+      const osm=await getNearbyAssets(Number(coords[1]),Number(coords[0]));
+      if(osm?.available){
+        const cats=osm.categories||{};
+        const count=k=>Number(cats[k]?.count||0);
+        const data={
+          available:true,
+          source:"OpenStreetMap / Overpass — secours local",
+          sourceUrl:"https://www.openstreetmap.org/",
+          counters:{
+            schools:count("schools"),
+            health:count("health"),
+            pharmacies:(cats.health?.items||[]).filter(x=>/pharm/i.test(String(x.name||""))).length,
+            shops:count("commerces"),
+            stations:count("transport"),
+            busStops:null,
+            postOffices:(cats.services?.items||[]).filter(x=>/poste/i.test(String(x.name||""))).length,
+            totalServices:Object.values(cats).reduce((sum,x)=>sum+Number(x?.count||0),0)
+          },
+          names:{schools:cats.schools?.items||[],health:cats.health?.items||[],pharmacies:[],shops:cats.commerces?.items||[],stations:cats.transport?.items||[]},
+          radiusKm:1.5,
+          note:"Repère de proximité calculé à partir des équipements OpenStreetMap dans un rayon de 1,5 km autour du centre communal. Il ne remplace pas un inventaire INSEE BPE exhaustif."
+        };
+        localEnvironmentCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
+        return data;
+      }
+    }
+  }catch(error){console.warn("JML services OSM secours:",error.message);}
   return {available:false,message:"Les services locaux sont temporairement indisponibles."};
 }
 
