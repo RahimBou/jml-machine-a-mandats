@@ -881,9 +881,12 @@ async function buildComparableSales(market,property){
   const weightedDen=display.reduce((s,x)=>s+Math.max(0.1,x.score),0);
   const weightedPriceM2=weightedDen?display.reduce((s,x)=>s+Number(x.pricePerM2||0)*Math.max(0.1,x.score),0)/weightedDen:null;
   const radiusKm=display.length?Math.max(...display.map(x=>x.distanceKm)):null;
-  const closeSales=display.filter(x=>Number(x.distanceKm)<=0.8);
+  const closeSales=display.filter(x=>Number(x.distanceKm)<=0.5);
   const minPriceM2=values.length?Math.round(values[0]):null;
   const maxPriceM2=values.length?Math.round(values[values.length-1]):null;
+  const q1=values.length?values[Math.floor((values.length-1)*0.25)]:null;
+  const q3=values.length?values[Math.floor((values.length-1)*0.75)]:null;
+  const spreadPct=median&&q1!=null&&q3!=null?Math.round((q3-q1)/median*1000)/10:null;
   const strictCount=display.filter(x=>String(x.tier).includes("500 m")).length;
   const closeCount=closeSales.length;
 
@@ -893,7 +896,7 @@ async function buildComparableSales(market,property){
     median:median!=null?Math.round(median):null,
     weightedPriceM2:weightedPriceM2!=null?Math.round(weightedPriceM2):null,
     matchCount:display.length,totalCandidates:candidates.length,radiusKm,
-    closeCount,minPriceM2,maxPriceM2,strictCount,
+    closeCount,minPriceM2,maxPriceM2,q1:q1!=null?Math.round(q1):null,q3:q3!=null?Math.round(q3):null,spreadPct,strictCount,
     searchScope:display.length?display[display.length-1].tier:"Aucun comparable répondant aux critères",
     origin,originSource,
     source:"DVF local JML / PostgreSQL",
