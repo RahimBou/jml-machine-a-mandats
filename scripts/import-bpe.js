@@ -1,9 +1,6 @@
 const { Pool } = require("pg");
-const { Readable } = require("stream");
 const readline = require("readline");
 const fs = require("fs");
-const { spawn } = require("child_process");
-const { pipeline } = require("stream/promises");
 
 const DATABASE_URL=String(process.env.DATABASE_URL||"").trim();
 if(!DATABASE_URL) throw new Error("DATABASE_URL manquante");
@@ -14,9 +11,7 @@ const pool=new Pool({
   connectionTimeoutMillis:15000
 });
 
-const URL="https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.zip";
-const ZIP_PATH="/tmp/BPE25.zip";
-const EXPECTED_MEMBER="BPE25.csv";
+const CSV_PATH=process.env.BPE_CSV_PATH||require("path").join(process.cwd(),"data","BPE25_Ardennes.csv");
 const YEAR=2025;
 const DEP="08";
 const BATCH=500;
@@ -69,29 +64,10 @@ async function main(){
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_commune ON jml_bpe_assets(commune_code)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_geo ON jml_bpe_assets(latitude,longitude)");
 
-    console.log("Téléchargement BPE 2025 INSEE (archive officielle)...");
-    const response=await fetch(URL,{headers:{"User-Agent":"JML-Projet-Vendeur-BPE/1.0"},signal:AbortSignal.timeout(600000)});
-    if(!response.ok) throw new Error("INSEE BPE HTTP "+response.status);
-    const zipPath=ZIP_PATH;
-    await pipeline(Readable.fromWeb(response.body),fs.createWriteStream(zipPath));
-    const zipSizeMb=(fs.statSync(zipPath).size/1024/1024).toFixed(1);
-    console.log("Archive BPE téléchargée : "+zipSizeMb+" Mo");
-
-    const list=spawn("unzip",["-l",zipPath],{stdio:["ignore","pipe","pipe"]});
-    let listOut="",listErr="";
-    list.stdout.on("data",d=>{listOut+=String(d);});
-    list.stderr.on("data",d=>{listErr+=String(d);});
-    await new Promise((resolve,reject)=>list.on("close",code=>{
-      if(code!==0)return reject(new Error("Lecture de l’archive BPE impossible: "+listErr));      if(!listOut.includes(EXPECTED_MEMBER)){
-        return reject(new Error("Le fichier "+EXPECTED_MEMBER+" est absent de l’archive INSEE."));
-      }
-      resolve();
-    }));
-    console.log("Archive BPE validée : "+EXPECTED_MEMBER);
-    const csvStream=spawn("unzip",["-p",zipPath,EXPECTED_MEMBER],{stdio:["ignore","pipe","pipe"]});
-    let unzipErr="";
-    csvStream.stderr.on("data",d=>{unzipErr+=String(d);});
-    const input=csvStream.stdout;
+    if(!fs.existsSync(CSV_PATH)) throw new Error("Fichier BPE local introuvable : "+CSV_PATH);
+    const sizeMb=(fs.statSync(CSV_PATH).size/1024/1024).toFixed(1);
+    console.log("Import BPE local Ardennes : "+CSV_PATH+" ("+sizeMb+" Mo)");
+    const input=fs.createReadStream(CSV_PATH);
     input.on("error",()=>{});
     await client.query("BEGIN");
     console.log("Filtrage BPE : département "+DEP+" ; domaines A-G ; coordonnées obligatoires.");
@@ -137,9 +113,7 @@ async function main(){
       }
     }
     if(batch.length){await insertBatch(client,batch);inserted+=batch.length;}
-    await new Promise((resolve,reject)=>csvStream.on("close",code=>code===0?resolve():reject(new Error("Extraction BPE25.csv impossible: "+unzipErr))));
     await client.query("COMMIT");
-    try{fs.unlinkSync(zipPath);}catch(_){}
     console.log(`BPE terminé : supprimés=${deleted}, insérés=${inserted}, lignes_scannées=${scanned}, Ardennes_avec_coordonnées=${validArdennes}, sans_coordonnées=${skippedNoCoords}`);
     if(inserted===0) throw new Error("Aucun équipement BPE Ardennes n’a été importé : vérifier le format DEPCOM et les coordonnées.");
   }catch(error){
