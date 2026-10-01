@@ -88,3 +88,14 @@
 .guide-topic:nth-child(4) .guide-visual,
 .guide-topic:nth-child(6) .guide-visual{background-image:url("/assets/charleville-hero.svg")!important}
 .guide-summary-photo{background-image:url("/assets/charleville-place-ducale.svg")!important}
+
+/* V2.6 — priorité au hero photo réaliste */
+.seller-dashboard-hero{
+  background-image:linear-gradient(90deg,rgba(8,48,39,.92) 0%,rgba(8,48,39,.70) 42%,rgba(8,48,39,.22) 78%,rgba(8,48,39,.08) 100%),url("https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Place_Ducale_28-54_with_terraces%2C_Charleville-M%C3%A9zi%C3%A8res.jpg/1920px-Place_Ducale_28-54_with_terraces%2C_Charleville-M%C3%A9zi%C3%A8res.jpg")!important;
+  background-position:center 48%!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+@media(max-width:600px){
+  .seller-dashboard-hero{background-position:center center!important;}
+}
