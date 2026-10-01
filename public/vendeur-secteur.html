@@ -168,9 +168,12 @@ function getSpace(){
 async function loadServerSpace(){
  const p=new URLSearchParams(location.search);
  const token=p.get("token")||"";
- if(!token) return getSpace();
+ const local=getSpace();
+ if(!token) return local;
+ const ctl=new AbortController();
+ const timer=setTimeout(()=>ctl.abort(),4500);
  try{
-  const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{cache:"no-store"});
+  const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{cache:"no-store",signal:ctl.signal});
   const j=await r.json().catch(()=>({}));
   if(r.ok&&j.ok&&j.space){
    const space={...j.space,token,submitted:true};
@@ -178,7 +181,8 @@ async function loadServerSpace(){
    return space;
   }
  }catch(_e){}
- return getSpace();
+ finally{clearTimeout(timer)}
+ return local;
 }
 
 const pageData={market:null,reference:null,assets:null,comparables:null,space:null};
