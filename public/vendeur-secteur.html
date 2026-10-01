@@ -41,6 +41,20 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 @media(max-width:760px){.hero h1{font-size:30px}.grid,.metrics,.types,.sales,.comps,.nearby,.env,.reference{grid-template-columns:1fr}.head,.project-top{display:block}.source,.status{display:inline-block;margin-top:8px}}
 
 .highlight-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 12px}.highlight-item{display:flex;gap:8px;align-items:center;background:#fffdf7;border:1px solid rgba(24,63,50,.12);border-radius:12px;padding:10px}.highlight-num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#d7b45b;color:#173f32;font-weight:800;flex:0 0 auto}.highlight-item b{font-size:.78rem}.highlight-item small{display:block;font-size:.67rem}.highlight-item p{margin:3px 0 0;font-size:.68rem;color:#8b6e31}.asset-details{margin-top:8px;border-top:1px dashed rgba(24,63,50,.16);padding-top:6px}.asset-details summary{cursor:pointer;font-weight:700;font-size:.75rem}.asset-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px}.asset-grid .asset{min-width:0}.asset-grid .asset ul{font-size:.68rem}.asset-grid .asset h3{font-size:.8rem}.asset-grid .asset p{font-size:.68rem}@media(max-width:760px){.highlight-list,.asset-grid{grid-template-columns:1fr 1fr}.highlight-item{min-height:62px}.highlight-item b{font-size:.74rem}}@media(max-width:430px){.highlight-list{grid-template-columns:1fr}.asset-grid{grid-template-columns:1fr}}
+
+/* Correctif mobile : les éléments d'introduction et la liste des atouts
+   sont des blocs distincts. On évite que la grille parent les écrase. */
+.asset-grid{display:block !important;}
+.asset-grid > .asset-intro{width:100%;margin-bottom:10px;}
+.asset-grid > .highlight-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;margin:10px 0 12px;}
+.asset-grid > .asset-details{width:100%;}
+@media(max-width:760px){
+  .asset-grid > .highlight-list{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:520px){
+  .asset-grid > .highlight-list{grid-template-columns:1fr;}
+  .asset-grid > .highlight-list .highlight-item{min-height:58px;}
+}
 </style>
 </head>
 <body>
