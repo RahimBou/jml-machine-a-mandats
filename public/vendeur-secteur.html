@@ -140,7 +140,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">03 · REPÈRE VENDEUR</div><h2>Une valeur de référence simple</h2></div><div class="source">Indicatif · non certifié</div></div>
+ <div class="head"><div><div class="eyebrow">03 · REPÈRE VENDEUR</div><h2>Un repère de valeur pour votre bien</h2></div><div class="source">Indicatif · non certifié</div></div>
  <div class="card reference" id="reference">
   <div class="ref-main"><h3>Valeur de référence</h3><div class="ref-value">—</div><p>—</p></div>
   <div class="ref-list"><div class="ref-row"><b>Repère au m²</b><span>—</span></div><div class="ref-row"><b>Ventes prises en compte</b><span>—</span></div><div class="ref-row"><b>Nature du repère</b><span>—</span></div></div>
@@ -461,20 +461,29 @@ function renderSellerReading(r){
  const commune=d.city||"la commune";
  const base=r.basePriceM2;
  const baseText=base!=null?Math.round(Number(base)).toLocaleString("fr-FR")+" €/m²":"un repère de marché";
- const compText=c.matchCount?c.matchCount+" ventes comparables ont été retenues autour de l'adresse.":"Les comparables disponibles restent limités pour cette adresse.";
+ const communalM2=type==="Maison"?Number(m.housePrice||m.communalPrice):Number(m.communalPrice);
+ const communalText=Number.isFinite(communalM2)&&communalM2>0?Math.round(communalM2).toLocaleString("fr-FR")+" €/m²":"non disponible";
+ const gap=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?((Number(base)/communalM2-1)*100):null;
+ const gapText=gap!=null?(gap>=0?"+":"")+gap.toFixed(1).replace(".",",")+" %":"";
+ const count=Number(c.matchCount||0);
+ const strict=Number(c.strictCount||0);
+ const radius=Number(c.radiusKm||0);
  const bullets=[];
- bullets.push(comparable
-   ?"Le repère de "+baseText+" privilégie les ventes jugées les plus comparables à votre "+type+" : type, surface, pièces, distance et récence sont pris en compte."
-   :"Le repère repose sur le marché communal disponible ; il sera à compléter par l'analyse des ventes réellement comparables.");
- bullets.push(compText);
+ if(comparable){
+   bullets.push("Le "+baseText+" n'est pas une moyenne générale : il est calculé à partir des ventes retenues comme comparables à votre "+type+" selon le type de bien, la surface, le nombre de pièces, la distance et la récence.");
+   bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" ont été retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+(radius.toLocaleString("fr-FR")+" km"):"")+"."+(strict?" Parmi elles, "+strict+" correspondent au premier niveau de proximité.":""));
+   if(gap!=null) bullets.push("À titre de comparaison, le repère des maisons dans la commune est de "+communalText+". Le repère local des comparables est donc "+gapText+" par rapport à cette référence communale.");
+   bullets.push("La valeur affichée correspond à un repère de départ : elle ne tient pas encore compte de l'état précis du bien, de ses prestations, des travaux à prévoir ou de la stratégie de mise en vente.");
+ }else{
+   bullets.push("Le repère repose sur le marché communal disponible ; il ne remplace pas une analyse des ventes réellement comparables.");
+   bullets.push("Les caractéristiques du bien, son état, ses prestations et son environnement doivent compléter cette première lecture.");
+ }
  if(assets.length) bullets.push("Le secteur présente aussi des éléments concrets à proximité, comme "+assets.slice(0,3).map(x=>x.label.toLowerCase()+" "+x.distance).join(", ")+".");
- bullets.push("L'état du bien, ses prestations, les travaux éventuels et la demande au moment de la mise en vente doivent compléter cette lecture.");
  el.innerHTML='<h3>Ce que cela signifie pour votre vente</h3>'+
-   '<p class="reading-title">Lecture vendeur</p>'+
-   '<p>Pour '+esc(commune)+', le chiffre affiché doit être lu comme un point de départ pour positionner le bien, et non comme un prix automatique.</p>'+
+   '<p class="reading-title">Pourquoi ce prix ressort</p>'+
+   '<p>Pour '+esc(commune)+', le chiffre affiché doit être lu comme un <b>repère de valeur indicatif</b> : les ventes comparables servent à situer le bien, puis le contexte du marché communal permet de vérifier si le niveau obtenu est cohérent.</p>'+
    '<ul>'+bullets.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
 }
-
 function renderComps(c){
  c=c||{};
  pageData.comparables=c;
