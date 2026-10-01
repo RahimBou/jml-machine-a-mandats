@@ -113,4 +113,6 @@ if(list){
    const present=!!key.split(".").reduce((o,k)=>o?.[k],d);
    return '<div class="check '+(present?"ok":"")+'"><b>'+(present?"✓ ":"")+label+'</b><span>'+ (present?"Information renseignée dans le dossier.":why) +'</span></div>';
  }).join("");
-}})();</script></body></html>
+}})();
+const ownerBox=document.getElementById('owners');const baseOwner={firstName:'',lastName:'',phone:'',email:''};let ownerData=[{...baseOwner}];function drawOwners(){ownerBox.innerHTML='';ownerData.forEach(function(o,i){const box=document.createElement('div');box.className='owner-item';box.innerHTML='<div class="owner-head"><strong>Propriétaire '+(i+1)+'</strong></div><div class="owner-grid"><div class="field"><label>Prénom</label><input></div><div class="field"><label>Nom</label><input></div><div class="field"><label>Téléphone</label><input></div><div class="field"><label>E-mail</label><input></div></div>';const inputs=box.querySelectorAll('input');['firstName','lastName','phone','email'].forEach(function(k,j){inputs[j].value=o[k]||'';inputs[j].oninput=function(){o[k]=this.value}});ownerBox.appendChild(box)})}drawOwners();document.getElementById('addOwner').onclick=function(){ownerData.push({...baseOwner});document.getElementById('ownerCount').value=ownerData.length;drawOwners()};
+</script></body></html>
