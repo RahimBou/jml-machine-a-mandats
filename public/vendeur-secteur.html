@@ -71,6 +71,8 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .method-note{color:#69736d;font-size:12px;}
 @media(max-width:650px){.nearby{grid-template-columns:1fr 1fr;}.env{grid-template-columns:1fr;}}
 @media(max-width:430px){.nearby{grid-template-columns:1fr;}}
+.comps-note{margin:0 0 10px;padding:10px 12px;background:#f5f1e7;border:1px solid #e7decd;border-radius:9px;color:#5f6862;font-size:12px;line-height:1.45;}
+.env-unavailable{display:none!important;}
 </style>
 </head>
 <body>
@@ -434,11 +436,12 @@ function renderComps(c){
  '<div class="ref-row"><b>Périmètre retenu</b><span>'+esc(c.searchScope||"—")+'</span></div>'+
  '<div class="ref-row"><b>Ventes retenues</b><span>'+esc(c.matchCount??"—")+'</span></div>'+
  '<div class="ref-row"><b>Médiane des comparables</b><span>'+esc(c.median!=null?m2(c.median):"—")+'</span></div>'+
- '<div class="ref-row"><b>Fourchette observée</b><span>'+esc(c.minPriceM2!=null&&c.maxPriceM2!=null?m2(c.minPriceM2)+" → "+m2(c.maxPriceM2):"—")+'</span></div>'+
+ '<div class="ref-row"><b>Dispersion des ventes</b><span>'+esc(c.minPriceM2!=null&&c.maxPriceM2!=null?"Écart important · valeurs extrêmes écartées du repère":"—")+'</span></div>'+
  '<div class="ref-row"><b>Très proches</b><span>'+esc(c.closeCount??"0")+'</span></div></div>';
  const rows=Array.isArray(c.sales)?c.sales:[];
  if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
- $("#comps").innerHTML=rows.map(s=>
+ $("#comps").innerHTML='<div class="comps-note"><b>Lecture vendeur :</b> le repère de '+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"prix")+' s’appuie sur les ventes jugées les plus comparables. Les valeurs très éloignées sont conservées dans l’historique mais ne pilotent pas le repère.</div>'+
+ rows.map(s=>
  '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="score">'+esc(s.score!=null?s.score+"/100":"—")+'</span></div>'+
  '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+'</p>'+
  '<span class="pill">'+esc(s.sameStreet?"Même rue":"Secteur proche")+'</span></article>'
@@ -594,6 +597,9 @@ async function run(){
    renderRows("#security",env.security);
    renderRows("#risks",env.risks);
    renderRows("#environment",env.environment);
+   const allUnavailable=[env.security,env.risks,env.environment].every(x=>!x||x.available===false);
+   const envSection=$("#security")?.closest(".section");
+   if(envSection) envSection.style.display=allUnavailable?"none":"";
   }else{
    renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
   }
