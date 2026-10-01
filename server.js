@@ -7,8 +7,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.1";
-const BUILD_MARKER = "dvf-postgres-monthly-02";
+const VERSION = "3.4.2";
+const BUILD_MARKER = "dvf-postgres-monthly-03";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -704,6 +704,38 @@ async function buildComparableSales(market,property){
     diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0}
   };
 }
+
+app.get("/api/territory-comparables", async (req,res) => {
+  const city=clean(req.query.city,100);
+  const address=clean(req.query.address,180);
+  const propertyType=clean(req.query.propertyType,60);
+  const surface=clean(req.query.surface,40);
+  const rooms=clean(req.query.rooms,40);
+  if(!city) return res.status(400).json({ok:false,code:"JML-COMP-400",error:"Commune requise."});
+  try{
+    const commune=await resolveTerritoryCommune(city,address);
+    if(!commune) return res.status(422).json({ok:false,code:"JML-COMP-422",error:"Commune introuvable."});
+    let market={city:commune.nom,recentSales:[],transactions:null};
+    try{ market=await getCommuneMarketData(commune.nom,commune.code); }catch(error){
+      console.warn("JML comparables market isolated:",error.message);
+    }
+    const comparable=await buildComparableSales(market,{address,propertyType,surface,rooms,city:commune.nom});
+    return res.json({
+      ok:true,version:VERSION,build:BUILD_MARKER,commune,
+      comparables,
+      source:"DVF local JML / PostgreSQL"
+    });
+  }catch(error){
+    const detail=String(error?.message||error||"Erreur inconnue").slice(0,500);
+    console.error("JML territory-comparables:",detail);
+    return res.status(200).json({
+      ok:false,code:"JML-COMP-DEGRADED",
+      error:"Le moteur comparable est temporairement indisponible.",
+      detail,
+      comparables:{sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Indisponible",origin:null,message:"Les ventes communales restent disponibles ; la recherche fine sera réessayée."}
+    });
+  }
+});
 
 app.get("/api/territory-summary", async (req,res) => {
   const city=clean(req.query.city,100);
