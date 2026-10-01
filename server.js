@@ -10,7 +10,7 @@ const registerPublicEventsRoute = require("./events");
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
 const VERSION = "3.3.2";
-const BUILD_MARKER = "dvf-local-official-08";
+const BUILD_MARKER = "dvf-local-official-09";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -88,45 +88,54 @@ function parseDvfCsvLine(line){
   }
   out.push(cur); return out;
 }
+async function loadLocalDvfYear(year){
+  const url="https://files.data.gouv.fr/geo-dvf/latest/csv/"+year+"/departements/08.csv.gz";
+  const response=await fetch(url,{headers:{"Accept":"application/gzip","User-Agent":"JML-Projet-Vendeur/3.3.3"},signal:AbortSignal.timeout(15000)});
+  if(!response.ok) throw new Error("DVF "+year+" HTTP "+response.status);
+  const buffer=Buffer.from(await response.arrayBuffer());
+  const raw=zlib.gunzipSync(buffer).toString("utf8");
+  const lines=raw.split(/\r?\n/).filter(Boolean);
+  if(!lines.length) return [];
+  const header=parseDvfCsvLine(lines[0]).map(v=>v.trim());
+  const idx=Object.fromEntries(header.map((v,i)=>[v,i]));
+  const groups=new Map();
+  for(let i=1;i<lines.length;i++){
+    const row=parseDvfCsvLine(lines[i]);
+    if(row[0]==="id_mutation" || row[idx.nature_mutation]!=="Vente") continue;
+    const type=row[idx.type_local];
+    if(type!=="Maison"&&type!=="Appartement") continue;
+    const price=Number(row[idx.valeur_fonciere]), surface=Number(row[idx.surface_reelle_bati]);
+    const lat=Number(row[idx.latitude]), lon=Number(row[idx.longitude]);
+    if(!(price>0&&surface>0&&Number.isFinite(lat)&&Number.isFinite(lon))) continue;
+    const id=row[idx.id_mutation]||[row[idx.date_mutation],row[idx.adresse_numero],row[idx.adresse_nom_voie],row[idx.id_parcelle]].join("|");
+    if(!groups.has(id)) groups.set(id,[]);
+    groups.get(id).push({id,date:row[idx.date_mutation],type,price,surface,rooms:Number(row[idx.nombre_pieces_principales])||null,land:Number(row[idx.surface_terrain])||null,lat,lon,number:row[idx.adresse_numero]||"",suffix:row[idx.adresse_suffixe]||"",street:row[idx.adresse_nom_voie]||"",postal:row[idx.code_postal]||"",code:row[idx.code_commune]||"",city:row[idx.nom_commune]||""});
+  }
+  const out=[];
+  for(const rows of groups.values()){
+    if(rows.length!==1) continue;
+    const x=rows[0];
+    out.push({...x,address:[x.number,x.suffix,x.street].filter(Boolean).join(" "),pricePerM2:x.price/x.surface,source:"DVF local JML"});
+  }
+  console.log("JML DVF local "+year+": "+out.length+" ventes résidentielles exploitables");
+  return out;
+}
+
 async function loadLocalDvfSales(){
   if(dvfLocalLoadPromise) return dvfLocalLoadPromise;
   dvfLocalLoadPromise=(async()=>{
+    const results=await Promise.allSettled(DVF_YEARS_LOCAL.map(year=>loadLocalDvfYear(year)));
     const all=[];
-    for(const year of DVF_YEARS_LOCAL){
-      const url="https://files.data.gouv.fr/geo-dvf/latest/csv/"+year+"/departements/08.csv.gz";
-      const response=await fetch(url,{headers:{"Accept":"application/gzip","User-Agent":"JML-Projet-Vendeur/3.3.2"},signal:AbortSignal.timeout(30000)});
-      if(!response.ok) throw new Error("DVF "+year+" HTTP "+response.status);
-      const buffer=Buffer.from(await response.arrayBuffer());
-      const raw=zlib.gunzipSync(buffer).toString("utf8");
-      const lines=raw.split(/\r?\n/).filter(Boolean);
-      if(!lines.length) continue;
-      const header=parseDvfCsvLine(lines[0]).map(v=>v.trim());
-      const idx=Object.fromEntries(header.map((v,i)=>[v,i]));
-      const groups=new Map();
-      for(let i=1;i<lines.length;i++){
-        const row=parseDvfCsvLine(lines[i]);
-        if(row[0]==="id_mutation" || row[idx.nature_mutation]!=="Vente") continue;
-        const type=row[idx.type_local];
-        if(type!=="Maison"&&type!=="Appartement") continue;
-        const price=Number(row[idx.valeur_fonciere]), surface=Number(row[idx.surface_reelle_bati]);
-        const lat=Number(row[idx.latitude]), lon=Number(row[idx.longitude]);
-        if(!(price>0&&surface>0&&Number.isFinite(lat)&&Number.isFinite(lon))) continue;
-        const id=row[idx.id_mutation]||[row[idx.date_mutation],row[idx.adresse_numero],row[idx.adresse_nom_voie],row[idx.id_parcelle]].join("|");
-        if(!groups.has(id)) groups.set(id,[]);
-        groups.get(id).push({id,date:row[idx.date_mutation],type,price,surface,rooms:Number(row[idx.nombre_pieces_principales])||null,land:Number(row[idx.surface_terrain])||null,lat,lon,number:row[idx.adresse_numero]||"",suffix:row[idx.adresse_suffixe]||"",street:row[idx.adresse_nom_voie]||"",postal:row[idx.code_postal]||"",code:row[idx.code_commune]||"",city:row[idx.nom_commune]||""});
-      }
-      for(const rows of groups.values()){
-        if(rows.length!==1) continue;
-        const x=rows[0];
-        all.push({...x,address:[x.number,x.suffix,x.street].filter(Boolean).join(" "),pricePerM2:x.price/x.surface,source:"DVF local JML"});
-      }
-      console.log("JML DVF local "+year+": "+all.length+" ventes résidentielles exploitables cumulées");
+    for(let i=0;i<results.length;i++){
+      const r=results[i], year=DVF_YEARS_LOCAL[i];
+      if(r.status==="fulfilled") all.push(...r.value);
+      else console.warn("JML DVF local "+year+": "+String(r.reason?.message||r.reason||"échec"));
     }
+    console.log("JML DVF local: "+all.length+" ventes résidentielles exploitables cumulées");
     return all;
   })().catch(e=>{dvfLocalLoadPromise=null;console.warn("JML DVF local:",e.message);return [];});
   return dvfLocalLoadPromise;
 }
-
 
 const IMMO_DATA_API_BASE_URL = String(process.env.IMMO_DATA_API_BASE_URL || "https://api.immo-data.fr").replace(/\/+$/,"");
 
@@ -485,7 +494,7 @@ function parseEstimusCommunePage(html, city){
 
 async function getCommuneMarketData(city,code){
   const cleanCity=clean(city,100);
-  const key="v3|"+normalizeSearchCity(cleanCity);
+  const key="v4|"+normalizeSearchCity(cleanCity)+"|"+String(code||"");
   const cached=communeMarketCache.get(key);
   if(cached && cached.expiresAt>Date.now()) return {...cached.data,cache:true};
   const fallback={
@@ -888,7 +897,7 @@ async function buildComparableSales(market,property){
   const estimus=await enrichDistances(Array.isArray(market?.recentSales)?market.recentSales:[]);
   let localWithDistance=[];
   try{
-    const local=await Promise.race([loadLocalDvfSales(),new Promise(resolve=>setTimeout(()=>resolve([]),3500))]);
+    const local=await Promise.race([loadLocalDvfSales(),new Promise(resolve=>setTimeout(()=>resolve([]),12000))]);
     localWithDistance=(local||[]).filter(s=>!property?.city||normalizeSearchCity(s.city)===normalizeSearchCity(property.city)).slice(0,500).map(s=>{
       const distanceKm=haversineKm(origin,{lat:Number(s.lat),lon:Number(s.lon)});
       return distanceKm!=null?{...s,distanceKm:Number(distanceKm.toFixed(3))}:s;
@@ -1179,6 +1188,28 @@ async function resolveTerritoryCommune(city,address){
 
   return null;
 }
+
+app.get("/api/territory-commune", async (req,res) => {
+  const city=clean(req.query.city,100);
+  const address=clean(req.query.address,180);
+  if(!city) return res.status(400).json({ok:false,code:"JML-COMMUNE-400",error:"Commune requise."});
+  try{
+    const commune=await resolveTerritoryCommune(city,address);
+    if(!commune) return res.status(422).json({
+      ok:false,code:"JML-COMMUNE-422",
+      error:"Commune introuvable. Vérifiez le nom de la commune ou le code postal."
+    });
+    return res.json({
+      ok:true,commune,
+      source:"Géo API / Géoplateforme",
+      diagnostics:{resolver:"geo.api.gouv.fr puis Géoplateforme",code:commune.code,name:commune.nom}
+    });
+  }catch(error){
+    const detail=String(error?.message||error||"Erreur inconnue").slice(0,500);
+    console.error("JML territory-commune:",detail);
+    return res.status(500).json({ok:false,code:"JML-COMMUNE-500",error:"Erreur lors de la résolution de la commune.",detail});
+  }
+});
 
 app.get("/api/territory-summary", async (req,res) => {
   const city=clean(req.query.city,100);
