@@ -481,7 +481,7 @@ function renderSellerReading(r){
  if(assets.length) bullets.push("Le secteur présente aussi des éléments concrets à proximité, comme "+assets.slice(0,3).map(x=>x.label.toLowerCase()+" "+x.distance).join(", ")+".");
  el.innerHTML='<h3>Ce que cela signifie pour votre vente</h3>'+
    '<p class="reading-title">Pourquoi ce prix ressort</p>'+
-   '<p>Pour '+esc(commune)+', le chiffre affiché doit être lu comme un <b>repère de valeur indicatif</b> : les ventes comparables servent à situer le bien, puis le contexte du marché communal permet de vérifier si le niveau obtenu est cohérent.</p>'+
+   '<p>Pour '+esc(commune)+', le chiffre affiché est un <b>repère de valeur indicatif</b> construit à partir des ventes comparables disponibles autour de l\'adresse.</p>'+
    '<ul>'+bullets.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
 }
 function renderComps(c){
