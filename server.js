@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.6";
-const BUILD_MARKER = "dvf-postgres-monthly-07";
+const VERSION = "3.4.7";
+const BUILD_MARKER = "dvf-postgres-monthly-08";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
