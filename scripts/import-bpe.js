@@ -11,7 +11,8 @@ const pool=new Pool({
   connectionTimeoutMillis:15000
 });
 
-const CSV_PATH=process.env.BPE_CSV_PATH||require("path").join(process.cwd(),"data","BPE25_Ardennes.csv");
+const path=require("path");
+const CSV_PATH=process.env.BPE_CSV_PATH||[path.join(process.cwd(),"data","BPE25_Ardennes.csv"),path.join(process.cwd(),"BPE25_Ardennes.csv")].find(fs.existsSync);
 const YEAR=2025;
 const DEP="08";
 const BATCH=500;
@@ -64,7 +65,7 @@ async function main(){
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_commune ON jml_bpe_assets(commune_code)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_geo ON jml_bpe_assets(latitude,longitude)");
 
-    if(!fs.existsSync(CSV_PATH)) throw new Error("Fichier BPE local introuvable : "+CSV_PATH);
+    if(!CSV_PATH) throw new Error("Fichier BPE local introuvable : data/BPE25_Ardennes.csv ou BPE25_Ardennes.csv");
     const sizeMb=(fs.statSync(CSV_PATH).size/1024/1024).toFixed(1);
     console.log("Import BPE local Ardennes : "+CSV_PATH+" ("+sizeMb+" Mo)");
     const input=fs.createReadStream(CSV_PATH);
