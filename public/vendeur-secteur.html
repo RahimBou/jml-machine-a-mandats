@@ -55,6 +55,13 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   .asset-grid > .highlight-list{grid-template-columns:1fr;}
   .asset-grid > .highlight-list .highlight-item{min-height:58px;}
 }
+/* Hiérarchie vendeur : le contexte communal doit rester secondaire,
+   le repère issu des comparables doit être immédiatement lisible. */
+#reference .ref-main{border-left:4px solid var(--gold);}
+#reference .ref-value{font-size:34px;}
+#reference .ref-main p{max-width:760px;}
+#reference .ref-list .ref-row:first-child{background:#f7f2e8;border-radius:10px;}
+@media(max-width:520px){#reference .ref-value{font-size:28px;}}
 </style>
 </head>
 <body>
@@ -356,21 +363,25 @@ function renderAssets(data){
 function renderMarket(data){
  const market=data||{};
  pageData.market=market;
+ const h=Array.isArray(market.history)?market.history.filter(x=>n(x.value)!=null):[];
+ const years=h.map(x=>Number(x.year)).filter(Number.isFinite);
+ const period=years.length?(Math.min(...years)+"–"+Math.max(...years)):"période disponible";
+ const tx=n(market.transactions)!=null?Number(market.transactions).toLocaleString("fr-FR"):"—";
+
  $("#metrics").innerHTML=[
-  ["Prix médian",m2(market.communalPrice),"commune"],
-  ["Transactions",n(market.transactions)!=null?Number(market.transactions).toLocaleString("fr-FR"):"—","ventes disponibles"],
-  ["Dernière vente",market.recentSales?.[0]?.date?fmtDate(market.recentSales[0].date):"—","DVF"],
+  ["Prix médian communal",m2(market.communalPrice),"repère général"],
+  ["Ventes recensées",tx,"sur "+period],
+  ["Maisons",m2(market.housePrice),"repère le plus proche du bien"],
   ["Source",market.source||"—","origine des données"]
  ].map(x=>'<div class="metric"><label>'+esc(x[0])+'</label><strong>'+esc(x[1])+'</strong><small>'+esc(x[2])+'</small></div>').join("");
 
  $("#types").innerHTML=
- '<div class="type"><b>Maisons</b><strong>'+esc(m2(market.housePrice))+'</strong><small>prix médian signé</small></div>'+
- '<div class="type"><b>Appartements</b><strong>'+esc(m2(market.apartmentPrice))+'</strong><small>prix médian signé</small></div>'+
- '<div class="type"><b>Dernière transaction</b><strong>'+esc(market.recentSales?.[0]?eur(market.recentSales[0].price):"—")+'</strong><small>'+esc(market.recentSales?.[0]?.address||"Aucune donnée")+'</small></div>';
+ '<div class="type"><b>Maison</b><strong>'+esc(m2(market.housePrice))+'</strong><small>prix médian signé dans la commune</small></div>'+
+ '<div class="type"><b>Appartement</b><strong>'+esc(m2(market.apartmentPrice))+'</strong><small>repère distinct, à ne pas mélanger avec une maison</small></div>'+
+ '<div class="type"><b>Lecture pour votre bien</b><strong>'+esc(m2(market.housePrice))+'</strong><small>le repère maison est privilégié car votre bien est une maison</small></div>';
 
- $("#marketMessage").textContent=market.message||("Source : "+(market.source||"données publiques"));
+ $("#marketMessage").textContent=market.message||("Ces chiffres décrivent le marché communal ; ils ne constituent pas à eux seuls une estimation du bien.");
 
- const h=Array.isArray(market.history)?market.history.filter(x=>n(x.value)!=null):[];
  if(!h.length){$("#history").innerHTML='<div class="empty">Historique annuel indisponible.</div>'}
  else{
   const vals=h.map(x=>Number(x.value)),min=Math.min(...vals),max=Math.max(...vals);
@@ -512,7 +523,35 @@ async function run(){
  // 2. Comparables : appel séparé.
  try{
   const territory=await getData("/api/territory-comparables?"+base.toString(),20000,"Comparables / territoire");
-  renderComps(territory.comparables||{});
+  const comps=territory.comparables||{};
+  renderComps(comps);
+
+  // Le repère vendeur est recalculé après les comparables :
+  // les ventes proches et de même type sont plus directement utiles
+  // que le seul prix médian communal.
+  const surf=n(d.surface);
+  const isHouse=/maison/i.test(d.propertyType||"");
+  const compM2=n(comps.weightedPriceM2);
+  const houseM2=n(pageData.market?.housePrice);
+  const selectedM2=compM2!=null?compM2:(isHouse?houseM2:n(pageData.market?.communalPrice));
+  const observedLow=n(comps.minPriceM2), observedHigh=n(comps.maxPriceM2);
+  let range=null;
+  if(observedLow!=null&&observedHigh!=null&&observedHigh>=observedLow){
+    range={low:Math.round(observedLow*(surf||0)),high:Math.round(observedHigh*(surf||0))};
+  }else if(selectedM2!=null&&surf){
+    range={low:Math.round(selectedM2*surf*.85),high:Math.round(selectedM2*surf*1.15)};
+  }
+  renderReference({
+    basePriceM2:selectedM2,
+    surface:surf,
+    referenceValue:selectedM2!=null&&surf?Math.round(selectedM2*surf):null,
+    range,
+    transactions:comps.matchCount||0,
+    type:d.propertyType||"Bien",
+    explanation:compM2!=null
+      ?"Repère construit à partir des ventes comparables retenues autour de l'adresse. Le moteur tient compte du type, de la surface, des pièces, de la distance et de la récence. Le prix communal sert de contexte."
+      :"Aucun repère comparable suffisamment exploitable : le prix maison communal reste utilisé comme contexte de secours."
+  });
   renderSellerPost();
   if(territory.ok!==false) $("#status").textContent="Données marché + comparables chargés";
   else $("#status").textContent="Marché communal chargé · comparables en mode dégradé";
