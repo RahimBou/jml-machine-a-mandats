@@ -1293,6 +1293,86 @@ app.get("/api/territory-summary", async (req,res) => {
   }
 });
 
+
+const nearbyAssetsCache=new Map();
+
+async function getNearbyAssets(lat,lon){
+  const la=Number(lat), lo=Number(lon);
+  if(!Number.isFinite(la)||!Number.isFinite(lo)) return {available:false,message:"Coordonnées de l'adresse indisponibles."};
+  const key=la.toFixed(5)+","+lo.toFixed(5);
+  const cached=nearbyAssetsCache.get(key);
+  if(cached&&cached.expiresAt>Date.now()) return cached.data;
+  const q=`[out:json][timeout:8];
+(
+  nwr(around:1500,${la},${lo})[amenity~"^(school|kindergarten|college|university|pharmacy|doctors|clinic|hospital|post_office|bank|library|restaurant|cafe)$"];
+  nwr(around:1500,${la},${lo})[shop];
+  nwr(around:1500,${la},${lo})[highway=bus_stop];
+  nwr(around:1500,${la},${lo})[railway~"^(station|halt|tram_stop)$"];
+  nwr(around:1500,${la},${lo})[leisure~"^(park|playground|sports_centre|pitch|garden)$"];
+  nwr(around:1500,${la},${lo})[tourism=picnic_site];
+);
+out center tags;`;
+  try{
+    const response=await fetch("https://overpass-api.de/api/interpreter",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded","User-Agent":"JML-Projet-Vendeur/3.3.2"},
+      body:"data="+encodeURIComponent(q),
+      signal:AbortSignal.timeout(10000)
+    });
+    if(!response.ok) throw new Error("Overpass HTTP "+response.status);
+    const payload=await response.json();
+    const elements=Array.isArray(payload?.elements)?payload.elements:[];
+    const out={
+      available:true,source:"OpenStreetMap / Overpass",radiusKm:1.5,
+      categories:{
+        schools:{label:"Écoles & établissements",count:0,items:[]},
+        commerces:{label:"Commerces de proximité",count:0,items:[]},
+        transport:{label:"Transports",count:0,items:[]},
+        parks:{label:"Parcs, jeux & loisirs",count:0,items:[]},
+        health:{label:"Santé",count:0,items:[]},
+        services:{label:"Services du quotidien",count:0,items:[]}
+      }
+    };
+    const add=(cat,e,name,dist)=>{
+      const c=out.categories[cat]; if(!c)return;
+      c.count++;
+      if(c.items.length<5)c.items.push({name:name||"Équipement sans nom",distanceKm:Number(dist.toFixed(2))});
+    };
+    const distance=(e)=>{
+      const p=e?.center||e;
+      const x=Number(p?.lon??e?.lon), y=Number(p?.lat??e?.lat);
+      const d=haversineKm({lat:la,lon:lo},{lat:y,lon:x});
+      return d==null?999:d;
+    };
+    for(const e of elements){
+      const t=e?.tags||{}, d=distance(e), name=String(t.name||t.operator||"").trim();
+      if(d>1.5)continue;
+      if(t.amenity==="school"||t.amenity==="kindergarten"||t.amenity==="college"||t.amenity==="university") add("schools",e,name,d);
+      else if(t.shop) add("commerces",e,name,d);
+      else if(t.highway==="bus_stop"||["station","halt","tram_stop"].includes(t.railway)) add("transport",e,name,d);
+      else if(["park","playground","sports_centre","pitch","garden"].includes(t.leisure)||t.tourism==="picnic_site") add("parks",e,name,d);
+      else if(["pharmacy","doctors","clinic","hospital"].includes(t.amenity)) add("health",e,name,d);
+      else if(["post_office","bank","library","restaurant","cafe"].includes(t.amenity)) add("services",e,name,d);
+    }
+    Object.values(out.categories).forEach(c=>c.items.sort((a,b)=>a.distanceKm-b.distanceKm));
+    nearbyAssetsCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data:out});
+    return out;
+  }catch(error){
+    console.warn("JML équipements autour de l'adresse:",error.message);
+    return {available:false,source:"OpenStreetMap / Overpass",message:"Les équipements autour de l'adresse sont temporairement indisponibles."};
+  }
+}
+
+app.get("/api/territory-assets", async (req,res) => {
+  const lat=Number(req.query.lat), lon=Number(req.query.lon);
+  try{
+    const data=await getNearbyAssets(lat,lon);
+    return res.json({ok:true,...data});
+  }catch(error){
+    return res.status(502).json({ok:false,error:"Équipements locaux temporairement indisponibles."});
+  }
+});
+
 app.get("/api/territory-enrichment", async (req,res) => {
   const code=clean(req.query.code,10);
   const lat=Number(req.query.lat);
