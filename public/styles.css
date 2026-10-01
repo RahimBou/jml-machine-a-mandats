@@ -19,3 +19,7 @@
 .jml-route-line{height:2px;flex:1;background:rgba(247,242,231,.5);margin:0 7px}
 .jml-social-links{background:#fffdf8;border-radius:16px;box-shadow:0 8px 24px rgba(23,51,44,.05)}
 @media(max-width:650px){.jml-itineraire{min-height:290px;background-position:62% center!important}.jml-route-node{font-size:8px}.jml-route-line{margin:0 4px}.jml-itineraire h1{font-size:29px!important}}
+
+/* V2.3 — architecture Ardennaise / Charleville-Mézières */
+.jml-architecture{background-image:linear-gradient(90deg,rgba(23,59,50,.94) 0%,rgba(23,59,50,.68) 48%,rgba(23,59,50,.16) 100%),url('/assets/charleville-place-ducale.svg')!important;background-size:cover!important;background-position:center!important}
+.jml-architecture:after{content:"";position:absolute;inset:auto 0 0;height:5px;background:linear-gradient(90deg,transparent,#c9a85e 15%,#f1d78e 50%,#c9a85e 85%,transparent);z-index:3}
