@@ -78,43 +78,35 @@ body{background:#f7f2e7;color:#173b31}.page{max-width:1040px;margin:auto;padding
  <h2>📋 Les informations qui peuvent encore affiner le dossier</h2>
  <div id="checklist" class="checklist"></div>
 </section></main>
-<script>(function(){const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};const d=read(),token=d.token||"";document.querySelectorAll("[data-space]").forEach(a=>{if(token)a.href="/espace-vendeur/"+encodeURIComponent(token)});document.querySelectorAll("[data-sector]").forEach(a=>a.href="/vendeur-secteur.html?city="+encodeURIComponent(d.city||"")+"&address="+encodeURIComponent(d.address||"")+"&propertyType="+encodeURIComponent(d.propertyType||"")+"&surface="+encodeURIComponent(d.surface||"")+"&dpe="+encodeURIComponent(d.dpe||""));const set=(s,v)=>document.querySelectorAll(s).forEach(e=>e.textContent=v);
+<script>(async function(){
+const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};
+let d=read(),token=d.token||"";
+if(token){
+  try{
+    const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{cache:"no-store"});
+    if(r.ok){const j=await r.json();if(j.ok&&j.space){d={...d,...j.space,token};localStorage.setItem("jml-seller-space-v1",JSON.stringify(d));}}
+  }catch(e){}
+}
+document.querySelectorAll("[data-space]").forEach(a=>{if(token)a.href="/espace-vendeur/"+encodeURIComponent(token)});
+document.querySelectorAll("[data-sector]").forEach(a=>a.href="/vendeur-secteur.html?city="+encodeURIComponent(d.city||"")+"&address="+encodeURIComponent(d.address||"")+"&propertyType="+encodeURIComponent(d.propertyType||"")+"&surface="+encodeURIComponent(d.surface||"")+"&dpe="+encodeURIComponent(d.dpe||""));
+const set=(s,v)=>document.querySelectorAll(s).forEach(e=>e.textContent=v);
 const value=(v,fallback="À compléter")=>v!=null&&String(v).trim()!==""?String(v):fallback;
 const horizon=({"0-3":"Dans les 3 mois","3-6":"Dans 6 à 12 mois","6-12":"Dans 6 à 12 mois","unknown":"Calendrier à définir"})[d.horizon]||"Calendrier à définir";
-set("[data-city]",value(d.city));
-set("[data-address]",value(d.address));
-set("[data-type]",value(d.propertyType));
-set("[data-surface]",d.surface?d.surface+" m²":"À compléter");
-set("[data-rooms]",value(d.rooms));
-set("[data-dpe]",value(d.dpe));
-set("[data-terrain]",value(d.terrain));
-set("[data-horizon]",horizon);
-
-const fields=[
- ["Adresse","d.address","Adresse utilisée pour les recherches de secteur."],
- ["Type de bien","d.propertyType","Nécessaire pour comparer des biens de même nature."],
- ["Surface","d.surface","Permet de rapprocher le bien de surfaces comparables."],
- ["Pièces / chambres","d.rooms","Utile pour affiner la comparaison entre maisons ou appartements."],
- ["DPE","d.dpe","À confirmer avec le diagnostic lorsque nécessaire."],
- ["Terrain","d.terrain","Important notamment pour comparer les maisons disposant de terrains différents."]
-];
-const missing=fields.filter(([_,key])=>!key.split(".").reduce((o,k)=>o?.[k],d));
-const status=document.querySelector("#dataStatus");
-if(status){
- status.classList.toggle("ok",missing.length===0);
- status.classList.toggle("warn",missing.length>0);
- status.innerHTML=missing.length
-   ? "<b>Dossier à compléter</b><span>"+missing.length+" élément"+(missing.length>1?"s":"")+" important"+(missing.length>1?"s":"")+" reste"+(missing.length>1?"nt":"")+" à préciser pour affiner les comparaisons.</span>"
-   : "<b>Dossier suffisamment renseigné</b><span>Les principales caractéristiques nécessaires à la lecture du marché sont présentes.</span>";
-}
-const list=document.querySelector("#checklist");
-if(list){
- list.innerHTML=fields.map(([label,key,why])=>{
-   const present=!!key.split(".").reduce((o,k)=>o?.[k],d);
-   return '<div class="check '+(present?"ok":"")+'"><b>'+(present?"✓ ":"")+label+'</b><span>'+ (present?"Information renseignée dans le dossier.":why) +'</span></div>';
- }).join("");
-}})();
-const ownerBox=document.getElementById('owners');const baseOwner={firstName:'',lastName:'',phone:'',email:''};let ownerData=[{...baseOwner}];function drawOwners(){ownerBox.innerHTML='';ownerData.forEach(function(o,i){const box=document.createElement('div');box.className='owner-item';box.innerHTML='<div class="owner-head"><strong>Propriétaire '+(i+1)+'</strong></div><div class="owner-grid"><div class="field"><label>Prénom</label><input></div><div class="field"><label>Nom</label><input></div><div class="field"><label>Téléphone</label><input></div><div class="field"><label>E-mail</label><input></div></div>';const inputs=box.querySelectorAll('input');['firstName','lastName','phone','email'].forEach(function(k,j){inputs[j].value=o[k]||'';inputs[j].oninput=function(){o[k]=this.value}});ownerBox.appendChild(box)})}drawOwners();document.getElementById('addOwner').onclick=function(){ownerData.push({...baseOwner});document.getElementById('ownerCount').value=ownerData.length;drawOwners()};
-
-document.getElementById('saveSeller').onclick=function(){try{const current=JSON.parse(localStorage.getItem('jml-seller-space-v1')||'{}');current.ownerRole=document.getElementById('ownerRole').value;current.owners=ownerData;current.horizon=document.getElementById('saleHorizon').value;current.expectedPrice=document.getElementById('expectedPrice').value;current.alreadyEstimated=document.getElementById('alreadyEstimated').value;current.alreadyProfessional=document.getElementById('alreadyProfessional').value;current.saleReason=document.getElementById('saleReason').value;localStorage.setItem('jml-seller-space-v1',JSON.stringify(current));document.getElementById('saveMsg').textContent='Dossier enregistré sur cet appareil.'}catch(e){document.getElementById('saveMsg').textContent='Enregistrement impossible pour le moment.'}};
-</script></body></html>
+set("[data-city]",value(d.city));set("[data-address]",value(d.address));set("[data-type]",value(d.propertyType));set("[data-surface]",d.surface?d.surface+" m²":"À compléter");set("[data-rooms]",value(d.rooms));set("[data-dpe]",value(d.dpe));set("[data-terrain]",value(d.terrain));set("[data-horizon]",horizon);
+const fields=[["Adresse","d.address","Adresse utilisée pour les recherches de secteur."],["Type de bien","d.propertyType","Nécessaire pour comparer des biens de même nature."],["Surface","d.surface","Permet de rapprocher le bien de surfaces comparables."],["Pièces / chambres","d.rooms","Utile pour affiner la comparaison entre maisons ou appartements."],["DPE","d.dpe","À confirmer avec le diagnostic lorsque nécessaire."],["Terrain","d.terrain","Important notamment pour comparer les maisons disposant de terrains différents."]];
+const missing=fields.filter(([_,key])=>!key.split(".").reduce((o,k)=>o?.[k],d));const status=document.querySelector("#dataStatus");
+if(status){status.classList.toggle("ok",missing.length===0);status.classList.toggle("warn",missing.length>0);status.innerHTML=missing.length?"<b>Dossier à compléter</b><span>"+missing.length+" élément"+(missing.length>1?"s":"")+" important"+(missing.length>1?"s":"")+" reste"+(missing.length>1?"nt":"")+" à préciser pour affiner les comparaisons.</span>":"<b>Dossier suffisamment renseigné</b><span>Les principales caractéristiques nécessaires à la lecture du marché sont présentes.</span>";}
+const list=document.querySelector("#checklist");if(list)list.innerHTML=fields.map(([label,key,why])=>{const present=!!key.split(".").reduce((o,k)=>o?.[k],d);return '<div class="check '+(present?"ok":"")+'"><b>'+(present?"✓ ":"")+label+'</b><span>'+(present?"Information renseignée dans le dossier.":why)+'</span></div>';}).join("");
+const baseOwner={firstName:"",lastName:"",phone:"",email:""};let ownerData=Array.isArray(d.ownerData)?d.ownerData:(Array.isArray(d.owners)?d.owners:[{...baseOwner}]);
+const ownerBox=document.getElementById("owners"),ownerCount=document.getElementById("ownerCount");document.getElementById("ownerRole").value=d.ownerRole||"Propriétaire";ownerCount.value=Math.max(1,ownerData.length);
+function drawOwners(){ownerBox.innerHTML="";ownerData.forEach(function(o,i){const box=document.createElement("div");box.className="owner-item";box.innerHTML='<div class="owner-head"><strong>Propriétaire '+(i+1)+'</strong></div><div class="owner-grid"><div class="field"><label>Prénom</label><input></div><div class="field"><label>Nom</label><input></div><div class="field"><label>Téléphone</label><input></div><div class="field"><label>E-mail</label><input></div></div>';const inputs=box.querySelectorAll("input");["firstName","lastName","phone","email"].forEach((k,j)=>{inputs[j].value=o[k]||"";inputs[j].oninput=function(){o[k]=this.value;}});ownerBox.appendChild(box);});}
+drawOwners();
+document.getElementById("addOwner").onclick=function(){ownerData.push({...baseOwner});ownerCount.value=ownerData.length;drawOwners();};
+["saleHorizon","expectedPrice","alreadyEstimated","alreadyProfessional","saleReason"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=d[id]||""});
+document.getElementById("saveSeller").onclick=async function(){
+ const msg=document.getElementById("saveMsg");const payload={ownerRole:document.getElementById("ownerRole").value,ownerData,horizon:document.getElementById("saleHorizon").value,expectedPrice:document.getElementById("expectedPrice").value,alreadyEstimated:document.getElementById("alreadyEstimated").value,alreadyProfessional:document.getElementById("alreadyProfessional").value,saleReason:document.getElementById("saleReason").value};
+ const current={...d,...payload,owners:ownerData};try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(current));}catch(e){}
+ if(!token){msg.textContent="Dossier enregistré sur cet appareil.";return;}
+ try{const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const j=await r.json();if(!r.ok||!j.ok)throw new Error("save");localStorage.setItem("jml-seller-space-v1",JSON.stringify({...current,...j.space,token}));msg.textContent="Dossier enregistré."; }catch(e){msg.textContent="Enregistré sur cet appareil. Synchronisation serveur indisponible.";}
+};
+})()</script></body></html>
