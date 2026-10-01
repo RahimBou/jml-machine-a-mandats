@@ -729,6 +729,116 @@ app.get("/api/territory-commune", async (req,res) => {
   }
 });
 
+function normalizeAddress(value){
+  return normalizeSearchCity(String(value||"").replace(/[0-9]+/g," ").replace(/\s+/g," "));
+}
+const geocodeCache=new Map();
+async function geocodeAddress(address,city){
+  const raw=String(address||"").trim(), commune=String(city||"").trim();
+  if(!raw||!commune) return null;
+  const key=normalizeSearchCity(raw+", "+commune);
+  const cached=geocodeCache.get(key);
+  if(cached && cached.expiresAt>Date.now()) return cached.value;
+  try{
+    const q=encodeURIComponent(raw+", "+commune);
+    const response=await fetch("https://data.geopf.fr/geocodage/search?q="+q+"&limit=5",{
+      headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.4.0"},
+      signal:AbortSignal.timeout(6000)
+    });
+    if(!response.ok) return null;
+    const payload=await response.json();
+    const feature=(Array.isArray(payload?.features)?payload.features:[]).find(x=>Array.isArray(x?.geometry?.coordinates)&&x.geometry.coordinates.length>=2);
+    if(!feature) return null;
+    const [lon,lat]=feature.geometry.coordinates.map(Number);
+    const value=Number.isFinite(lat)&&Number.isFinite(lon)?{lat,lon,label:String(feature?.properties?.label||"").trim()}:null;
+    geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value});
+    return value;
+  }catch(error){ console.warn("JML géocodage adresse:",error.message); return null; }
+}
+function haversineKm(a,b){
+  const lat1=Number(a?.lat),lon1=Number(a?.lon),lat2=Number(b?.lat),lon2=Number(b?.lon);
+  if(![lat1,lon1,lat2,lon2].every(Number.isFinite)) return null;
+  const r=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return r*2*Math.atan2(Math.sqrt(x),Math.sqrt(Math.max(0,1-x)));
+}
+function classifyDvfType(value,code){
+  const v=String(value||"").toLowerCase(), c=String(code||"").toLowerCase();
+  if(/appartement|apartment/.test(v)||c==="2") return "Appartement";
+  if(/maison|house/.test(v)||c==="1") return "Maison";
+  return null;
+}
+function parseSaleDate(v){
+  if(v instanceof Date&&!Number.isNaN(v.getTime())) return v;
+  const raw=String(v??"").trim(); if(!raw) return null;
+  const direct=new Date(raw); if(!Number.isNaN(direct.getTime())) return direct;
+  const normalized=raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ");
+  const fr=normalized.match(/^(\d{1,2})[\s/-]+(janvier|janv|fevrier|fevr|mars|avril|avr|mai|juin|juillet|juil|aout|septembre|sept|octobre|oct|novembre|nov|decembre|dec)[a-z.]*[\s/-]+(\d{4})$/i);
+  if(fr){
+    const months={janvier:0,janv:0,fevrier:1,fevr:1,mars:2,avril:3,avr:3,mai:4,juin:5,juillet:6,juil:6,aout:7,septembre:8,sept:8,octobre:9,oct:9,novembre:10,nov:10,decembre:11,dec:11};
+    const d=new Date(Number(fr[3]),months[fr[2]],Number(fr[1]));
+    return d.getFullYear()===Number(fr[3])&&d.getMonth()===months[fr[2]]&&d.getDate()===Number(fr[1])?d:null;
+  }
+  return null;
+}
+async function buildComparableSales(market,property){
+  const city=String(property?.city||market?.city||"").trim();
+  const typeWanted=classifyDvfType(property?.propertyType,"");
+  const surface=Number(property?.surface), rooms=Number(property?.rooms);
+  const origin=await geocodeAddress(property?.address,city);
+  if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Adresse non géolocalisée",origin:null,message:"L'adresse n'a pas pu être géolocalisée précisément."};
+  const tiers=[{radius:800,months:12,label:"800 m / 12 mois"},{radius:1500,months:18,label:"1,5 km / 18 mois"},{radius:3000,months:24,label:"3 km / 24 mois"}];
+  const local=await getLocalDvfComparables(origin,3);
+  const seen=new Set(), candidates=[];
+  const now=Date.now();
+  const streetKey=v=>normalizeAddress(v).replace(/\b\d+\b/g,"").trim();
+  const ageMonths=v=>{const d=parseSaleDate(v);return d?Math.max(0,(now-d.getTime())/(30.4375*86400000)):99;};
+  const scoreSale=(sale,tier)=>{
+    if(typeWanted&&classifyDvfType(sale.type,sale.codtypbien||"")!==typeWanted) return null;
+    const dist=Number(sale.distanceKm); if(!Number.isFinite(dist)||dist>tier.radius/1000) return null;
+    const gap=Number.isFinite(surface)&&surface>0&&Number(sale.surface)>0?Math.abs(Number(sale.surface)-surface)/surface:null;
+    if(gap!==null&&gap>0.30)return null;
+    const saleRooms=Number(sale.rooms); if(Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0&&Math.abs(saleRooms-rooms)>2)return null;
+    const age=ageMonths(sale.date); if(age>tier.months)return null;
+    const distanceScore=Math.max(0,1-dist/(tier.radius/1000))*30;
+    const recencyScore=Math.max(0,1-age/tier.months)*25;
+    const surfaceScore=gap===null?12.5:Math.max(0,1-gap/0.30)*25;
+    const roomsScore=Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0?Math.max(0,1-Math.abs(saleRooms-rooms)/2)*10:5;
+    const sameStreet=streetKey(sale.address)===streetKey(property?.address);
+    const scoreRaw=distanceScore+recencyScore+surfaceScore+roomsScore+(sameStreet?10:0)+(Number.isFinite(Number(sale.pricePerM2))?10:0);
+    return {...sale,score:Number(Math.min(100,scoreRaw/110*100).toFixed(1)),sameStreet,surfaceGap:gap,ageMonths:Number(age.toFixed(1)),tier:tier.label};
+  };
+  const sourceRows=[...(Array.isArray(market?.recentSales)?market.recentSales:[]),...(Array.isArray(local)?local:[])];
+  for(const sale of sourceRows){
+    const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface].join("|"));
+    if(seen.has(id))continue; seen.add(id);
+    const distanceKm=haversineKm(origin,{lat:Number(sale.lat),lon:Number(sale.lon)});
+    if(distanceKm==null)continue;
+    const normalized={...sale,distanceKm:Number(distanceKm.toFixed(3)),pricePerM2:Number(sale.pricePerM2||sale.price_per_m2||0)||null};
+    for(const tier of tiers){const x=scoreSale(normalized,tier);if(x){candidates.push(x);break;}}
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  const display=candidates.slice(0,12);
+  const values=display.map(x=>Number(x.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
+  const median=values.length?(values.length%2?values[(values.length-1)/2]:(values[values.length/2-1]+values[values.length/2])/2):null;
+  const weightedDen=display.reduce((s,x)=>s+Math.max(0.1,x.score),0);
+  const weightedPriceM2=weightedDen?display.reduce((s,x)=>s+Number(x.pricePerM2||0)*Math.max(0.1,x.score),0)/weightedDen:null;
+  const radiusKm=display.length?Math.max(...display.map(x=>x.distanceKm)):null;
+  return {
+    sales:display,
+    sameStreet:display.filter(s=>s.sameStreet),
+    median:median!=null?Math.round(median):null,
+    weightedPriceM2:weightedPriceM2!=null?Math.round(weightedPriceM2):null,
+    matchCount:display.length,totalCandidates:candidates.length,radiusKm,
+    searchScope:display.length?display[display.length-1].tier:"Aucun comparable répondant aux critères",
+    origin,
+    source:"DVF local JML / PostgreSQL",
+    method:"Transactions DVF importées en base PostgreSQL ; type strict, récence ≤24 mois, surface ±30 %, pièces ±2, proximité et récence pondérées.",
+    engineVersion:"8.0.0-PG-DVF",
+    diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0}
+  };
+}
+
 app.get("/api/territory-summary", async (req,res) => {
   const city=clean(req.query.city,100);
   const address=clean(req.query.address,180);
