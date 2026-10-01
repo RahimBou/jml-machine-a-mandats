@@ -335,7 +335,10 @@ async function run(){
  // 1bis. Atouts géolocalisés : appel indépendant du marché.
  try{
   const territory=await getData("/api/territory-summary?"+base.toString(),7000);
-  const c=territory.commune,coords=c?.centre?.coordinates;
+  const origin=territory.market?.comparables?.origin;
+  const coords=origin&&Number.isFinite(Number(origin.lat))&&Number.isFinite(Number(origin.lon))
+    ?[Number(origin.lon),Number(origin.lat)]
+    :territory.commune?.centre?.coordinates;
   if(Array.isArray(coords)&&coords.length>=2){
     const assets=await getData("/api/territory-assets?"+new URLSearchParams({lat:String(coords[1]),lon:String(coords[0])}).toString(),12000);
     renderAssets(assets);
