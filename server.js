@@ -93,10 +93,20 @@ async function getEducationAssets(lat,lon,communeCode){
 }
 
 async function getBpeAssets(lat,lon,communeCode){
-  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^\d{5}$/.test(String(communeCode||""))) return [];
+  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^\d{5}$/.test(String(communeCode||""))) {
+    return {rows:[],ready:false,importedAt:null};
+  }
   const key=String(communeCode)+"|"+lat.toFixed(4)+"|"+lon.toFixed(4);
   const cached=territoryAssetCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return cached.data;
+  const status=await db("SELECT COUNT(*)::int AS total, MAX(imported_at) AS imported_at FROM jml_bpe_assets WHERE commune_code=$1",[communeCode]);
+  const ready=Number(status.rows[0]?.total||0)>0;
+  const importedAt=status.rows[0]?.imported_at||null;
+  if(!ready){
+    const empty={rows:[],ready:false,importedAt:null};
+    territoryAssetCache.set(key,{expiresAt:Date.now()+60*60*1000,data:empty});
+    return empty;
+  }
   const result=await db(`
     SELECT name,domain,type_label,latitude,longitude,
       ROUND((6371*2*ASIN(SQRT(
@@ -105,39 +115,44 @@ async function getBpeAssets(lat,lon,communeCode){
     FROM jml_bpe_assets
     WHERE commune_code=$3
       AND latitude IS NOT NULL AND longitude IS NOT NULL
-      AND latitude BETWEEN $1-0.12 AND $1+0.12
-      AND longitude BETWEEN $2-0.18 AND $2+0.18
+      AND latitude BETWEEN $1-0.02 AND $1+0.02
+      AND longitude BETWEEN $2-0.03 AND $2+0.03
     ORDER BY distance_km
     LIMIT 500
   `,[lat,lon,communeCode]);
-  const rows=result.rows.map(x=>({name:x.name||x.type_label||"Équipement",domain:x.domain,type:x.type_label,distanceKm:Number(x.distance_km)})).filter(x=>Number.isFinite(x.distanceKm)&&x.distanceKm<=10);
-  territoryAssetCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data:rows});
-  return rows;
+  const rows=result.rows.map(x=>({name:x.name||x.type_label||"Équipement",domain:x.domain,type:x.type_label,distanceKm:Number(x.distance_km)})).filter(x=>Number.isFinite(x.distanceKm)&&x.distanceKm<=1.5);
+  const data={rows,ready:true,importedAt};
+  territoryAssetCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data});
+  return data;
 }
 
 async function getOfficialTerritoryAssets(lat,lon,communeCode){
   const [education,bpe]=await Promise.allSettled([getEducationAssets(lat,lon,communeCode),getBpeAssets(lat,lon,communeCode)]);
   const schools=education.status==="fulfilled"?education.value:[];
-  const bpeRows=bpe.status==="fulfilled"?bpe.value:[];
+  const bpeData=bpe.status==="fulfilled"?bpe.value:{rows:[],ready:false,importedAt:null};
+  const bpeRows=bpeData.rows||[];
+  const bpeReady=Boolean(bpeData.ready);
+  const byDomain=(domain)=>bpeRows.filter(x=>x.domain===domain);
   const categories={
-    schools:{label:"Écoles & établissements",count:schools.length,items:schools.slice(0,5)},
-    commerces:{label:"Commerces de proximité",count:bpeRows.filter(x=>x.domain==="B").length,items:bpeRows.filter(x=>x.domain==="B").slice(0,5)},
-    transport:{label:"Transports & mobilité",count:bpeRows.filter(x=>x.domain==="E").length,items:bpeRows.filter(x=>x.domain==="E").slice(0,5)},
-    parks:{label:"Sports, loisirs & culture",count:bpeRows.filter(x=>x.domain==="F").length,items:bpeRows.filter(x=>x.domain==="F").slice(0,5)},
-    health:{label:"Santé",count:bpeRows.filter(x=>x.domain==="D").length,items:bpeRows.filter(x=>x.domain==="D").slice(0,5)},
-    services:{label:"Services du quotidien",count:bpeRows.filter(x=>x.domain==="A").length,items:bpeRows.filter(x=>x.domain==="A").slice(0,5)}
+    schools:{label:"Écoles & établissements",count:schools.length,available:education.status==="fulfilled",items:schools.slice(0,5),source:"Éducation nationale"},
+    commerces:{label:"Commerces de proximité",count:byDomain("B").length,available:bpeReady,items:byDomain("B").slice(0,5),source:"INSEE BPE 2025"},
+    transport:{label:"Transports & mobilité",count:byDomain("E").length,available:bpeReady,items:byDomain("E").slice(0,5),source:"INSEE BPE 2025"},
+    parks:{label:"Sports, loisirs & culture",count:byDomain("F").length,available:bpeReady,items:byDomain("F").slice(0,5),source:"INSEE BPE 2025"},
+    health:{label:"Santé",count:byDomain("D").length,available:bpeReady,items:byDomain("D").slice(0,5),source:"INSEE BPE 2025"},
+    services:{label:"Services du quotidien",count:byDomain("A").length,available:bpeReady,items:byDomain("A").slice(0,5),source:"INSEE BPE 2025"}
   };
-  const available=schools.length>0||bpeRows.length>0;
+  const available=education.status==="fulfilled"||bpeReady;
   return {
     available,
     provider:"Données publiques officielles",
     source:"Éducation nationale + INSEE BPE 2025",
     sourceUrl:"https://www.insee.fr/fr/statistiques/8217525",
-    radiusKm:10,
+    radiusKm:1.5,
+    importedAt:bpeData.importedAt,
     categories,
     diagnostics:{
       education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),
-      bpe:bpe.status==="fulfilled"?(pool?"OK":"base locale non configurée"):String(bpe.reason?.message||"indisponible")
+      bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible")
     }
   };
 }
