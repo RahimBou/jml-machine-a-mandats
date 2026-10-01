@@ -1,6 +1,8 @@
 const { Pool } = require("pg");
 const { Readable } = require("stream");
 const readline = require("readline");
+const fs = require("fs");
+const { spawn } = require("child_process");
 
 const DATABASE_URL=String(process.env.DATABASE_URL||"").trim();
 if(!DATABASE_URL) throw new Error("DATABASE_URL manquante");
@@ -11,7 +13,7 @@ const pool=new Pool({
   connectionTimeoutMillis:15000
 });
 
-const URL="https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.csv";
+const URL="https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.zip";
 const YEAR=2025;
 const DEP="08";
 const BATCH=500;
@@ -64,16 +66,26 @@ async function main(){
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_commune ON jml_bpe_assets(commune_code)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_geo ON jml_bpe_assets(latitude,longitude)");
 
-    console.log("Téléchargement BPE 2025 INSEE...");
+    console.log("Téléchargement BPE 2025 INSEE (archive officielle)...");
     const response=await fetch(URL,{headers:{"User-Agent":"JML-Projet-Vendeur-BPE/1.0"},signal:AbortSignal.timeout(180000)});
     if(!response.ok) throw new Error("INSEE BPE HTTP "+response.status);
-    if(!response.body) throw new Error("Flux BPE absent");
+    const zipPath="/tmp/BPE25.zip";
+    await new Promise(async(resolve,reject)=>{
+      const file=fs.createWriteStream(zipPath);
+      file.on("error",reject); file.on("finish",resolve);
+      try{Readable.fromWeb(response.body).pipe(file);}catch(error){reject(error);}
+    });
 
+    const csvStream=spawn("unzip",["-p",zipPath],{stdio:["ignore","pipe","pipe"]});
+    let unzipErr="";
+    csvStream.stderr.on("data",d=>{unzipErr+=String(d);});
+    const input=csvStream.stdout;
+    input.on("error",()=>{});
     await client.query("BEGIN");
     const del=await client.query("DELETE FROM jml_bpe_assets WHERE year=$1 AND commune_code LIKE $2",[YEAR,DEP+"%"]);
     deleted=del.rowCount||0;
 
-    const rl=readline.createInterface({input:Readable.fromWeb(response.body),crlfDelay:Infinity});
+    const rl=readline.createInterface({input,crlfDelay:Infinity});
     let header=null,idx={};
     let batch=[];
     for await(const line of rl){
@@ -110,6 +122,8 @@ async function main(){
     }
     if(batch.length){await insertBatch(client,batch);inserted+=batch.length;}
     await client.query("COMMIT");
+    await new Promise((resolve,reject)=>csvStream.on("close",code=>code===0?resolve():reject(new Error("unzip failed: "+unzipErr))));
+    try{fs.unlinkSync(zipPath);}catch(_){}
     console.log(`BPE terminé : supprimés=${deleted}, insérés=${inserted}`);
   }catch(error){
     try{await client.query("ROLLBACK");}catch(_){}
