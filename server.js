@@ -1304,7 +1304,7 @@ async function getNearbyAssets(lat,lon){
   if(cached&&cached.expiresAt>Date.now()) return cached.data;
   const q=`[out:json][timeout:8];
 (
-  nwr(around:1500,${la},${lo})[amenity~"^(school|kindergarten|college|university|pharmacy|doctors|clinic|hospital|post_office|bank|library|restaurant|cafe)$"];
+  nwr(around:1500,${la},${lo})[amenity~"^(school|kindergarten|childcare|college|university|pharmacy|doctors|clinic|hospital|post_office|bank|library|restaurant|cafe|parking)$"];
   nwr(around:1500,${la},${lo})[shop];
   nwr(around:1500,${la},${lo})[highway=bus_stop];
   nwr(around:1500,${la},${lo})[railway~"^(station|halt|tram_stop)$"];
@@ -1327,7 +1327,7 @@ out center tags;`;
       categories:{
         schools:{label:"Écoles & établissements",count:0,items:[]},
         commerces:{label:"Commerces de proximité",count:0,items:[]},
-        transport:{label:"Transports",count:0,items:[]},
+        transport:{label:"Transports & stationnement",count:0,items:[]},
         parks:{label:"Parcs, jeux & loisirs",count:0,items:[]},
         health:{label:"Santé",count:0,items:[]},
         services:{label:"Services du quotidien",count:0,items:[]}
@@ -1347,9 +1347,9 @@ out center tags;`;
     for(const e of elements){
       const t=e?.tags||{}, d=distance(e), name=String(t.name||t.operator||"").trim();
       if(d>1.5)continue;
-      if(t.amenity==="school"||t.amenity==="kindergarten"||t.amenity==="college"||t.amenity==="university") add("schools",e,name,d);
+      if(t.amenity==="school"||t.amenity==="kindergarten"||t.amenity==="childcare"||t.amenity==="college"||t.amenity==="university") add("schools",e,name,d);
       else if(t.shop) add("commerces",e,name,d);
-      else if(t.highway==="bus_stop"||["station","halt","tram_stop"].includes(t.railway)) add("transport",e,name,d);
+      else if(t.highway==="bus_stop"||["station","halt","tram_stop"].includes(t.railway)||t.amenity==="parking") add("transport",e,name,d);
       else if(["park","playground","sports_centre","pitch","garden"].includes(t.leisure)||t.tourism==="picnic_site") add("parks",e,name,d);
       else if(["pharmacy","doctors","clinic","hospital"].includes(t.amenity)) add("health",e,name,d);
       else if(["post_office","bank","library","restaurant","cafe"].includes(t.amenity)) add("services",e,name,d);
