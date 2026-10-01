@@ -427,7 +427,8 @@ function renderMarket(data){
 
 function renderSales(rows){
  if(!Array.isArray(rows)||!rows.length){$("#sales").innerHTML='<div class="empty">Aucune transaction exploitable récupérée pour cette commune.</div>';return}
- $("#sales").innerHTML=rows.slice(0,9).map(s=>
+ $("#sales").innerHTML='<div class="sales-note"><b>Comment lire ces ventes :</b> ce sont des transactions enregistrées dans la commune. Elles donnent du contexte au marché local ; elles ne sont pas toutes comparables à votre bien.</div>'+
+ rows.slice(0,9).map(s=>
  '<article class="sale"><div class="sale-top"><b>'+esc(s.type||"Bien")+'</b><span class="price">'+esc(eur(s.price))+'</span></div>'+
  '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(fmtDate(s.date))+' · '+esc(s.surface?s.surface+" m²":"surface non renseignée")+'<br>'+esc(m2(s.pricePerM2))+'</p>'+
  '<span class="tag">'+esc(s.source||"DVF")+'</span></article>'
