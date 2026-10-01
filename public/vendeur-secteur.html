@@ -203,26 +203,29 @@ function getSpace(){
 }
 async function loadServerSpace(){
  const p=new URLSearchParams(location.search);
- const token=p.get("token")||"";
+ const token=p.get("token")||local.token||"";
  const local=getSpace();
+ const effectiveToken=token||local.token||"";
 
- // Affichage immédiat : si le navigateur possède déjà le dossier vendeur,
- // ne pas bloquer toute la page sur l'API distante.
- if(local.city){
-   if(token){
-     fetch("/api/seller-space/"+encodeURIComponent(token),{cache:"no-store"})
-       .then(r=>r.json().catch(()=>({})))
-       .then(j=>{
-         if(j?.ok&&j.space){
-           const space={...j.space,token,submitted:true};
-           try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(space));}catch(_e){}
-         }
-       }).catch(()=>{});
-   }
-   return local;
+ // Si un espace serveur existe, il devient la source de vérité.
+ // Le localStorage reste un secours hors connexion, mais ne doit pas
+ // écraser une modification récente du dossier vendeur.
+ if(effectiveToken){
+   const ctl=new AbortController();
+   const timer=setTimeout(()=>ctl.abort(),4500);
+   try{
+     const r=await fetch("/api/seller-space/"+encodeURIComponent(effectiveToken),{cache:"no-store",signal:ctl.signal});
+     const j=await r.json().catch(()=>({}));
+     if(r.ok&&j.ok&&j.space){
+       const space={...j.space,token:effectiveToken,submitted:true};
+       try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(space));}catch(_e){}
+       return space;
+     }
+   }catch(_e){}
+   finally{clearTimeout(timer)}
  }
 
- if(!token) return local;
+ return local;
 
  const ctl=new AbortController();
  const timer=setTimeout(()=>ctl.abort(),4500);
