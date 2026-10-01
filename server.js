@@ -810,21 +810,21 @@ async function buildComparableSales(market,property){
     const direct=new Date(raw);
     if(!Number.isNaN(direct.getTime())) return direct;
     const normalized=raw.toLowerCase()
-      .normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
-      .replace(/\\s+/g," ");
-    const fr=normalized.match(/^(\\d{1,2})[\\s/-]+(janvier|janv|fevrier|fevr|mars|avril|avr|mai|juin|juillet|juil|aout|septembre|sept|octobre|oct|novembre|nov|decembre|dec)[a-z.]*[\\s/-]+(\\d{4})$/i);
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/\s+/g," ");
+    const fr=normalized.match(/^(\d{1,2})[\s/-]+(janvier|janv|fevrier|fevr|mars|avril|avr|mai|juin|juillet|juil|aout|septembre|sept|octobre|oct|novembre|nov|decembre|dec)[a-z.]*[\s/-]+(\d{4})$/i);
     if(fr){
       const months={janvier:0,janv:0,fevrier:1,fevr:1,mars:2,avril:3,avr:3,mai:4,juin:5,juillet:6,juil:6,aout:7,septembre:8,sept:8,octobre:9,oct:9,novembre:10,nov:10,decembre:11,dec:11};
       const day=Number(fr[1]),month=months[fr[2]],year=Number(fr[3]);
       const d=new Date(year,month,day);
       return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day?d:null;
     }
-    const slash=raw.match(/^(\\d{1,2})[\\/.-](\\d{1,2})[\\/.-](\\d{4})$/);
+    const slash=raw.match(/^(\d{1,2})[\\/.-](\d{1,2})[\\/.-](\d{4})$/);
     if(slash){
       const d=new Date(Number(slash[3]),Number(slash[2])-1,Number(slash[1]));
       return d.getFullYear()===Number(slash[3])&&d.getMonth()===Number(slash[2])-1&&d.getDate()===Number(slash[1])?d:null;
     }
-    const isoYear=raw.match(/^(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})/);
+    const isoYear=raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
     if(isoYear){
       const d=new Date(Number(isoYear[1]),Number(isoYear[2])-1,Number(isoYear[3]));
       return d.getFullYear()===Number(isoYear[1])&&d.getMonth()===Number(isoYear[2])-1&&d.getDate()===Number(isoYear[3])?d:null;
@@ -975,9 +975,18 @@ async function buildComparableSales(market,property){
 
 app.get("/api/commune-market", async (req,res) => {
   const city=clean(req.query.city,100);
-  if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
-  const data=await getCommuneMarketData(city);
-  return res.json({ok:true,...data});
+  const address=clean(req.query.address,180);
+  if(!city) return res.status(400).json({ok:false,code:"JML-MARKET-400",error:"Commune requise."});
+  try{
+    const commune=await resolveTerritoryCommune(city,address);
+    if(!commune) return res.status(422).json({ok:false,code:"JML-MARKET-COMMUNE",error:"Commune introuvable. Impossible de charger le marché communal."});
+    const data=await getCommuneMarketData(commune.nom,commune.code);
+    return res.json({ok:true,commune,...data});
+  }catch(error){
+    const detail=String(error?.message||error||"Erreur inconnue").slice(0,400);
+    console.error("JML commune-market route:",detail);
+    return res.status(500).json({ok:false,code:"JML-MARKET-500",error:"Le marché communal n'a pas pu être chargé.",detail});
+  }
 });
 
 function buildSellerReference(market,property){
@@ -1217,7 +1226,7 @@ app.get("/api/territory-summary", async (req,res) => {
           sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,
           radiusKm:null,searchScope:"Recherche trop lente — données communales conservées",origin:null,
           message:"La recherche fine autour de l’adresse a dépassé le délai. Les données communales restent disponibles."
-        }),12000))
+        }),15000))
       ]);
     }catch(error){
       console.warn("JML comparables isolated:",error.message);
