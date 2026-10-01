@@ -3,6 +3,7 @@ const { Readable } = require("stream");
 const readline = require("readline");
 const fs = require("fs");
 const { spawn } = require("child_process");
+const { pipeline } = require("stream/promises");
 
 const DATABASE_URL=String(process.env.DATABASE_URL||"").trim();
 if(!DATABASE_URL) throw new Error("DATABASE_URL manquante");
@@ -69,14 +70,12 @@ async function main(){
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_geo ON jml_bpe_assets(latitude,longitude)");
 
     console.log("Téléchargement BPE 2025 INSEE (archive officielle)...");
-    const response=await fetch(URL,{headers:{"User-Agent":"JML-Projet-Vendeur-BPE/1.0"},signal:AbortSignal.timeout(180000)});
+    const response=await fetch(URL,{headers:{"User-Agent":"JML-Projet-Vendeur-BPE/1.0"},signal:AbortSignal.timeout(600000)});
     if(!response.ok) throw new Error("INSEE BPE HTTP "+response.status);
     const zipPath=ZIP_PATH;
-    await new Promise(async(resolve,reject)=>{
-      const file=fs.createWriteStream(zipPath);
-      file.on("error",reject); file.on("finish",resolve);
-      try{Readable.fromWeb(response.body).pipe(file);}catch(error){reject(error);}
-    });
+    await pipeline(Readable.fromWeb(response.body),fs.createWriteStream(zipPath));
+    const zipSizeMb=(fs.statSync(zipPath).size/1024/1024).toFixed(1);
+    console.log("Archive BPE téléchargée : "+zipSizeMb+" Mo");
 
     const list=spawn("unzip",["-l",zipPath],{stdio:["ignore","pipe","pipe"]});
     let listOut="",listErr="";
