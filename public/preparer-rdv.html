@@ -6,20 +6,25 @@ body{background:#f7f2e7;color:#173b31}.wrap{max-width:900px;margin:auto;padding:
 <section class="card"><h2>Un rendez-vous sans pression</h2><p class="muted">L'objectif est de comprendre votre bien et votre projet. Vous pouvez venir avec vos questions, même si votre décision de vendre n'est pas encore arrêtée.</p><div class="actions"><button onclick="window.print()">🖨️ Imprimer / enregistrer en PDF</button><a class="dark" href="/projet-vendeur">Retour à mon espace →</a></div></section></main>
 <script>
 const params=new URLSearchParams(location.search),type=document.getElementById("type"),horizon=document.getElementById("horizon"),city=document.getElementById("city"),result=document.getElementById("result");
-if(params.get("type"))type.value=params.get("type");if(params.get("horizon")){const m={"0-3":"Dans les 3 mois","3-6":"Dans 3 à 6 mois","6-12":"Dans 6 à 12 mois","unknown":"Plus tard / réflexion"};horizon.value=m[params.get("horizon")]||params.get("horizon")}if(params.get("city"))city.value=params.get("city");
+function readSellerSpace(){try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}}
+const seller=readSellerSpace();
+const horizonMap={"0-3":"Dans les 3 mois","3-6":"Dans 3 à 6 mois","6-12":"Dans 6 à 12 mois","unknown":"Plus tard / réflexion"};
+if(params.get("type"))type.value=params.get("type");else if(seller.propertyType)type.value=seller.propertyType;
+if(params.get("horizon"))horizon.value=horizonMap[params.get("horizon")]||params.get("horizon");else if(seller.horizon)horizon.value=horizonMap[seller.horizon]||seller.horizon;
+if(params.get("city"))city.value=params.get("city");else if(seller.city)city.value=seller.city;
 const esc=v=>String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 document.getElementById("prepare").addEventListener("click",async()=>{
- const t=type.value,h=horizon.value,c=city.value.trim(),items=["Préparer les informations principales du bien et ses caractéristiques."];
- if(t==="Maison")items.push("Noter surfaces, extérieurs, dépendances, stationnement et principaux équipements.");
- if(t==="Appartement")items.push("Préparer les informations de copropriété, charges, étage, ascenseur et stationnement si concernés.");
- if(t==="Immeuble")items.push("Rassembler les informations disponibles sur les lots, surfaces, occupation et documents utiles.");
- if(t==="Terrain")items.push("Préparer surface, localisation, accès et documents d’urbanisme disponibles.");
+ const t=type.value,h=horizon.value,c=city.value.trim(),items=["PRIORITÉ 1 · Préparer les informations principales du bien et ses caractéristiques."];
+ if(t==="Maison")items.push("PRIORITÉ 1 · Noter surface et nombre de pièces. Puis préparer extérieurs, dépendances et stationnement.");
+ if(t==="Appartement")items.push("PRIORITÉ 1 · Préparer surface, pièces et étage. Puis charges, copropriété, ascenseur et stationnement.");
+ if(t==="Immeuble")items.push("PRIORITÉ 1 · Rassembler lots, surfaces et occupation. Puis les documents disponibles.");
+ if(t==="Terrain")items.push("PRIORITÉ 1 · Préparer surface, localisation et accès. Puis les documents d’urbanisme disponibles.");
  if(h==="Dans les 3 mois")items.push("Réunir dès maintenant les documents et questions utiles à votre calendrier proche.");
  if(h==="Dans 3 à 6 mois")items.push("Profiter du délai pour préparer progressivement documents et éventuels travaux.");
  if(h==="Dans 6 à 12 mois")items.push("Utiliser le rendez-vous pour clarifier le calendrier et les informations à préparer.");
  if(h==="Plus tard / réflexion")items.push("Venir surtout avec vos questions : comprendre le marché n'engage pas une décision immédiate.");
  if(c)items.push("Préparer vos questions sur le secteur de "+c+" et les repères de marché que vous souhaitez comprendre.");
- items.push("Apporter si possible le DPE, les diagnostics, la taxe foncière et les documents disponibles.");
+ items.push("PRIORITÉ 2 · Apporter si possible le DPE, les diagnostics et la taxe foncière. Les autres justificatifs peuvent compléter le dossier.");
  result.innerHTML='<div class="result-head"><strong>VOTRE PRÉPARATION</strong><h2 style="margin:7px 0">Voici les points à avoir sous la main.</h2><span style="font-size:11px;color:#e7eee9">Bien : '+esc(t)+' · Projet : '+esc(h)+(c?" · "+esc(c):"")+'</span></div><div class="result-grid">'+items.map((x,i)=>'<div class="result-item"><b>'+(i+1)+'.</b><span>'+esc(x)+'</span></div>').join("")+'</div><div id="marketResult" class="market">Recherche du repère local…</div><p class="muted" style="margin-top:12px"><strong>À retenir :</strong> cette préparation sert de support à notre échange. Elle ne constitue pas une estimation du bien.</p>';
  result.style.display="block";
  const market=document.getElementById("marketResult");
