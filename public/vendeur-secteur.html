@@ -333,13 +333,29 @@ function renderNearby(rows){
 function renderRows(el,data){
  if(!data){$(el).innerHTML='<div class="empty">Donnée indisponible.</div>';return}
  const pairs=[];
- Object.entries(data).forEach(([k,v])=>{
-  if(["available","message"].includes(k))return;
-  if(v==null||typeof v==="object")return;
-  pairs.push('<div class="row"><span>'+esc(k.replace(/_/g," "))+'</span><b>'+esc(v)+'</b></div>');
- });
- if(data.message) pairs.push('<div class="row"><span>Information</span><b>'+esc(data.message)+'</b></div>');
- $(el).innerHTML=pairs.length?pairs.slice(0,8).join(""):'<div class="empty">Aucune donnée détaillée.</div>';
+ if(data.available===false){
+  if(data.message) pairs.push('<div class="row"><span>Information</span><b>'+esc(data.message)+'</b></div>');
+ }else{
+  if(data.year!=null) pairs.push('<div class="row"><span>Année</span><b>'+esc(data.year)+'</b></div>');
+  if(data.source) pairs.push('<div class="row"><span>Source</span><b>'+esc(data.source)+'</b></div>');
+  if(Array.isArray(data.indicators)&&data.indicators.length){
+   pairs.push('<div class="row"><span>Indicateurs</span><b>'+data.indicators.slice(0,8).map(x=>esc(x.label||x.indicator||"Indicateur")+" : "+(x.rate!=null?x.rate+" "+(x.unit||""):x.count!=null?x.count+" faits":"donnée disponible")).join("<br>")+'</b></div>');
+  }
+  if(Array.isArray(data.risks)&&data.risks.length){
+   pairs.push('<div class="row"><span>Risques recensés</span><b>'+data.risks.slice(0,12).map(esc).join("<br>")+'</b></div>');
+  }
+  if(data.catNatCount!=null) pairs.push('<div class="row"><span>Arrêtés catastrophe naturelle</span><b>'+esc(data.catNatCount)+'</b></div>');
+  if(data.counters&&typeof data.counters==="object"){
+   const labels={schools:"Écoles",health:"Santé",pharmacies:"Pharmacies",shops:"Commerces",stations:"Gares / mobilité",busStops:"Arrêts de bus",postOffices:"Poste",totalServices:"Total repères"};
+   Object.entries(labels).forEach(([key,label])=>{
+    if(data.counters[key]!=null) pairs.push('<div class="row"><span>'+esc(label)+'</span><b>'+esc(data.counters[key])+'</b></div>');
+   });
+  }
+  if(data.radiusKm!=null) pairs.push('<div class="row"><span>Rayon</span><b>'+esc(data.radiusKm)+" km"+'</b></div>');
+  if(data.note) pairs.push('<div class="row"><span>Précision</span><b>'+esc(data.note)+'</b></div>');
+  if(data.message) pairs.push('<div class="row"><span>Information</span><b>'+esc(data.message)+'</b></div>');
+ }
+ $(el).innerHTML=pairs.length?pairs.slice(0,10).join(""):'<div class="empty">Aucune donnée détaillée.</div>';
 }
 
 async function run(){
