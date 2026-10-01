@@ -392,7 +392,7 @@ async function run(){
 
  // 2. Comparables : appel séparé.
  try{
-  const territory=await getData("/api/territory-summary?"+base.toString(),14500,"Comparables / territoire");
+  const territory=await getData("/api/territory-summary?"+base.toString(),20000,"Comparables / territoire");
   renderComps(territory.market?.comparables||{});
   if(territory.sellerReference) renderReference(territory.sellerReference);
   if(Array.isArray(territory.nearby))renderNearby(territory.nearby);
