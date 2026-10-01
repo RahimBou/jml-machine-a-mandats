@@ -283,7 +283,11 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 .seller-status{margin-top:14px;padding:17px 22px;border-radius:18px;background:rgba(255,253,248,.96);box-shadow:0 8px 25px rgba(23,51,44,.06)}
 .seller-status-copy strong:before{content:"✓";display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:#b8944e;color:#173b31;font-size:13px}
 .seller-quick-grid{margin-top:14px;gap:12px}
-.seller-quick-card{position:relative;overflow:hidden;min-height:152px;padding:17px 16px 13px;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;background:#fffdf8;cursor:pointer;pointer-events:auto;z-index:2}.seller-quick-card:after{pointer-events:none}
+.seller-quick-card{position:relative;overflow:hidden;min-height:152px;padding:17px 16px 13px;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;background:#fffdf8;cursor:pointer;pointer-events:auto;z-index:2}
+.seller-quick-card .seller-quick-photo{position:absolute;right:0;bottom:0;width:118px;height:78px;object-fit:cover;border:0;border-radius:48px 0 0 0;opacity:.92;z-index:0;display:block}
+.seller-quick-card .seller-quick-photo::after{content:""}
+.seller-quick-card>span,.seller-quick-card>em{position:relative;z-index:2}
+.seller-quick-card:after{display:none}
 .seller-quick-card em{position:absolute;right:13px;bottom:12px;padding:4px 8px;border-radius:999px;background:#f1e4c4}
 .seller-quick-card:after{content:"";position:absolute;right:0;bottom:0;width:104px;height:58px;opacity:.9;background-position:center;background-size:cover;border-radius:48px 0 0 0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
 .seller-quick-card:nth-child(1):after{background-image:linear-gradient(90deg,rgba(255,253,248,0),rgba(255,253,248,.08)),url("/assets/guide-hero.svg")}
@@ -487,10 +491,22 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
     </div>
 
     <div class="seller-quick-grid">
-      <a class="seller-quick-card" id="sellerQuickSector" href="/vendeur-secteur.html"><span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Analyse du marché local de votre secteur.</small></span><em>→</em></a>
-      <a class="seller-quick-card" id="sellerQuickProperty" href="/vendeur-bien.html"><span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, terrain, état, travaux et équipements…</small></span><em>→</em></a>
-      <a class="seller-quick-card" id="sellerQuickCalendar" href="/vendeur-calendrier.html"><span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre horizon, les prochaines étapes et le rendez-vous.</small></span><em>→</em></a>
-      <a class="seller-quick-card" id="sellerQuickAdvice" href="/vendeur-conseils.html"><span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples et concrets pour votre projet.</small></span><em>→</em></a>
+      <a class="seller-quick-card" id="sellerQuickSector" href="/vendeur-secteur.html">
+        <img class="seller-quick-photo" src="/assets/guide-hero.svg?v=3.4.9" alt="Ardennes — votre secteur" loading="eager" decoding="async">
+        <span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Analyse du marché local de votre secteur.</small></span><em>→</em>
+      </a>
+      <a class="seller-quick-card" id="sellerQuickProperty" href="/vendeur-bien.html">
+        <img class="seller-quick-photo" src="/assets/guide-project-photo.svg?v=3.4.9" alt="Préparation de votre bien" loading="lazy" decoding="async">
+        <span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, terrain, état, travaux et équipements…</small></span><em>→</em>
+      </a>
+      <a class="seller-quick-card" id="sellerQuickCalendar" href="/vendeur-calendrier.html">
+        <img class="seller-quick-photo" src="/assets/guide-calendar-photo.svg?v=3.4.9" alt="Calendrier de votre projet" loading="lazy" decoding="async">
+        <span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre horizon, les prochaines étapes et le rendez-vous.</small></span><em>→</em>
+      </a>
+      <a class="seller-quick-card" id="sellerQuickAdvice" href="/vendeur-conseils.html">
+        <img class="seller-quick-photo" src="/assets/guide-summary-photo.svg?v=3.4.9" alt="Conseils vendeurs" loading="lazy" decoding="async">
+        <span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples et concrets pour votre projet.</small></span><em>→</em>
+      </a>
     </div>
 
     <section class="seller-project-summary" id="sellerProjectSummary">
