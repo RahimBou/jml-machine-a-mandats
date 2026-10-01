@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="jml-version" content="2026-10-01-mon-secteur-rebuild-2">
+<meta name="jml-version" content="2026-10-01-mon-secteur-rebuild-3">
 <title>JML Immobilier — Mon secteur</title>
 <style>
 :root{--g:#173b32;--g2:#245346;--gold:#c9a85b;--cream:#f5f0e6;--paper:#fffdf8;--line:#e4dccd;--ink:#173b32;--muted:#68736c;--bad:#8a5147}
@@ -169,7 +169,25 @@ async function loadServerSpace(){
  const p=new URLSearchParams(location.search);
  const token=p.get("token")||"";
  const local=getSpace();
+
+ // Affichage immédiat : si le navigateur possède déjà le dossier vendeur,
+ // ne pas bloquer toute la page sur l'API distante.
+ if(local.city){
+   if(token){
+     fetch("/api/seller-space/"+encodeURIComponent(token),{cache:"no-store"})
+       .then(r=>r.json().catch(()=>({})))
+       .then(j=>{
+         if(j?.ok&&j.space){
+           const space={...j.space,token,submitted:true};
+           try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(space));}catch(_e){}
+         }
+       }).catch(()=>{});
+   }
+   return local;
+ }
+
  if(!token) return local;
+
  const ctl=new AbortController();
  const timer=setTimeout(()=>ctl.abort(),4500);
  try{
@@ -186,6 +204,7 @@ async function loadServerSpace(){
 }
 
 const pageData={market:null,reference:null,assets:null,comparables:null,space:null};
+const PAGE_BUILD="2026-10-01-mon-secteur-rebuild-3";
 const diagnostics=[];
 function addDiag(source,code,detail){
  diagnostics.push({source,code,detail:String(detail||"")});
@@ -425,7 +444,8 @@ async function run(){
  const d=await loadServerSpace();
  pageData.space=d;
  setProject(d);
- addDiag("Page / navigateur","JML-D001","Données du projet récupérées depuis l’espace vendeur / URL");
+ addDiag("Page / navigateur","JML-D001",PAGE_BUILD+" · données du projet récupérées depuis l’espace vendeur / URL");
+ $("#status").textContent="Dossier chargé · recherche des données locales…";
  if(!d.city){
   $("#status").textContent="Commune manquante";
   $("#marketMessage").className="message bad";
