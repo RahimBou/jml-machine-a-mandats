@@ -1,0 +1,141 @@
+const { Pool } = require("pg");
+const { Readable } = require("stream");
+const readline = require("readline");
+
+const DATABASE_URL=String(process.env.DATABASE_URL||"").trim();
+if(!DATABASE_URL) throw new Error("DATABASE_URL manquante");
+const pool=new Pool({
+  connectionString:DATABASE_URL,
+  ssl:process.env.DATABASE_SSL==="false"?false:{rejectUnauthorized:false},
+  max:2,
+  connectionTimeoutMillis:15000
+});
+
+const URL="https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.csv";
+const YEAR=2025;
+const DEP="08";
+const BATCH=500;
+
+function parseCsv(line){
+  const out=[]; let v=""; let q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(q&&line[i+1]==='"'){v+='"';i++;}
+      else q=!q;
+    }else if(ch===";"&&!q){out.push(v);v="";}
+    else v+=ch;
+  }
+  out.push(v);
+  return out;
+}
+const pick=(row,idx,...names)=>{
+  for(const name of names){
+    const i=idx[name.toLowerCase()];
+    if(i!==undefined) return String(row[i]??"").trim();
+  }
+  return "";
+};
+const num=v=>{
+  const n=Number(String(v||"").replace(",",".").trim());
+  return Number.isFinite(n)?n:null;
+};
+
+async function main(){
+  const client=await pool.connect();
+  let deleted=0,inserted=0;
+  try{
+    await client.query(`CREATE TABLE IF NOT EXISTS jml_bpe_assets (
+      id BIGSERIAL PRIMARY KEY,
+      year INTEGER NOT NULL,
+      commune_code TEXT NOT NULL,
+      domain TEXT,
+      subdomain TEXT,
+      type_code TEXT,
+      type_label TEXT,
+      name TEXT,
+      latitude DOUBLE PRECISION,
+      longitude DOUBLE PRECISION,
+      address TEXT,
+      source TEXT NOT NULL DEFAULT 'INSEE BPE 2025',
+      imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(year,commune_code,type_code,name,latitude,longitude)
+    )`);
+    await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_commune ON jml_bpe_assets(commune_code)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_jml_bpe_geo ON jml_bpe_assets(latitude,longitude)");
+
+    console.log("Téléchargement BPE 2025 INSEE...");
+    const response=await fetch(URL,{headers:{"User-Agent":"JML-Projet-Vendeur-BPE/1.0"},signal:AbortSignal.timeout(180000)});
+    if(!response.ok) throw new Error("INSEE BPE HTTP "+response.status);
+    if(!response.body) throw new Error("Flux BPE absent");
+
+    await client.query("BEGIN");
+    const del=await client.query("DELETE FROM jml_bpe_assets WHERE year=$1 AND commune_code LIKE $2",[YEAR,DEP+"%"]);
+    deleted=del.rowCount||0;
+
+    const rl=readline.createInterface({input:Readable.fromWeb(response.body),crlfDelay:Infinity});
+    let header=null,idx={};
+    let batch=[];
+    for await(const line of rl){
+      if(!line) continue;
+      if(!header){
+        header=parseCsv(line).map(x=>x.replace(/^\uFEFF/,"").trim().toLowerCase());
+        header.forEach((x,i)=>idx[x]=i);
+        console.log("Colonnes BPE détectées:",header.length);
+        continue;
+      }
+      const row=parseCsv(line);
+      const commune=pick(row,idx,"depcom");
+      if(!/^08\d{3}$/.test(commune)) continue;
+      const lat=num(pick(row,idx,"latitude"));
+      const lon=num(pick(row,idx,"longitude"));
+      if(lat===null||lon===null) continue;
+      const domain=pick(row,idx,"dom");
+      if(!/^[A-G]$/.test(domain)) continue;
+      const subdomain=pick(row,idx,"sdom");
+      const typeCode=pick(row,idx,"typequ","typequ_1");
+      const typeLabel=pick(row,idx,"libelle_typequ","lib_equ","libelle_type_qu");
+      const name=pick(row,idx,"nomrs")||typeLabel||"Équipement";
+      const numvoie=pick(row,idx,"numvoie");
+      const typvoie=pick(row,idx,"typvoie");
+      const libvoie=pick(row,idx,"libvoie");
+      const address=[numvoie,typvoie,libvoie].filter(Boolean).join(" ");
+      batch.push([YEAR,commune,domain,subdomain,typeCode,typeLabel,name,lat,lon,address]);
+      if(batch.length>=BATCH){
+        await insertBatch(client,batch);
+        inserted+=batch.length;
+        batch=[];
+        if(inserted%5000===0) console.log("BPE Ardennes importés:",inserted);
+      }
+    }
+    if(batch.length){await insertBatch(client,batch);inserted+=batch.length;}
+    await client.query("COMMIT");
+    console.log(`BPE terminé : supprimés=${deleted}, insérés=${inserted}`);
+  }catch(error){
+    try{await client.query("ROLLBACK");}catch(_){}
+    throw error;
+  }finally{
+    client.release();
+    await pool.end();
+  }
+}
+
+async function insertBatch(client,rows){
+  if(!rows.length)return;
+  const values=[]; const params=[];
+  rows.forEach((r,rowIndex)=>{
+    const base=rowIndex*10;
+    values.push(`(${Array.from({length:10},(_,i)=>"$"+(base+i+1)).join(",")})`);
+    params.push(...r);
+  });
+  await client.query(
+    `INSERT INTO jml_bpe_assets
+      (year,commune_code,domain,subdomain,type_code,type_label,name,latitude,longitude,address)
+     VALUES ${values.join(",")}
+     ON CONFLICT(year,commune_code,type_code,name,latitude,longitude) DO UPDATE SET
+       domain=EXCLUDED.domain,subdomain=EXCLUDED.subdomain,type_label=EXCLUDED.type_label,address=EXCLUDED.address,imported_at=NOW()`,
+    params
+  );
+}
+
+main().catch(error=>{console.error("BPE import failed:",error);process.exitCode=1;});
