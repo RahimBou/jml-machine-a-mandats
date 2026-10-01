@@ -105,7 +105,7 @@ document.getElementById("addOwner").onclick=function(){ownerData.push({...baseOw
 ["saleHorizon","expectedPrice","alreadyEstimated","alreadyProfessional","saleReason"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=d[id]||""});
 document.getElementById("saveSeller").onclick=async function(){
  const msg=document.getElementById("saveMsg");const payload={ownerRole:document.getElementById("ownerRole").value,ownerData,horizon:document.getElementById("saleHorizon").value,expectedPrice:document.getElementById("expectedPrice").value,alreadyEstimated:document.getElementById("alreadyEstimated").value,alreadyProfessional:document.getElementById("alreadyProfessional").value,saleReason:document.getElementById("saleReason").value};
- const current={...d,...payload,owners:ownerData};try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(current));}catch(e){}
+ const current={...d,...payload,owners:ownerData};payload.city=d.city||"";payload.address=d.address||"";payload.propertyType=d.propertyType||"";payload.surface=d.surface||"";payload.rooms=d.rooms||"";payload.dpe=d.dpe||"";payload.terrain=d.terrain||"";try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(current));}catch(e){}
  if(!token){msg.textContent="Dossier enregistré sur cet appareil.";return;}
  try{const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const j=await r.json();if(!r.ok||!j.ok)throw new Error("save");localStorage.setItem("jml-seller-space-v1",JSON.stringify({...current,...j.space,token}));msg.textContent="Dossier enregistré."; }catch(e){msg.textContent="Enregistré sur cet appareil. Synchronisation serveur indisponible.";}
 };
