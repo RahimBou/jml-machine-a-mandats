@@ -123,7 +123,7 @@ async function main(){
       if(!/^[A-G]$/.test(domain)) continue;
       const subdomain=pick(row,idx,"sdom");
       const typeCode=pick(row,idx,"typequ","typequ_1");
-      const typeLabel=pick(row,idx,"libelle_typequ","lib_equ","libelle_type_qu");
+      const typeLabel=pick(row,idx,"libelle_typequ","lib_equ","libelle_type_qu","type");
       const name=pick(row,idx,"nomrs")||typeLabel||"Équipement";
       const numvoie=pick(row,idx,"numvoie");
       const typvoie=pick(row,idx,"typvoie");
@@ -138,8 +138,8 @@ async function main(){
       }
     }
     if(batch.length){await insertBatch(client,batch);inserted+=batch.length;}
-    await client.query("COMMIT");
     await new Promise((resolve,reject)=>csvStream.on("close",code=>code===0?resolve():reject(new Error("Extraction BPE25.csv impossible: "+unzipErr))));
+    await client.query("COMMIT");
     try{fs.unlinkSync(zipPath);}catch(_){}
     console.log(`BPE terminé : supprimés=${deleted}, insérés=${inserted}, lignes_scannées=${scanned}, Ardennes_avec_coordonnées=${validArdennes}, sans_coordonnées=${skippedNoCoords}`);
     if(inserted===0) throw new Error("Aucun équipement BPE Ardennes n’a été importé : vérifier le format DEPCOM et les coordonnées.");
