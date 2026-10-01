@@ -18,7 +18,12 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .hero p{max-width:760px;color:#dbe7e0;font-size:12px;line-height:1.6;margin:0}
 .back{display:inline-block;margin-top:17px;padding:10px 14px;border-radius:999px;background:var(--gold);color:var(--g);font-size:11px;font-weight:900;text-decoration:none}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 7px 25px rgba(23,59,50,.05)}
-.section{margin-top:25px}.head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 2px 10px}.head h2{font-size:24px;margin:4px 0}.source{font-size:8px;font-weight:900;color:#59675f;background:#eaf0e9;padding:7px 9px;border-radius:999px}
+.section{margin-top:25px}
+.value-intro{background:linear-gradient(135deg,#173b32,#285848);color:#fff;border-radius:18px;padding:17px}
+.value-intro h2{font-size:22px;margin:5px 0}.value-intro p{font-size:9.5px;line-height:1.6;color:#dbe7e0;margin:0}
+.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}.asset{background:#faf6ee;border:1px solid var(--line);border-radius:14px;padding:13px}.asset-head{display:flex;justify-content:space-between;gap:8px;align-items:start}.asset h3{font-size:13px;margin:0}.asset-count{font-size:20px;font-weight:900;color:#8a6c2e}.asset p{font-size:8.5px;color:var(--muted);line-height:1.5;margin:7px 0}.asset ul{list-style:none;padding:0;margin:7px 0 0}.asset li{font-size:8px;padding:4px 0;border-top:1px solid #eee6d9;color:#56625b}.asset .distance{float:right;font-weight:900;color:#8a6c2e}
+.benefit-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:10px;margin-top:10px}.benefit{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.benefit h3{font-size:13px;margin:0 0 7px}.benefit p{font-size:9px;line-height:1.6;color:var(--muted);margin:0}.proof{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.proof div{background:#f7f2e8;border-radius:11px;padding:10px}.proof b{display:block;font-size:8px;text-transform:uppercase;color:#7a827d}.proof strong{display:block;font-size:13px;margin-top:4px}
+@media(max-width:760px){.asset-grid,.benefit-grid,.proof{grid-template-columns:1fr}}.head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 2px 10px}.head h2{font-size:24px;margin:4px 0}.source{font-size:8px;font-weight:900;color:#59675f;background:#eaf0e9;padding:7px 9px;border-radius:999px}
 .project{margin-top:14px}.project-top{display:flex;justify-content:space-between;gap:15px}.project h2{font-size:25px;margin:4px 0}.address{font-size:11px;color:var(--muted)}.status{font-size:9px;font-weight:900;background:#eef2ed;color:#52635a;border-radius:999px;padding:7px 10px;height:max-content}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:17px}.box{background:#f6f1e7;border-radius:13px;padding:13px}.box label{display:block;font-size:8px;text-transform:uppercase;font-weight:900;color:#7a827d}.box strong{display:block;font-size:15px;margin-top:6px}.map{display:inline-block;margin-top:12px;color:var(--g);font-size:10px;font-weight:900}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric{background:#f7f2e8;border:1px solid #e8dfcf;border-radius:14px;padding:14px}.metric label{font-size:8px;text-transform:uppercase;font-weight:900;color:#7a827d}.metric strong{display:block;font-size:22px;margin:7px 0 3px}.metric small{font-size:8px;color:var(--muted)}
@@ -59,7 +64,23 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">01 · MARCHÉ LOCAL</div><h2>Les chiffres de votre commune</h2></div><div class="source">DVF+ / Cerema / DGFiP</div></div>
+ <div class="head"><div><div class="eyebrow">01 · LES ATOUTS DE L'ADRESSE</div><h2>Pourquoi ce bien peut séduire</h2></div><div class="source">Données géolocalisées</div></div>
+ <div class="card">
+  <div class="value-intro">
+   <h2>Les éléments concrets qui peuvent soutenir la valeur</h2>
+   <p>On ne regarde pas seulement le prix au m² : on identifie aussi les éléments du quotidien qu'un acheteur peut valoriser autour de l'adresse.</p>
+  </div>
+  <div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
+  <div class="benefit-grid">
+   <div class="benefit"><h3>🗣️ Arguments à reprendre dans la présentation</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs et vérifiables.</p></div>
+   <div class="benefit"><h3>📌 Repères vendeur</h3><div class="proof" id="proof"><div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div></div></div>
+  </div>
+  <div class="message" style="margin-top:10px">Les distances sont calculées autour de l'adresse géolocalisée. Une présence d'équipement décrit l'environnement : elle ne constitue pas, à elle seule, une preuve de surcote immobilière.</div>
+ </div>
+</section>
+
+<section class="section">
+ <div class="head"><div><div class="eyebrow">02 · MARCHÉ LOCAL</div><h2>Les chiffres de votre commune</h2></div><div class="source">DVF+ / Cerema / DGFiP</div></div>
  <div class="card">
   <div class="metrics" id="metrics"></div>
   <div class="types" id="types"></div>
@@ -69,7 +90,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">02 · REPÈRE VENDEUR</div><h2>Une valeur de référence simple</h2></div><div class="source">Indicatif · non certifié</div></div>
+ <div class="head"><div><div class="eyebrow">03 · REPÈRE VENDEUR</div><h2>Une valeur de référence simple</h2></div><div class="source">Indicatif · non certifié</div></div>
  <div class="card reference" id="reference">
   <div class="ref-main"><h3>Valeur de référence</h3><div class="ref-value">—</div><p>Calculée uniquement lorsque le type, la surface et un prix de marché exploitable sont disponibles.</p></div>
   <div class="ref-list"><div class="ref-row"><b>Prix de base</b><span>—</span></div><div class="ref-row"><b>Fourchette</b><span>—</span></div><div class="ref-row"><b>Transactions</b><span>—</span></div></div>
@@ -77,12 +98,12 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">03 · TRANSACTIONS</div><h2>Ventes réelles dans la commune</h2></div><div class="source">DVF</div></div>
+ <div class="head"><div><div class="eyebrow">04 · TRANSACTIONS</div><h2>Ventes réelles dans la commune</h2></div><div class="source">DVF</div></div>
  <div class="card"><div class="sales" id="sales"><div class="loading">Chargement…</div></div></div>
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">04 · AUTOUR DE L'ADRESSE</div><h2>Ventes comparables</h2></div><div class="source">Moteur JML</div></div>
+ <div class="head"><div><div class="eyebrow">05 · AUTOUR DE L'ADRESSE</div><h2>Ventes comparables</h2></div><div class="source">Moteur JML</div></div>
  <div class="card">
   <div class="reference" id="compSummary"><div class="ref-main"><h3>Recherche locale</h3><div class="ref-value">—</div><p>Le moteur recherche d'abord les ventes proches, puis élargit progressivement si nécessaire.</p></div><div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>—</span></div><div class="ref-row"><b>Périmètre</b><span>—</span></div><div class="ref-row"><b>Ventes retenues</b><span>—</span></div></div></div>
   <div style="margin-top:10px"><div class="comps" id="comps"><div class="loading">Recherche des comparables…</div></div></div>
@@ -90,12 +111,12 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">05 · TERRITOIRE</div><h2>Les communes proches</h2></div></div>
+ <div class="head"><div><div class="eyebrow">06 · TERRITOIRE</div><h2>Les communes proches</h2></div></div>
  <div class="card"><div class="nearby" id="nearby"><div class="loading">Chargement…</div></div></div>
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">06 · ENVIRONNEMENT</div><h2>Sécurité, risques et services</h2></div><div class="source">Données publiques</div></div>
+ <div class="head"><div><div class="eyebrow">07 · ENVIRONNEMENT</div><h2>Sécurité, risques et services</h2></div><div class="source">Données publiques</div></div>
  <div class="env">
   <div class="card"><h3>🛡️ Sécurité</h3><p>Indicateurs publics disponibles pour la commune.</p><div class="rows" id="security"><div class="loading">Chargement…</div></div></div>
   <div class="card"><h3>⚠️ Risques</h3><p>Informations communales, à compléter par une vérification à l'adresse exacte.</p><div class="rows" id="risks"><div class="loading">Chargement…</div></div></div>
@@ -158,6 +179,42 @@ function setProject(d){
  if(d.address||d.city) $("#map").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([d.address,d.city].filter(Boolean).join(", "));
 }
 
+function renderAssets(data){
+ const box=$("#assets");
+ if(!data||!data.available){box.innerHTML='<div class="empty">'+esc(data?.message||"Les équipements autour de l'adresse sont indisponibles pour cette session.")+'</div>';return}
+ const cats=data.categories||{};
+ const order=[
+  ["schools","🎓 Écoles & famille","Établissements scolaires autour de l'adresse."],
+  ["commerces","🛒 Commerces","Commerces de proximité et achats du quotidien."],
+  ["transport","🚌 Mobilité","Arrêts, gares et autres points de transport."],
+  ["parks","🌳 Parcs & loisirs","Parcs, aires de jeux et équipements de loisirs."],
+  ["health","⚕️ Santé","Pharmacies, médecins, cliniques et hôpitaux."],
+  ["services","🏪 Services","Poste, banque, bibliothèque, restauration et services."]
+ ];
+ box.innerHTML=order.map(([key,title,desc])=>{
+  const c=cats[key]||{count:0,items:[]};
+  const items=(c.items||[]).slice(0,4).map(x=>'<li>'+esc(x.name||"Équipement")+' <span class="distance">'+esc(x.distanceKm)+" km</span></li>").join("");
+  return '<article class="asset"><div class="asset-head"><h3>'+title+'</h3><span class="asset-count">'+esc(c.count||0)+'</span></div><p>'+desc+'</p><ul>'+(items||'<li>Aucun équipement identifié dans le rayon.</li>')+'</ul></article>';
+ }).join("");
+ const total=k=>Number(cats[k]?.count||0);
+ const schools=total("schools"),shops=total("commerces"),transport=total("transport"),parks=total("parks"),health=total("health");
+ const proofs=[
+  ["Proximité",parks+shops+schools>0?"Équipements accessibles":"À vérifier"],
+  ["Vie quotidienne",shops>0?shops+" commerces identifiés":"À compléter"],
+  ["Mobilité",transport>0?transport+" points de transport":"À vérifier"],
+  ["Famille / loisirs",schools+parks>0?(schools+parks)+" repères identifiés":"À vérifier"]
+ ];
+ $("#proof").innerHTML=proofs.map(x=>'<div><b>'+x[0]+'</b><strong>'+esc(x[1])+'</strong></div>').join("");
+ const parts=[];
+ if(schools)parts.push(schools+" équipement(s) scolaire(s)");
+ if(shops)parts.push(shops+" commerce(s)");
+ if(transport)parts.push(transport+" point(s) de transport");
+ if(parks)parts.push(parks+" parc(s), aire(s) de jeux ou équipement(s) de loisirs");
+ if(health)parts.push(health+" équipement(s) de santé");
+ $("#sellingPitch").textContent=parts.length
+   ?"À proximité de l'adresse, on peut objectivement mettre en avant "+parts.join(", ")+". Ce sont des éléments concrets à intégrer dans l'argumentaire et la visite."
+   :"Aucun équipement de proximité n'a pu être identifié automatiquement dans le rayon retenu. Il faudra compléter manuellement les atouts du quartier.";
+}
 function renderMarket(data){
  const market=data||{};
  $("#metrics").innerHTML=[
@@ -274,6 +331,16 @@ async function run(){
   $("#marketMessage").textContent="Les données communales n'ont pas répondu : "+(e.message||"erreur temporaire")+". Les autres blocs continuent indépendamment.";
   $("#sales").innerHTML='<div class="error">Les transactions communales n’ont pas pu être chargées. Cela n’empêche pas la recherche des comparables.</div>';
  }
+
+ // 1bis. Atouts géolocalisés : appel indépendant du marché.
+ try{
+  const territory=await getData("/api/territory-summary?"+base.toString(),7000);
+  const c=territory.commune,coords=c?.centre?.coordinates;
+  if(Array.isArray(coords)&&coords.length>=2){
+    const assets=await getData("/api/territory-assets?"+new URLSearchParams({lat:String(coords[1]),lon:String(coords[0])}).toString(),12000);
+    renderAssets(assets);
+  }else renderAssets(null);
+ }catch(e){ renderAssets({available:false,message:"Les équipements autour de l'adresse n'ont pas pu être chargés."}); }
 
  // 2. Comparables : appel séparé.
  try{
