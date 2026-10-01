@@ -39,6 +39,8 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .loading,.empty{font-size:9px;color:var(--muted);padding:7px 0}.error{background:#f6e9e5;border:1px solid #e4cec7;color:var(--bad);border-radius:12px;padding:12px;font-size:9px;line-height:1.55}
 .footer{margin-top:25px;font-size:8.5px;color:var(--muted);line-height:1.6}
 @media(max-width:760px){.hero h1{font-size:30px}.grid,.metrics,.types,.sales,.comps,.nearby,.env,.reference{grid-template-columns:1fr}.head,.project-top{display:block}.source,.status{display:inline-block;margin-top:8px}}
+
+.highlight-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 12px}.highlight-item{display:flex;gap:8px;align-items:center;background:#fffdf7;border:1px solid rgba(24,63,50,.12);border-radius:12px;padding:10px}.highlight-num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#d7b45b;color:#173f32;font-weight:800;flex:0 0 auto}.highlight-item b{font-size:.78rem}.highlight-item small{display:block;font-size:.67rem}.highlight-item p{margin:3px 0 0;font-size:.68rem;color:#8b6e31}.asset-details{margin-top:8px;border-top:1px dashed rgba(24,63,50,.16);padding-top:6px}.asset-details summary{cursor:pointer;font-weight:700;font-size:.75rem}.asset-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px}.asset-grid .asset{min-width:0}.asset-grid .asset ul{font-size:.68rem}.asset-grid .asset h3{font-size:.8rem}.asset-grid .asset p{font-size:.68rem}@media(max-width:760px){.highlight-list,.asset-grid{grid-template-columns:1fr 1fr}.highlight-item{min-height:62px}.highlight-item b{font-size:.74rem}}@media(max-width:430px){.highlight-list{grid-template-columns:1fr}.asset-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -225,25 +227,39 @@ function setProject(d){
  if(d.address||d.city) $("#map").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([d.address,d.city].filter(Boolean).join(", "));
 }
 
+function sellerAssetHighlights(){
+ const d=pageData.space||{}, cats=pageData.assets?.categories||{};
+ const isHouse=/maison/i.test(d.propertyType||"");
+ const keys=isHouse?["family","daily","health","leisure","mobility"]:["daily","health","mobility","family","leisure"];
+ const out=[];
+ keys.forEach(key=>{
+  const items=Array.isArray(cats[key]?.items)?cats[key].items:[];
+  if(!items.length)return;
+  const x=items[0];
+  out.push({
+   key,
+   label:x.type||cats[key].label||"Équipement",
+   name:x.name&&x.name!==x.type?x.name:"",
+   distance:x.distanceLabel||((Number(x.distanceKm)||0).toFixed(2)+" km"),
+   distanceKm:Number(x.distanceKm)||99
+  });
+ });
+ return out.slice(0,5);
+}
 function renderSellerPost(){
- const d=pageData.space||{}, ref=pageData.reference||{}, comps=pageData.comparables||{}, assets=pageData.assets||{};
- const cats=assets.categories||{};
+ const d=pageData.space||{}, ref=pageData.reference||{}, comps=pageData.comparables||{};
  const base=Number(ref.basePriceM2), compM2=Number(comps.weightedPriceM2||comps.median), refValue=Number(ref.referenceValue);
- const type=d.propertyType||"bien", surface=d.surface?d.surface+" m²":"", commune=d.city||"ce secteur";
+ const type=d.propertyType||"bien", commune=d.city||"ce secteur";
  const priceLine=Number.isFinite(refValue)&&refValue>0
    ?"Le repère indicatif ressort autour de "+Math.round(refValue).toLocaleString("fr-FR")+" €, à partir de "+Math.round(base).toLocaleString("fr-FR")+" €/m²."
    :"Le repère de prix est construit à partir des transactions réelles disponibles.";
  const compLine=Number.isFinite(compM2)&&compM2>0
    ?"Les ventes comparables retenues apportent un second repère à "+Math.round(compM2).toLocaleString("fr-FR")+" €/m²."
    :"Les ventes comparables sont utilisées lorsqu'elles sont disponibles.";
- const highlights=[];
- ["family","daily","health","mobility","leisure"].forEach(key=>{
-   const c=cats[key], item=(c?.items||[])[0];
-   if(item) highlights.push((item.type||c.label)+(item.distanceLabel?" ("+item.distanceLabel+")":""));
- });
+ const highlights=sellerAssetHighlights();
  const sectorLine=highlights.length
-   ?"Pour la présentation du bien, on peut surtout retenir : "+highlights.slice(0,4).join(", ")+"."
-   :"L'environnement du bien pourra être complété avec les atouts de proximité vérifiés lors de la visite.";
+   ?"À proximité, on relève notamment "+highlights.slice(0,4).map(x=>x.label+" "+x.distance).join(", ")+"."+((highlights.length>4)?"":"")
+   :"L'environnement du bien pourra être complété avec les atouts vérifiés lors de la visite.";
  const post=[
   "🏡 "+type+" à "+commune+" : les repères utiles pour comprendre le prix",
   "",
@@ -258,7 +274,6 @@ function renderSellerPost(){
  ].join("\n");
  const el=$("#sellerPost"); if(el)el.textContent=post;
 }
-
 function renderAssets(data){
  pageData.assets=data||null;
  const box=$("#assets");
@@ -269,42 +284,35 @@ function renderAssets(data){
   return;
  }
  addDiag(data.source||"Équipements / source locale","JML-ASSET-OK",String(data.provider||"source répondante"));
+ const highlights=sellerAssetHighlights();
  const cats=data.categories||{};
  const order=[
-  ["family","🎓 Écoles & famille","Ce qui peut compter pour un ménage avec enfants."],
-  ["daily","🛒 Vie quotidienne","Les commerces réellement utiles au quotidien."],
-  ["health","⚕️ Santé","Les professionnels et services de santé proches."],
-  ["mobility","🚌 Mobilité","Les équipements de transport identifiés autour du bien."],
-  ["leisure","🌳 Loisirs & vie locale","Quelques équipements utiles pour la vie de quartier."]
+  ["family","🎓 Famille","Écoles, crèches et établissements utiles à un ménage."],
+  ["daily","🛒 Quotidien","Alimentation et commerces utiles au quotidien."],
+  ["health","⚕️ Santé","Professionnels et services de santé proches."],
+  ["mobility","🚌 Mobilité","Repères de transport autour du bien."],
+  ["leisure","🌳 Loisirs","Équipements utiles à la vie de quartier."]
  ];
  box.innerHTML=
- '<div class="asset-intro"><b>Ce qui est réellement utile à un acheteur</b><p>On ne retient plus le nombre brut de services dans la commune. La sélection privilégie les équipements concrets et proches de l’adresse, avec un rayon principal de 800 m.</p></div>'+
- order.map(([key,title,desc])=>{
-   const c=cats[key]||{items:[],count:0,available:false};
-   const items=(c.items||[]).slice(0,5);
-   const body=items.length
-     ? items.map(x=>{
-         const label=x.type||x.name||"Équipement";
-         const name=x.name&&x.name!==label?x.name:"";
-         return '<li><b>'+esc(label)+'</b>'+(name?' · '+esc(name):'')+' <span class="distance">'+esc(x.distanceLabel||((Number(x.distanceKm)||0).toFixed(2)+" km"))+'</span></li>';
-       }).join("")
-     : (c.available===false?'<li><b>Source indisponible</b> pour cette catégorie.</li>':'<li>Aucun équipement pertinent identifié dans le rayon principal.</li>');
-   return '<article class="asset"><div class="asset-head"><h3>'+title+'</h3><span class="asset-count">'+esc(items.length?String(items.length):"—")+'</span></div><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||"Source officielle")+(c.count!=null&&c.count>items.length?" · "+esc(String(c.count))+" repères à moins de 800 m":"")+'</small></article>';
- }).join("");
- const pick=(key)=>((cats[key]?.items||[])[0]);
- const proof=[];
- const f=pick("family"), d=pick("daily"), h=pick("health"), m=pick("mobility"), l=pick("leisure");
- if(f)proof.push(["Famille",f.type||"Équipement scolaire"]);
- if(d)proof.push(["Quotidien",d.type||"Commerce de proximité"]);
- if(h)proof.push(["Santé",h.type||"Professionnel de santé"]);
- if(m)proof.push(["Mobilité",m.type||"Transport"]);
- if(l)proof.push(["Loisirs",l.type||"Équipement de loisirs"]);
+  '<div class="asset-intro"><b>Les 5 atouts de proximité à retenir</b><p>La sélection privilégie les équipements concrets proches de l'adresse. Le nombre brut de services de la commune n'est volontairement pas utilisé.</p></div>'+
+  '<div class="highlight-list">'+highlights.map((x,i)=>
+    '<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p></div></div>'
+  ).join("")+'</div>'+
+  '<details class="asset-details"><summary>Voir le détail par catégorie</summary>'+
+  '<div class="asset-grid">'+order.map(([key,title,desc])=>{
+    const c=cats[key]||{items:[],available:false};
+    const items=(c.items||[]).slice(0,3);
+    const body=items.length
+      ?items.map(x=>'<li><b>'+esc(x.type||x.name||"Équipement")+'</b>'+(x.name&&x.name!==x.type?' · '+esc(x.name):'')+' <span class="distance">'+esc(x.distanceLabel||((Number(x.distanceKm)||0).toFixed(2)+" km"))+'</span></li>').join("")
+      :(c.available===false?'<li><b>Source indisponible</b></li>':'<li>Aucun repère pertinent identifié.</li>');
+    return '<article class="asset"><h3>'+title+'</h3><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||"Source officielle")+'</small></article>';
+  }).join("")+'</div></details>';
+ const proof=highlights.slice(0,4);
  $("#proof").innerHTML=proof.length
-   ?proof.slice(0,4).map(x=>'<div><b>'+esc(x[0])+'</b><strong>'+esc(x[1])+'</strong></div>').join("")
+   ?proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("")
    :'<div><b>Proximité</b><strong>À compléter</strong></div>';
- const parts=proof.slice(0,4).map(x=>x[1]);
- $("#sellingPitch").textContent=parts.length
-   ?"Pour le vendeur, les arguments de proximité les plus concrets sont : "+parts.join(", ")+". À présenter comme des éléments de confort et de vie quotidienne, sans leur attribuer automatiquement une valeur financière."
+ $("#sellingPitch").textContent=highlights.length
+   ?"Pour le vendeur, les arguments de proximité les plus concrets sont : "+highlights.slice(0,4).map(x=>x.label+" "+x.distance).join(", ")+". À présenter comme des éléments de confort et de vie quotidienne, sans leur attribuer automatiquement une valeur financière."
    :"Aucun repère de proximité suffisamment pertinent n'a pu être identifié automatiquement dans le rayon retenu.";
  renderSellerPost();
 }
