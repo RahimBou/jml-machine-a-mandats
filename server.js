@@ -72,6 +72,76 @@ const memory = { prospects: new Map(), leads: new Map(), sellerSpaces: new Map()
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 registerPublicEventsRoute(app, clean);
 
+const territoryAssetCache = new Map();
+
+async function getEducationAssets(lat,lon,communeCode){
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)) return [];
+  const where=communeCode
+    ? 'code_commune="'+String(communeCode).replace(/"/g,'')+'" AND etat_etablissement=1'
+    : "";
+  const url="https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre/records/?lang=fr&limit=100&offset=0"+(where?"&where="+encodeURIComponent(where):"");
+  const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.4.6","Accept":"application/json"},signal:AbortSignal.timeout(7000)});
+  if(!response.ok) throw new Error("Education API HTTP "+response.status);
+  const payload=await response.json();
+  const rows=Array.isArray(payload?.results)?payload.results:[];
+  return rows.map(x=>{
+    const la=Number(x.latitude),lo=Number(x.longitude);
+    if(!Number.isFinite(la)||!Number.isFinite(lo)) return null;
+    const d=haversineKm({lat,lon},{lat:la,lon:lo});
+    return d==null?null:{name:x.appellation_officielle||x.denomination_principale||"Établissement scolaire",distanceKm:Number(d.toFixed(2)),type:x.nature_uai_libe||"Établissement",students:x.nombre_eleves??null,source:"Éducation nationale"};
+  }).filter(Boolean).filter(x=>x.distanceKm<=10).sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,12);
+}
+
+async function getBpeAssets(lat,lon,communeCode){
+  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^d{5}$/.test(String(communeCode||""))) return [];
+  const key=String(communeCode)+"|"+lat.toFixed(4)+"|"+lon.toFixed(4);
+  const cached=territoryAssetCache.get(key);
+  if(cached&&cached.expiresAt>Date.now()) return cached.data;
+  const result=await db(`
+    SELECT name,domain,type_label,latitude,longitude,
+      ROUND((6371*2*ASIN(SQRT(
+        POWER(SIN(RADIANS(latitude-$1)/2),2)+COS(RADIANS($1))*COS(RADIANS(latitude))*POWER(SIN(RADIANS(longitude-$2)/2),2)
+      )))::numeric,2) AS distance_km
+    FROM jml_bpe_assets
+    WHERE commune_code=$3
+      AND latitude IS NOT NULL AND longitude IS NOT NULL
+      AND latitude BETWEEN $1-0.12 AND $1+0.12
+      AND longitude BETWEEN $2-0.18 AND $2+0.18
+    ORDER BY distance_km
+    LIMIT 500
+  `,[lat,lon,communeCode]);
+  const rows=result.rows.map(x=>({name:x.name||x.type_label||"Équipement",domain:x.domain,type:x.type_label,distanceKm:Number(x.distance_km)})).filter(x=>Number.isFinite(x.distanceKm)&&x.distanceKm<=10);
+  territoryAssetCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data:rows});
+  return rows;
+}
+
+async function getOfficialTerritoryAssets(lat,lon,communeCode){
+  const [education,bpe]=await Promise.allSettled([getEducationAssets(lat,lon,communeCode),getBpeAssets(lat,lon,communeCode)]);
+  const schools=education.status==="fulfilled"?education.value:[];
+  const bpeRows=bpe.status==="fulfilled"?bpe.value:[];
+  const categories={
+    schools:{label:"Écoles & établissements",count:schools.length,items:schools.slice(0,5)},
+    commerces:{label:"Commerces de proximité",count:bpeRows.filter(x=>x.domain==="B").length,items:bpeRows.filter(x=>x.domain==="B").slice(0,5)},
+    transport:{label:"Transports & mobilité",count:bpeRows.filter(x=>x.domain==="E").length,items:bpeRows.filter(x=>x.domain==="E").slice(0,5)},
+    parks:{label:"Sports, loisirs & culture",count:bpeRows.filter(x=>x.domain==="F").length,items:bpeRows.filter(x=>x.domain==="F").slice(0,5)},
+    health:{label:"Santé",count:bpeRows.filter(x=>x.domain==="D").length,items:bpeRows.filter(x=>x.domain==="D").slice(0,5)},
+    services:{label:"Services du quotidien",count:bpeRows.filter(x=>x.domain==="A").length,items:bpeRows.filter(x=>x.domain==="A").slice(0,5)}
+  };
+  const available=schools.length>0||bpeRows.length>0;
+  return {
+    available,
+    provider:"Données publiques officielles",
+    source:"Éducation nationale + INSEE BPE 2025",
+    sourceUrl:"https://www.insee.fr/fr/statistiques/8217525",
+    radiusKm:10,
+    categories,
+    diagnostics:{
+      education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),
+      bpe:bpe.status==="fulfilled"?(pool?"OK":"base locale non configurée"):String(bpe.reason?.message||"indisponible")
+    }
+  };
+}
+
 const communeMarketCache = new Map();
 const IMMO_DATA_API_BASE_URL = String(process.env.IMMO_DATA_API_BASE_URL || "https://api.immo-data.fr").replace(/\/+$/,"");
 
@@ -1097,23 +1167,26 @@ app.get("/api/territory-assets", async (req,res) => {
   const address=clean(req.query.address,180);
   const city=clean(req.query.city,100);
   try{
-    // Ne dépend plus de territory-summary : le bloc "Atouts" doit pouvoir fonctionner seul.
     if(!Number.isFinite(lat)||!Number.isFinite(lon)){
       const geo=await geocodeAddress(address,city);
-      if(geo){
-        lat=Number(geo.lat); lon=Number(geo.lon);
-      }else{
-        const commune=await resolveTerritoryCommune(city,"");
+      if(geo){lat=Number(geo.lat);lon=Number(geo.lon);}
+      else{
+        const commune=await resolveTerritoryCommune(city,address);
         const coords=commune?.centre?.coordinates;
-        if(!Array.isArray(coords)||coords.length<2) return res.status(404).json({ok:false,available:false,error:"Localisation indisponible.",message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."});
-        lon=Number(coords[0]); lat=Number(coords[1]);
+        if(!Array.isArray(coords)||coords.length<2) return res.status(404).json({ok:false,available:false,error:"Localisation indisponible.",message:"La localisation du bien n'a pas pu être déterminée."});
+        lon=Number(coords[0]);lat=Number(coords[1]);
       }
     }
-    const data=await getNearbyAssets(lat,lon);
-    return res.json({ok:true,lat,lon,...data});
+    let communeCode=clean(req.query.code,10);
+    if(!/^\d{5}$/.test(communeCode)){
+      const commune=await resolveTerritoryCommune(city,address);
+      communeCode=String(commune?.code||"");
+    }
+    const data=await getOfficialTerritoryAssets(lat,lon,communeCode);
+    return res.json({ok:true,lat,lon,communeCode,...data});
   }catch(error){
-    console.warn("JML territory-assets:",error.message);
-    return res.status(502).json({ok:false,available:false,error:"Équipements locaux temporairement indisponibles.",message:"Le service cartographique n'a pas répondu. Une nouvelle tentative est possible."});
+    console.warn("JML territory-assets officielles:",error.message);
+    return res.status(200).json({ok:false,available:false,code:"JML-ASSET-OFFICIAL",message:"Les sources officielles d'équipements sont temporairement indisponibles.",source:"Éducation nationale + INSEE BPE 2025"});
   }
 });
 
