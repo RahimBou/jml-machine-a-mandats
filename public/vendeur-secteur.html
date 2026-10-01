@@ -317,7 +317,7 @@ function renderAssets(data){
   ["leisure","🌳 Loisirs","Équipements utiles à la vie de quartier."]
  ];
  box.innerHTML=
-  '<div class="asset-intro"><b>Les 5 atouts de proximité à retenir</b><p>La sélection privilégie les équipements concrets proches de l'adresse. Le nombre brut de services de la commune n'est volontairement pas utilisé.</p></div>'+
+  "<div class=\"asset-intro\"><b>Les 5 atouts de proximité à retenir</b><p>La sélection privilégie les équipements concrets proches de l'adresse. Le nombre brut de services de la commune n'est volontairement pas utilisé.</p></div>"+
   '<div class="highlight-list">'+highlights.map((x,i)=>
     '<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p></div></div>'
   ).join("")+'</div>'+
