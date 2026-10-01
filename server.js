@@ -805,7 +805,15 @@ async function buildComparableSales(market,property){
     }catch(_e){}
   }
   if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Localisation indisponible",origin:null,message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."};
-  const tiers=[{radius:800,months:12,label:"800 m / 12 mois"},{radius:1500,months:18,label:"1,5 km / 18 mois"},{radius:3000,months:24,label:"3 km / 24 mois"}];
+
+  // On privilégie les biens réellement comparables : même type, surface proche,
+  // nombre de pièces proche, puis proximité et récence. On élargit uniquement
+  // si le nombre de ventes strictes est insuffisant.
+  const tiers=[
+    {radius:800,months:18,surfaceGap:.15,roomsGap:1,label:"800 m / 18 mois · critères serrés"},
+    {radius:1500,months:24,surfaceGap:.20,roomsGap:1,label:"1,5 km / 24 mois · critères proches"},
+    {radius:3000,months:24,surfaceGap:.25,roomsGap:2,label:"3 km / 24 mois · élargissement prudent"}
+  ];
   let local=[];
   try{
     local=await getLocalDvfComparables(origin,3);
@@ -817,30 +825,56 @@ async function buildComparableSales(market,property){
   const now=Date.now();
   const streetKey=v=>normalizeAddress(v).replace(/\b\d+\b/g,"").trim();
   const ageMonths=v=>{const d=parseSaleDate(v);return d?Math.max(0,(now-d.getTime())/(30.4375*86400000)):99;};
+
   const scoreSale=(sale,tier)=>{
-    if(typeWanted&&classifyDvfType(sale.type,sale.codtypbien||"")!==typeWanted) return null;
-    const dist=Number(sale.distanceKm); if(!Number.isFinite(dist)||dist>tier.radius/1000) return null;
-    const gap=Number.isFinite(surface)&&surface>0&&Number(sale.surface)>0?Math.abs(Number(sale.surface)-surface)/surface:null;
-    if(gap!==null&&gap>0.30)return null;
-    const saleRooms=Number(sale.rooms); if(Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0&&Math.abs(saleRooms-rooms)>2)return null;
-    const age=ageMonths(sale.date); if(age>tier.months)return null;
+    if(typeWanted&&classifyDvfType(sale.type,sale.codtypbien||"")!==typeWanted)return null;
+    const dist=Number(sale.distanceKm);
+    if(!Number.isFinite(dist)||dist>tier.radius/1000)return null;
+
+    const saleSurface=Number(sale.surface);
+    const gap=Number.isFinite(surface)&&surface>0&&saleSurface>0?Math.abs(saleSurface-surface)/surface:null;
+    if(gap!==null&&gap>tier.surfaceGap)return null;
+
+    const saleRooms=Number(sale.rooms);
+    const roomDiff=Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0?Math.abs(saleRooms-rooms):null;
+    if(roomDiff!==null&&roomDiff>tier.roomsGap)return null;
+
+    const age=ageMonths(sale.date);
+    if(age>tier.months)return null;
+
     const distanceScore=Math.max(0,1-dist/(tier.radius/1000))*30;
-    const recencyScore=Math.max(0,1-age/tier.months)*25;
-    const surfaceScore=gap===null?12.5:Math.max(0,1-gap/0.30)*25;
-    const roomsScore=Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0?Math.max(0,1-Math.abs(saleRooms-rooms)/2)*10:5;
+    const recencyScore=Math.max(0,1-age/tier.months)*20;
+    const surfaceScore=gap===null?10:Math.max(0,1-gap/tier.surfaceGap)*25;
+    const roomsScore=roomDiff===null?5:Math.max(0,1-roomDiff/Math.max(1,tier.roomsGap))*10;
     const sameStreet=streetKey(sale.address)===streetKey(property?.address);
-    const scoreRaw=distanceScore+recencyScore+surfaceScore+roomsScore+(sameStreet?10:0)+(Number.isFinite(Number(sale.pricePerM2))?10:0);
-    return {...sale,score:Number(Math.min(100,scoreRaw/110*100).toFixed(1)),sameStreet,surfaceGap:gap,ageMonths:Number(age.toFixed(1)),tier:tier.label};
+    const scoreRaw=distanceScore+recencyScore+surfaceScore+roomsScore+(sameStreet?5:0)+(Number.isFinite(Number(sale.pricePerM2))?10:0);
+
+    return {
+      ...sale,
+      score:Number(Math.min(100,scoreRaw/100*100).toFixed(1)),
+      sameStreet,
+      surfaceGap:gap,
+      roomDiff,
+      ageMonths:Number(age.toFixed(1)),
+      tier:tier.label
+    };
   };
+
   const sourceRows=[...(Array.isArray(market?.recentSales)?market.recentSales:[]),...(Array.isArray(local)?local:[])];
   for(const sale of sourceRows){
     const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface].join("|"));
-    if(seen.has(id))continue; seen.add(id);
+    if(seen.has(id))continue;
+    seen.add(id);
     const distanceKm=haversineKm(origin,{lat:Number(sale.lat),lon:Number(sale.lon)});
     if(distanceKm==null)continue;
     const normalized={...sale,distanceKm:Number(distanceKm.toFixed(3)),pricePerM2:Number(sale.pricePerM2||sale.price_per_m2||0)||null};
-    for(const tier of tiers){const x=scoreSale(normalized,tier);if(x){candidates.push(x);break;}}
+    // Une vente n'entre qu'une seule fois : premier niveau de critères qui la valide.
+    for(const tier of tiers){
+      const x=scoreSale(normalized,tier);
+      if(x){candidates.push(x);break;}
+    }
   }
+
   candidates.sort((a,b)=>b.score-a.score);
   const display=candidates.slice(0,12);
   const values=display.map(x=>Number(x.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
@@ -851,19 +885,22 @@ async function buildComparableSales(market,property){
   const closeSales=display.filter(x=>Number(x.distanceKm)<=0.8);
   const minPriceM2=values.length?Math.round(values[0]):null;
   const maxPriceM2=values.length?Math.round(values[values.length-1]):null;
+  const strictCount=display.filter(x=>String(x.tier).includes("critères serrés")).length;
+  const closeCount=closeSales.length;
+
   return {
     sales:display,
     sameStreet:display.filter(s=>s.sameStreet),
     median:median!=null?Math.round(median):null,
     weightedPriceM2:weightedPriceM2!=null?Math.round(weightedPriceM2):null,
     matchCount:display.length,totalCandidates:candidates.length,radiusKm,
-    closeCount:closeSales.length,minPriceM2,maxPriceM2,
+    closeCount,minPriceM2,maxPriceM2,strictCount,
     searchScope:display.length?display[display.length-1].tier:"Aucun comparable répondant aux critères",
-    origin,
-    originSource,
+    origin,originSource,
     source:"DVF local JML / PostgreSQL",
-    method:"Transactions DVF importées en base PostgreSQL ; type strict, récence ≤24 mois, surface ±30 %, pièces ±2, proximité et récence pondérées.",
-    engineVersion:"8.0.0-PG-DVF",
+    method:"Comparables priorisés sur le même type de bien, une surface proche (±15 % puis ±20 % puis ±25 %), un nombre de pièces proche (±1 puis ±2), avec priorité à la proximité et à la récence. Élargissement progressif uniquement si nécessaire.",
+    criteria:{type:typeWanted||null,surface:surface||null,rooms:rooms||null},
+    engineVersion:"8.1.0-PG-DVF-COMPARABLES",
     diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0}
   };
 }
