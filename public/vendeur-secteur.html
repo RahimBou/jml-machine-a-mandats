@@ -249,7 +249,7 @@ function renderAssets(data){
  const total=k=>cats[k]?.available===false?null:Number(cats[k]?.count||0);
  const schools=total("schools"),shops=total("commerces"),transport=total("transport"),parks=total("parks"),health=total("health");
  const proofs=[
-  ["Proximité",(parks??shops??schools) ? "Équipements accessibles" : "À vérifier"],
+  ["Proximité",[parks,shops,schools].some(v=>v!==null&&v>0) ? "Équipements accessibles" : "À vérifier"],
   ["Vie quotidienne",shops===null?"À compléter":(shops>0?shops+" commerces identifiés":"Aucun identifié")],
   ["Mobilité",transport===null?"À vérifier":(transport>0?transport+" points de transport":"Aucun identifié")],
   ["Famille / loisirs",schools!==null&&parks!==null?(schools+parks)+" repères identifiés":(schools!==null?schools+" repères scolaires":"À vérifier")]
