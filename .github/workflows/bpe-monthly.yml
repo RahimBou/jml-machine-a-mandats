@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "scripts/import-bpe.js"
-      - "data/BPE25_Ardennes.csv"
+      - "BPE25_Ardennes.csv"
       - ".github/workflows/bpe-monthly.yml"
   schedule:
     - cron: "45 4 1 * *"
