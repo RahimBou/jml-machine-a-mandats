@@ -123,3 +123,22 @@
 .seller-quick-card:nth-child(2):after{background-position:62% center!important}
 .seller-quick-card:nth-child(3):after{background-position:38% center!important}
 .seller-quick-card:nth-child(4):after{background-position:70% center!important}
+
+
+/* V2.9 — patrimoine ardennais : plusieurs villes, un visuel différent par carte */
+.seller-quick-card:nth-child(1):after{
+  background-image:linear-gradient(90deg,rgba(23,59,50,.20),rgba(23,59,50,.04)),url("https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Place_Ducale_28-54_with_terraces%2C_Charleville-M%C3%A9zi%C3%A8res.jpg/1280px-Place_Ducale_28-54_with_terraces%2C_Charleville-M%C3%A9zi%C3%A8res.jpg")!important;
+  background-position:center 48%!important;
+}
+.seller-quick-card:nth-child(2):after{
+  background-image:linear-gradient(90deg,rgba(23,59,50,.20),rgba(23,59,50,.04)),url("https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Chateau_fort_de_Sedan_depuis_les_ramparts.jpg/1280px-Chateau_fort_de_Sedan_depuis_les_ramparts.jpg")!important;
+  background-position:center 52%!important;
+}
+.seller-quick-card:nth-child(3):after{
+  background-image:linear-gradient(90deg,rgba(23,59,50,.20),rgba(23,59,50,.04)),url("https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Rocroi_%28Ardennes%29_fortifications%2C_14.JPG/1280px-Rocroi_%28Ardennes%29_fortifications%2C_14.JPG")!important;
+  background-position:center 50%!important;
+}
+.seller-quick-card:nth-child(4):after{
+  background-image:linear-gradient(90deg,rgba(23,59,50,.20),rgba(23,59,50,.04)),url("https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Charlemont_citadelle_de_Givet.jpg/1280px-Charlemont_citadelle_de_Givet.jpg")!important;
+  background-position:center 50%!important;
+}
