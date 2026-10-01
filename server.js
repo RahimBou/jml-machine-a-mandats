@@ -188,13 +188,13 @@ async function loadSsmsiSecurityDataset(){
       if(!line) continue;
       if(!header){
         header=parseCsvSemicolonLine(line).map(v=>v.replace(/^"|"$/g,""));
-        header.forEach((name,i)=>idx[name]=i);
+        header.forEach((name,i)=>{idx[String(name||"").trim().toLowerCase()]=i;});
         continue;
       }
       const row=parseCsvSemicolonLine(line);
-      const year=String(row[idx.annee]||"");
+      const year=String(row[idx.annee]||row[idx.annee_donnees]||"").trim();
       if(year!=="2025") continue;
-      const code=String(row[idx.CODGEO_2025]||"").trim();
+      const code=String(row[idx.codgeo_2026]||row[idx.codgeo_2025]||row[idx.codgeo]||"").trim();
       const indicator=normalizeSecurityIndicator(row[idx.indicateur]);
       if(!code || !indicator) continue;
       if(!ssmsiSecurityCache.has(code)) ssmsiSecurityCache.set(code,{year:2025,indicators:{},population:parseNumericLoose(row[idx.insee_pop]),logements:parseNumericLoose(row[idx.insee_log])});
@@ -206,7 +206,7 @@ async function loadSsmsiSecurityDataset(){
         count:parseNumericLoose(row[idx.nombre]),
         rate:parseNumericLoose(row[idx.taux_pour_mille]),
         status:String(row[idx.est_diffuse]||"").trim(),
-        available:String(row[idx.est_diffuse]||"").trim()==="diff"
+        available:String(row[idx.est_diffuse]||"").trim().toLowerCase()==="diff"
       };
       loaded++;
     }
