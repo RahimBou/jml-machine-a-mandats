@@ -1,0 +1,141 @@
+const fs = require("fs");
+const path = require("path");
+const zlib = require("zlib");
+const { Pool } = require("pg");
+
+const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
+if (!DATABASE_URL) throw new Error("DATABASE_URL manquante.");
+
+const YEARS = String(process.env.DVF_IMPORT_YEARS || "2025,2024,2023,2022")
+  .split(",").map(x => Number(x.trim())).filter(Number.isInteger);
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false },
+  max: 2,
+  connectionTimeoutMillis: 15000
+});
+
+function parseCsvLine(line){
+  const out=[]; let cur="", quoted=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(quoted && line[i+1]==='"'){cur+='"';i++;}
+      else quoted=!quoted;
+    } else if(ch===","&&!quoted){out.push(cur);cur="";}
+    else cur+=ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+function num(v){ const n=Number(String(v??"").replace(",", ".")); return Number.isFinite(n)?n:null; }
+function text(v){ return String(v??"").trim() || null; }
+
+async function importYear(client, year){
+  const url="https://files.data.gouv.fr/geo-dvf/latest/csv/"+year+"/departements/08.csv.gz";
+  console.log("DVF: téléchargement",year,url);
+  const response=await fetch(url,{headers:{"Accept":"application/gzip","User-Agent":"JML-Projet-Vendeur-DVF-Importer/1.0"},signal:AbortSignal.timeout(120000)});
+  if(!response.ok) throw new Error("DVF "+year+" HTTP "+response.status);
+  const raw=zlib.gunzipSync(Buffer.from(await response.arrayBuffer())).toString("utf8");
+  const lines=raw.split(/\r?\n/).filter(Boolean);
+  if(!lines.length) return 0;
+  const header=parseCsvLine(lines[0]).map(v=>v.trim());
+  const idx=Object.fromEntries(header.map((v,i)=>[v,i]));
+  const required=["id_mutation","date_mutation","nature_mutation","valeur_fonciere","type_local","surface_reelle_bati","latitude","longitude","code_commune","nom_commune"];
+  for(const key of required) if(idx[key]===undefined) throw new Error("Colonne DVF absente: "+key);
+
+  await client.query("DELETE FROM jml_dvf_sales WHERE source_year=$1",[year]);
+
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const r=parseCsvLine(lines[i]);
+    if(r[idx.nature_mutation]!=="Vente") continue;
+    const type=r[idx.type_local];
+    if(type!=="Maison"&&type!=="Appartement") continue;
+    const price=num(r[idx.valeur_fonciere]), surface=num(r[idx.surface_reelle_bati]);
+    const lat=num(r[idx.latitude]), lon=num(r[idx.longitude]);
+    if(!(price>0&&surface>0&&lat!=null&&lon!=null)) continue;
+    rows.push({
+      mutation_id:text(r[idx.id_mutation])||[r[idx.date_mutation],r[idx.adresse_numero],r[idx.adresse_nom_voie],r[idx.id_parcelle]].join("|"),
+      sale_date:text(r[idx.date_mutation]),
+      property_type:type,
+      price,surface,
+      rooms:num(r[idx.nombre_pieces_principales]),
+      land_surface:num(r[idx.surface_terrain]),
+      latitude:lat,longitude:lon,
+      address:[r[idx.adresse_numero],r[idx.adresse_suffixe],r[idx.adresse_nom_voie]].map(text).filter(Boolean).join(" ")||null,
+      street:text(r[idx.adresse_nom_voie]),
+      postal_code:text(r[idx.code_postal]),
+      commune_code:text(r[idx.code_commune]),
+      commune_name:text(r[idx.nom_commune]),
+      parcel_id:text(r[idx.id_parcelle]),
+      source_year:year
+    });
+  }
+
+  const unique=new Map();
+  for(const r of rows){
+    const key=[r.mutation_id,r.property_type,r.price,r.surface,r.address||"",r.parcel_id||""].join("|");
+    if(!unique.has(key)) unique.set(key,r);
+  }
+  const data=[...unique.values()];
+  const chunk=500;
+  for(let i=0;i<data.length;i+=chunk){
+    const part=data.slice(i,i+chunk);
+    const values=[], params=[];
+    part.forEach((r,k)=>{
+      const b=k*18;
+      values.push("(" + Array.from({length:18},(_,j)=>"$"+(b+j+1)).join(",") + ")");
+      params.push(r.mutation_id,r.sale_date,r.property_type,r.price,r.surface,r.rooms,r.land_surface,r.latitude,r.longitude,r.address,r.street,r.postal_code,r.commune_code,r.commune_name,r.parcel_id,r.source_year,r.price/r.surface,"DVF");
+    });
+    await client.query(`INSERT INTO jml_dvf_sales
+      (mutation_id,sale_date,property_type,price,surface,rooms,land_surface,latitude,longitude,address,street,postal_code,commune_code,commune_name,parcel_id,source_year,price_per_m2,source)
+      VALUES ${values.join(",")}
+      ON CONFLICT DO NOTHING`,params);
+    process.stdout.write("\rDVF "+year+": "+Math.min(i+chunk,data.length)+"/"+data.length);
+  }
+  console.log("\nDVF "+year+": "+data.length+" mutations résidentielles importées.");
+  return data.length;
+}
+
+async function main(){
+  const client=await pool.connect();
+  try{
+    await client.query(`CREATE TABLE IF NOT EXISTS jml_dvf_sales (
+      id BIGSERIAL PRIMARY KEY,
+      mutation_id TEXT NOT NULL,
+      sale_date DATE,
+      property_type TEXT NOT NULL,
+      price NUMERIC NOT NULL,
+      surface NUMERIC NOT NULL,
+      rooms NUMERIC,
+      land_surface NUMERIC,
+      latitude DOUBLE PRECISION NOT NULL,
+      longitude DOUBLE PRECISION NOT NULL,
+      address TEXT,
+      street TEXT,
+      postal_code TEXT,
+      commune_code TEXT,
+      commune_name TEXT,
+      parcel_id TEXT,
+      source_year INTEGER NOT NULL,
+      price_per_m2 NUMERIC NOT NULL,
+      source TEXT NOT NULL DEFAULT 'DVF',
+      imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(mutation_id,property_type,price,surface,address,parcel_id)
+    )`);
+    await client.query("CREATE INDEX IF NOT EXISTS idx_jml_dvf_commune_date ON jml_dvf_sales(commune_code,sale_date DESC)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_jml_dvf_geo_date ON jml_dvf_sales(latitude,longitude,sale_date DESC)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_jml_dvf_type_surface ON jml_dvf_sales(property_type,surface)");
+    for(const year of YEARS) await importYear(client,year);
+    const count=await client.query("SELECT COUNT(*)::int AS count, MAX(imported_at) AS imported_at FROM jml_dvf_sales");
+    console.log("DVF import terminé:",count.rows[0]);
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
+main().catch(async e=>{ console.error("DVF import FAILED:",e); try{await pool.end();}catch(_){} process.exit(1); });
