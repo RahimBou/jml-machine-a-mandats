@@ -7,8 +7,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.4";
-const BUILD_MARKER = "dvf-postgres-monthly-05";
+const VERSION = "3.4.5";
+const BUILD_MARKER = "dvf-postgres-monthly-06";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -741,6 +741,21 @@ app.get("/api/territory-comparables", async (req,res) => {
   }
 });
 
+app.get("/api/territory-nearby", async (req,res) => {
+  const city=clean(req.query.city,100);
+  const address=clean(req.query.address,180);
+  if(!city) return res.status(400).json({ok:false,code:"JML-NEARBY-400",error:"Commune requise."});
+  try{
+    const commune=await resolveTerritoryCommune(city,address);
+    if(!commune) return res.status(422).json({ok:false,code:"JML-NEARBY-422",error:"Commune introuvable."});
+    const nearby=await getNearbyCommunes(commune);
+    return res.json({ok:true,nearby,commune:{code:commune.code,nom:commune.nom}});
+  }catch(error){
+    console.warn("JML territory-nearby:",error.message);
+    return res.status(200).json({ok:false,nearby:[],code:"JML-NEARBY-DEGRADED",message:"Les communes proches sont temporairement indisponibles."});
+  }
+});
+
 app.get("/api/territory-summary", async (req,res) => {
   const city=clean(req.query.city,100);
   const address=clean(req.query.address,180);
@@ -1071,9 +1086,9 @@ app.get("/api/territory-enrichment", async (req,res) => {
   try{
     const commune={code,centre:{coordinates:[lon,lat]}};
     const [security,risks,environment]=await Promise.all([
-      Promise.race([getSecurityData(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données SSMSI prennent trop de temps à répondre.",year:2025}),9000))]),
-      Promise.race([getGeoRisks(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données Géorisques sont temporairement indisponibles."}),5000))]),
-      Promise.race([getLocalEnvironment(commune),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les services locaux sont temporairement indisponibles."}),5000))])
+      Promise.race([getSecurityData(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données SSMSI prennent trop de temps à répondre.",year:2025}),14000))]),
+      Promise.race([getGeoRisks(code),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les données Géorisques sont temporairement indisponibles."}),9000))]),
+      Promise.race([getLocalEnvironment(commune),new Promise(resolve=>setTimeout(()=>resolve({available:false,message:"Les services locaux sont temporairement indisponibles."}),9000))])
     ]);
     return res.json({ok:true,security,risks,environment});
   }catch(error){
