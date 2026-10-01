@@ -461,7 +461,7 @@ function renderSellerReading(r){
  const commune=d.city||"la commune";
  const base=r.basePriceM2;
  const baseText=base!=null?Math.round(Number(base)).toLocaleString("fr-FR")+" €/m²":"un repère de marché";
- const communalM2=type==="Maison"?Number(m.housePrice||m.communalPrice):Number(m.communalPrice);
+ const communalM2=type==="Maison"?Number(m.housePrice||m.communalPrice):type==="Appartement"?Number(m.apartmentPrice||m.communalPrice):Number(m.communalPrice);
  const communalText=Number.isFinite(communalM2)&&communalM2>0?Math.round(communalM2).toLocaleString("fr-FR")+" €/m²":"non disponible";
  const gap=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?((Number(base)/communalM2-1)*100):null;
  const gapText=gap!=null?(gap>=0?"+":"")+gap.toFixed(1).replace(".",",")+" %":"";
