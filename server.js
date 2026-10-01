@@ -1437,6 +1437,11 @@ async function initDb() {
       rooms TEXT,
       dpe TEXT,
       terrain TEXT,
+      owner_data JSONB NOT NULL DEFAULT '[]'::jsonb,
+      expected_price TEXT,
+      sale_reason TEXT,
+      already_estimated BOOLEAN,
+      already_professional BOOLEAN,
       checklist JSONB NOT NULL DEFAULT '[]'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -1507,6 +1512,12 @@ async function initDb() {
     created_at:"TIMESTAMPTZ NOT NULL DEFAULT NOW()",
     updated_at:"TIMESTAMPTZ NOT NULL DEFAULT NOW()"
   };
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS owner_data JSONB NOT NULL DEFAULT '[]'::jsonb`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS expected_price TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS sale_reason TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS already_estimated BOOLEAN`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS already_professional BOOLEAN`);
+
   await db(`ALTER TABLE jml_activities ADD COLUMN IF NOT EXISTS outcome TEXT`);
   await db(`ALTER TABLE jml_activities ADD COLUMN IF NOT EXISTS appointment_at TIMESTAMPTZ`);
   await db(`ALTER TABLE jml_activities ADD COLUMN IF NOT EXISTS appointment_location TEXT`);
@@ -1994,14 +2005,14 @@ async function createSellerSpace(data, prospectId){
     id:newId(), accessToken:newSellerSpaceToken(), prospectId:prospectId||null,
     city:clean(data.city,100), address:clean(data.address,180), propertyType:clean(data.propertyType,60),
     horizon:clean(data.horizon,20), surface:clean(data.surface,40), rooms:clean(data.rooms,40),
-    dpe:clean(data.dpe,10), terrain:clean(data.terrain,40), checklist:[], createdAt:now(), updatedAt:now()
+    dpe:clean(data.dpe,10), terrain:clean(data.terrain,40), ownerData:Array.isArray(data.ownerData)?data.ownerData.slice(0,10):[], expectedPrice:clean(data.expectedPrice,30), saleReason:clean(data.saleReason,1000), alreadyEstimated:typeof data.alreadyEstimated==="boolean"?data.alreadyEstimated:null, alreadyProfessional:typeof data.alreadyProfessional==="boolean"?data.alreadyProfessional:null, checklist:[], createdAt:now(), updatedAt:now()
   };
   if(pool){
     await db(
       `INSERT INTO jml_seller_spaces
-       (id,access_token,prospect_id,city,address,property_type,horizon,surface,rooms,dpe,terrain,checklist,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-      [space.id,space.accessToken,space.prospectId,space.city||null,space.address||null,space.propertyType||null,space.horizon||null,space.surface||null,space.rooms||null,space.dpe||null,space.terrain||null,JSON.stringify(space.checklist),space.createdAt,space.updatedAt]
+       (id,access_token,prospect_id,city,address,property_type,horizon,surface,rooms,dpe,terrain,owner_data,expected_price,sale_reason,already_estimated,already_professional,checklist,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+      [space.id,space.accessToken,space.prospectId,space.city||null,space.address||null,space.propertyType||null,space.horizon||null,space.surface||null,space.rooms||null,space.dpe||null,space.terrain||null,JSON.stringify(space.ownerData),space.expectedPrice||null,space.saleReason||null,space.alreadyEstimated,space.alreadyProfessional,JSON.stringify(space.checklist),space.createdAt,space.updatedAt]
     );
   }else memory.sellerSpaces.set(space.accessToken,space);
   return space;
@@ -2012,7 +2023,7 @@ function sellerSpacePublic(row){
   return {
     id:row.id, accessToken:row.access_token||row.accessToken, prospectId:row.prospect_id||row.prospectId||null,
     city:row.city||"", address:row.address||"", propertyType:row.property_type||row.propertyType||"",
-    horizon:row.horizon||"unknown", surface:row.surface||"", rooms:row.rooms||"", dpe:row.dpe||"", terrain:row.terrain||"",
+    horizon:row.horizon||"unknown", surface:row.surface||"", rooms:row.rooms||"", dpe:row.dpe||"", terrain:row.terrain||"", ownerData:Array.isArray(row.owner_data)?row.owner_data:[], expectedPrice:row.expected_price||"", saleReason:row.sale_reason||"", alreadyEstimated:row.already_estimated, alreadyProfessional:row.already_professional,
     checklist:Array.isArray(row.checklist)?row.checklist:[], createdAt:row.created_at||row.createdAt, updatedAt:row.updated_at||row.updatedAt
   };
 }
@@ -2034,19 +2045,19 @@ app.get("/api/seller-space/:token", async (req,res)=>{
 
 app.patch("/api/seller-space/:token", async (req,res)=>{
   const token=clean(req.params.token,100), b=req.body||{};
-  const fields={city:clean(b.city,100),address:clean(b.address,180),propertyType:clean(b.propertyType,60),horizon:clean(b.horizon,20),surface:clean(b.surface,40),rooms:clean(b.rooms,40),dpe:clean(b.dpe,10),terrain:clean(b.terrain,40)};
+  const fields={city:clean(b.city,100),address:clean(b.address,180),propertyType:clean(b.propertyType,60),horizon:clean(b.horizon,20),surface:clean(b.surface,40),rooms:clean(b.rooms,40),dpe:clean(b.dpe,10),terrain:clean(b.terrain,40),ownerData:Array.isArray(b.ownerData)?b.ownerData.slice(0,10).map(o=>({firstName:clean(o?.firstName,80),lastName:clean(o?.lastName,80),phone:clean(o?.phone,40),email:cleanEmail(o?.email)})):[],expectedPrice:clean(b.expectedPrice,30),saleReason:clean(b.saleReason,1000),alreadyEstimated:b.alreadyEstimated===true||b.alreadyEstimated==="Oui"?true:b.alreadyEstimated===false||b.alreadyEstimated==="Non"?false:null,alreadyProfessional:b.alreadyProfessional===true||b.alreadyProfessional==="Oui"?true:b.alreadyProfessional===false||b.alreadyProfessional==="Non"?false:null};
   const checklist=Array.isArray(b.checklist)?b.checklist.map(x=>Number(x)).filter(x=>Number.isInteger(x)&&x>=1&&x<=6).slice(0,6):null;
   try{
     if(pool){
-      const q=await db(`UPDATE jml_seller_spaces SET city=$2,address=$3,property_type=$4,horizon=$5,surface=$6,rooms=$7,dpe=$8,terrain=$9,
-        checklist=COALESCE($10::jsonb,checklist),updated_at=NOW() WHERE access_token=$1 RETURNING *`,
-        [token,fields.city||null,fields.address||null,fields.propertyType||null,fields.horizon||"unknown",fields.surface||null,fields.rooms||null,fields.dpe||null,fields.terrain||null,checklist?JSON.stringify(checklist):null]);
+      const q=await db(`UPDATE jml_seller_spaces SET city=$2,address=$3,property_type=$4,horizon=$5,surface=$6,rooms=$7,dpe=$8,terrain=$9,owner_data=$10::jsonb,expected_price=$11,sale_reason=$12,already_estimated=$13,already_professional=$14,
+        checklist=COALESCE($15::jsonb,checklist),updated_at=NOW() WHERE access_token=$1 RETURNING *`,
+        [token,fields.city||null,fields.address||null,fields.propertyType||null,fields.horizon||"unknown",fields.surface||null,fields.rooms||null,fields.dpe||null,fields.terrain||null,JSON.stringify(fields.ownerData),fields.expectedPrice||null,fields.saleReason||null,fields.alreadyEstimated,fields.alreadyProfessional,checklist?JSON.stringify(checklist):null]);
       if(!q.rowCount) return apiError(res,404,"JML-S004","Espace vendeur introuvable.");
       return res.json({ok:true,space:sellerSpacePublic(q.rows[0])});
     }
     const space=memory.sellerSpaces.get(token);
     if(!space) return apiError(res,404,"JML-S004","Espace vendeur introuvable.");
-    Object.assign(space,fields); if(checklist) space.checklist=checklist; space.updatedAt=now(); memory.sellerSpaces.set(token,space);
+    Object.assign(space,{...fields,ownerData:fields.ownerData,expectedPrice:fields.expectedPrice,saleReason:fields.saleReason,alreadyEstimated:fields.alreadyEstimated,alreadyProfessional:fields.alreadyProfessional}); if(checklist) space.checklist=checklist; space.updatedAt=now(); memory.sellerSpaces.set(token,space);
     return res.json({ok:true,space:sellerSpacePublic(space)});
   }catch(e){return unexpected(res,"JML-S005","Mise à jour de votre espace vendeur indisponible.",e);}
 });
