@@ -633,8 +633,19 @@ async function buildComparableSales(market,property){
   const city=String(property?.city||market?.city||"").trim();
   const typeWanted=classifyDvfType(property?.propertyType,"");
   const surface=Number(property?.surface), rooms=Number(property?.rooms);
-  const origin=await geocodeAddress(property?.address,city);
-  if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Adresse non géolocalisée",origin:null,message:"L'adresse n'a pas pu être géolocalisée précisément."};
+  let origin=await geocodeAddress(property?.address,city);
+  let originSource="Adresse";
+  if(!origin){
+    try{
+      const commune=await resolveTerritoryCommune(city,"");
+      const coords=commune?.centre?.coordinates;
+      if(Array.isArray(coords)&&coords.length>=2){
+        origin={lat:Number(coords[1]),lon:Number(coords[0])};
+        originSource="Centre de la commune";
+      }
+    }catch(_e){}
+  }
+  if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Localisation indisponible",origin:null,message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."};
   const tiers=[{radius:800,months:12,label:"800 m / 12 mois"},{radius:1500,months:18,label:"1,5 km / 18 mois"},{radius:3000,months:24,label:"3 km / 24 mois"}];
   const local=await getLocalDvfComparables(origin,3);
   const seen=new Set(), candidates=[];
@@ -680,6 +691,7 @@ async function buildComparableSales(market,property){
     matchCount:display.length,totalCandidates:candidates.length,radiusKm,
     searchScope:display.length?display[display.length-1].tier:"Aucun comparable répondant aux critères",
     origin,
+    originSource,
     source:"DVF local JML / PostgreSQL",
     method:"Transactions DVF importées en base PostgreSQL ; type strict, récence ≤24 mois, surface ±30 %, pièces ±2, proximité et récence pondérées.",
     engineVersion:"8.0.0-PG-DVF",
@@ -992,8 +1004,14 @@ app.get("/api/territory-assets", async (req,res) => {
     // Ne dépend plus de territory-summary : le bloc "Atouts" doit pouvoir fonctionner seul.
     if(!Number.isFinite(lat)||!Number.isFinite(lon)){
       const geo=await geocodeAddress(address,city);
-      if(!geo) return res.status(404).json({ok:false,available:false,error:"Adresse non géolocalisée.",message:"L'adresse n'a pas pu être géolocalisée précisément."});
-      lat=Number(geo.lat); lon=Number(geo.lon);
+      if(geo){
+        lat=Number(geo.lat); lon=Number(geo.lon);
+      }else{
+        const commune=await resolveTerritoryCommune(city,"");
+        const coords=commune?.centre?.coordinates;
+        if(!Array.isArray(coords)||coords.length<2) return res.status(404).json({ok:false,available:false,error:"Localisation indisponible.",message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."});
+        lon=Number(coords[0]); lat=Number(coords[1]);
+      }
     }
     const data=await getNearbyAssets(lat,lon);
     return res.json({ok:true,lat,lon,...data});
