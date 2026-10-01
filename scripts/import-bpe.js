@@ -76,7 +76,7 @@ async function main(){
       try{Readable.fromWeb(response.body).pipe(file);}catch(error){reject(error);}
     });
 
-    const csvStream=spawn("unzip",["-p",zipPath],{stdio:["ignore","pipe","pipe"]});
+    const csvStream=spawn("unzip",["-p",zipPath,"BPE25.csv"],{stdio:["ignore","pipe","pipe"]});
     let unzipErr="";
     csvStream.stderr.on("data",d=>{unzipErr+=String(d);});
     const input=csvStream.stdout;
@@ -122,7 +122,7 @@ async function main(){
     }
     if(batch.length){await insertBatch(client,batch);inserted+=batch.length;}
     await client.query("COMMIT");
-    await new Promise((resolve,reject)=>csvStream.on("close",code=>code===0?resolve():reject(new Error("unzip failed: "+unzipErr))));
+    await new Promise((resolve,reject)=>csvStream.on("close",code=>code===0?resolve():reject(new Error("Extraction BPE25.csv impossible: "+unzipErr))));
     try{fs.unlinkSync(zipPath);}catch(_){}
     console.log(`BPE terminé : supprimés=${deleted}, insérés=${inserted}`);
   }catch(error){
