@@ -7,8 +7,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.0";
-const BUILD_MARKER = "dvf-postgres-monthly-01";
+const VERSION = "3.4.1";
+const BUILD_MARKER = "dvf-postgres-monthly-02";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -647,7 +647,13 @@ async function buildComparableSales(market,property){
   }
   if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Localisation indisponible",origin:null,message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."};
   const tiers=[{radius:800,months:12,label:"800 m / 12 mois"},{radius:1500,months:18,label:"1,5 km / 18 mois"},{radius:3000,months:24,label:"3 km / 24 mois"}];
-  const local=await getLocalDvfComparables(origin,3);
+  let local=[];
+  try{
+    local=await getLocalDvfComparables(origin,3);
+  }catch(error){
+    console.warn("JML comparables DVF local isolés:",error.message);
+    local=[];
+  }
   const seen=new Set(), candidates=[];
   const now=Date.now();
   const streetKey=v=>normalizeAddress(v).replace(/\b\d+\b/g,"").trim();
@@ -745,7 +751,7 @@ app.get("/api/territory-summary", async (req,res) => {
           sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,
           radiusKm:null,searchScope:"Recherche trop lente — données communales conservées",origin:null,
           message:"La recherche fine autour de l’adresse a dépassé le délai. Les données communales restent disponibles."
-        }),15000))
+        }),18000))
       ]);
     }catch(error){
       console.warn("JML comparables isolated:",error.message);
