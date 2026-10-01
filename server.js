@@ -523,6 +523,38 @@ async function resolveTerritoryCommune(city,address){
   return null;
 }
 
+app.get("/api/commune-market", async (req,res) => {
+  const city=clean(req.query.city,100);
+  if(!city) return res.status(400).json({
+    ok:false,
+    code:"JML-MARKET-400",
+    error:"Commune requise."
+  });
+  try{
+    const commune=await resolveTerritoryCommune(city,"");
+    if(!commune) return res.status(422).json({
+      ok:false,
+      code:"JML-MARKET-422",
+      error:"Commune introuvable. Vérifiez le nom de la commune ou le code postal."
+    });
+    const market=await getCommuneMarketData(commune.nom,commune.code);
+    return res.json({
+      ok:true,
+      ...market,
+      commune:{code:commune.code,nom:commune.nom}
+    });
+  }catch(error){
+    const detail=String(error?.message||error||"Erreur inconnue").slice(0,500);
+    console.error("JML commune-market:",detail);
+    return res.status(500).json({
+      ok:false,
+      code:"JML-MARKET-500",
+      error:"Erreur lors du chargement du marché communal.",
+      detail
+    });
+  }
+});
+
 app.get("/api/territory-commune", async (req,res) => {
   const city=clean(req.query.city,100);
   const address=clean(req.query.address,180);
