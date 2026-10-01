@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dfe8e1"/><stop offset=".62" stop-color="#f4ead5"/><stop offset="1" stop-color="#d6c39b"/></linearGradient>
+<linearGradient id="fac" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#eadbc0"/><stop offset="1" stop-color="#c7a97a"/></linearGradient>
+<linearGradient id="road" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#756d62"/><stop offset="1" stop-color="#3e5149"/></linearGradient>
+<filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-opacity=".2"/></filter>
+</defs>
+<rect width="1400" height="700" fill="url(#sky)"/>
+<circle cx="1130" cy="105" r="64" fill="#c9a85e" opacity=".55"/>
+<!-- Place-inspired symmetrical Ardennes facades -->
+<g filter="url(#shadow)">
+<path d="M90 465V180l110-72 110 72v285Z" fill="url(#fac)"/><path d="M65 190l135-104 135 104-18 27-117-89-117 89Z" fill="#173b32"/>
+<path d="M360 465V145l115-72 115 72v320Z" fill="#e9d9bc"/><path d="M335 157L475 55l140 102-18 28-122-87-122 87Z" fill="#173b32"/>
+<path d="M1060 465V145l115-72 115 72v320Z" fill="#e9d9bc"/><path d="M1035 157L1175 55l140 102-18 28-122-87-122 87Z" fill="#173b32"/>
+<path d="M1330 465V180l-110-72-110 72v285Z" fill="url(#fac)"/><path d="M1355 190l-135-104-135 104 18 27 117-89 117 89Z" fill="#173b32"/>
+</g>
+<!-- windows and arcades -->
+<g fill="#b8d0ca" stroke="#173b32" stroke-width="7">
+<rect x="125" y="230" width="48" height="72"/><rect x="217" y="230" width="48" height="72"/>
+<rect x="405" y="205" width="52" height="76"/><rect x="493" y="205" width="52" height="76"/>
+<rect x="1105" y="205" width="52" height="76"/><rect x="1193" y="205" width="52" height="76"/>
+<rect x="1135" y="230" width="48" height="72"/><rect x="1227" y="230" width="48" height="72"/>
+</g>
+<g fill="#f4ead5" stroke="#173b32" stroke-width="7">
+<path d="M115 365q0-45 35-45t35 45v100h-70Z"/><path d="M207 365q0-45 35-45t35 45v100h-70Z"/>
+<path d="M395 350q0-50 38-50t38 50v115h-76Z"/><path d="M483 350q0-50 38-50t38 50v115h-76Z"/>
+<path d="M1095 350q0-50 38-50t38 50v115h-76Z"/><path d="M1183 350q0-50 38-50t38 50v115h-76Z"/>
+<path d="M1125 365q0-45 35-45t35 45v100h-70Z"/><path d="M1217 365q0-45 35-45t35 45v100h-70Z"/>
+</g>
+<!-- central square -->
+<path d="M0 520 Q350 455 700 510 Q1050 455 1400 520 V700H0Z" fill="url(#road)"/>
+<path d="M620 520h160l85 180H535Z" fill="#d4c7ad" opacity=".85"/>
+<path d="M700 500V700" stroke="#c9a85e" stroke-width="6" stroke-dasharray="12 12"/>
+<g fill="#c9a85e"><circle cx="700" cy="495" r="15"/><circle cx="700" cy="430" r="10"/><circle cx="700" cy="365" r="8"/></g>
+<g fill="#173b32"><rect x="0" y="520" width="1400" height="10" opacity=".25"/></g>
+</svg>
