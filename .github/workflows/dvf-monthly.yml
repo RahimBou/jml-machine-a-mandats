@@ -19,4 +19,4 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_SSL: "true"
-          DVF_IMPORT_YEARS: "2025,2024,2023,2022"
+          DVF_IMPORT_YEARS: "2026,2025,2024,2023"
