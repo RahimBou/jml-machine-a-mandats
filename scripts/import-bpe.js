@@ -83,8 +83,7 @@ async function main(){
     list.stdout.on("data",d=>{listOut+=String(d);});
     list.stderr.on("data",d=>{listErr+=String(d);});
     await new Promise((resolve,reject)=>list.on("close",code=>{
-      if(code!==0)return reject(new Error("Lecture de l’archive BPE impossible: "+listErr));
-      if(!new RegExp("\\b"+EXPECTED_MEMBER.replace(/[.*+?^$()|[\]\\]/g,"\\    const csvStream=spawn("unzip",["-p",zipPath,"BPE25.csv"],{stdio:["ignore","pipe","pipe"]});")+"\\b").test(listOut)){
+      if(code!==0)return reject(new Error("Lecture de l’archive BPE impossible: "+listErr));      if(!listOut.includes(EXPECTED_MEMBER)){
         return reject(new Error("Le fichier "+EXPECTED_MEMBER+" est absent de l’archive INSEE."));
       }
       resolve();
