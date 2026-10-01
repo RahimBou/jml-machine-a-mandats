@@ -392,11 +392,16 @@ async function run(){
 
  // 2. Comparables : appel séparé.
  try{
-  const territory=await getData("/api/territory-summary?"+base.toString(),20000,"Comparables / territoire");
-  renderComps(territory.market?.comparables||{});
-  if(territory.sellerReference) renderReference(territory.sellerReference);
-  if(Array.isArray(territory.nearby))renderNearby(territory.nearby);
-  $("#status").textContent=territory.market?.found?"Données marché + comparables chargés":"Page chargée · comparables traités";
+  const territory=await getData("/api/territory-comparables?"+base.toString(),20000,"Comparables / territoire");
+  renderComps(territory.comparables||{});
+  if(territory.ok!==false) $("#status").textContent="Données marché + comparables chargés";
+  else $("#status").textContent="Marché communal chargé · comparables en mode dégradé";
+  try{
+    const nearby=await getData("/api/territory-summary?"+new URLSearchParams({city:d.city,address:d.address}).toString(),8000,"Communes proches");
+    if(Array.isArray(nearby.nearby))renderNearby(nearby.nearby);
+  }catch(_nearbyError){
+    $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
+  }
  }catch(e){
   addDiag("Comparables / territoire",e.code||"JML-COMP-CLIENT",e.message||"Erreur");
   $("#comps").innerHTML='<div class="error"><b>'+esc(e.code||"JML-COMP-CLIENT")+'</b> · La recherche autour de l’adresse a échoué ou dépassé son délai. Les données communales restent indépendantes.</div>';
