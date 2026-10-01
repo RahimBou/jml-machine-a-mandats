@@ -287,7 +287,7 @@ function addDiag(source,code,detail){
  diagnostics.push({source,code,detail:String(detail||"")});
  const box=$("#diagRows");
  if(box) box.innerHTML=
-  "<div class="asset-intro"><b>5 repères de proximité vérifiés</b><p>La sélection retient les éléments les plus proches et les plus lisibles pour un acquéreur. Ils décrivent l'environnement ; ils ne participent pas directement au calcul du prix.</p></div>"+
+  '<div class="asset-intro"><b>5 repères de proximité vérifiés</b><p>La sélection retient les éléments les plus proches et les plus lisibles pour un acquéreur. Ils décrivent l'environnement ; ils ne participent pas directement au calcul du prix.</p></div>'+
   '<div class="highlight-list">'+highlights.map((x,i)=>
     '<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>'
   ).join("")+'</div>'+
