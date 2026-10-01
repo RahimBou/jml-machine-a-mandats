@@ -1281,14 +1281,21 @@ app.get("/api/territory-summary", async (req,res) => {
       }
     });
   }catch(error){
-    console.error("JML territory-summary fatal:",error);
+    const detail=String(error?.message||error||"Erreur inconnue").slice(0,500);
+    const code="JML-TERRITORY-500";
+    console.error("JML territory-summary fatal:",{code,stage,detail,stack:error?.stack});
     return res.status(500).json({
       ok:false,
       error:"Erreur interne du module Mon secteur.",
+      code,
       stage,
-      detail:String(error?.message||error||"Erreur inconnue").slice(0,300),
+      detail,
       version:VERSION,
-      build:BUILD_MARKER
+      build:BUILD_MARKER,
+      diagnostics:{
+        stage,
+        likelySource:stage==="resolve-commune"?"Géo API / Géoplateforme":stage==="market"?"Marché / DVF / Estimus":stage==="comparables"?"Géocodage adresse / DVF local / Cerema":"Calcul Mon secteur"
+      }
     });
   }
 });

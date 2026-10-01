@@ -28,7 +28,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:17px}.box{background:#f6f1e7;border-radius:13px;padding:13px}.box label{display:block;font-size:8px;text-transform:uppercase;font-weight:900;color:#7a827d}.box strong{display:block;font-size:15px;margin-top:6px}.map{display:inline-block;margin-top:12px;color:var(--g);font-size:10px;font-weight:900}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric{background:#f7f2e8;border:1px solid #e8dfcf;border-radius:14px;padding:14px}.metric label{font-size:8px;text-transform:uppercase;font-weight:900;color:#7a827d}.metric strong{display:block;font-size:22px;margin:7px 0 3px}.metric small{font-size:8px;color:var(--muted)}
 .types{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:9px;margin-top:9px}.type{border:1px solid var(--line);border-radius:14px;padding:13px}.type b{font-size:11px}.type strong{display:block;font-size:17px;margin-top:7px}.type small{font-size:8px;color:var(--muted)}
-.message{margin-top:10px;border-radius:13px;padding:12px;background:#eef2ed;color:#52635a;font-size:9px;line-height:1.55}.message.bad{background:#f6e9e5;color:var(--bad);border:1px solid #e4cec7}.diag{margin-top:10px;border:1px dashed #d6cbb8;border-radius:13px;background:#fbf8f1;padding:11px}.diag summary{cursor:pointer;font-size:9px;font-weight:900;color:#5b675f}.diag-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #eee6d9;font-size:8px}.diag-row:first-child{border-top:0}.diag-code{font-weight:900;color:#8a5147}.diag-source{font-weight:900;color:#52635a}
+.message{margin-top:10px;border-radius:13px;padding:12px;background:#eef2ed;color:#52635a;font-size:9px;line-height:1.55}.message.bad{background:#f6e9e5;color:var(--bad);border:1px solid #e4cec7}
 .history{margin-top:17px}.history h3{font-size:13px;margin:0}.bars{height:145px;display:flex;align-items:flex-end;gap:6px;border-bottom:1px solid #d9d0c0;padding:0 3px;margin-top:10px}.bar{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;text-align:center}.bar i{display:block;background:#a9894d;border-radius:5px 5px 0 0;min-height:3px}.bar em{font-size:7px;color:var(--muted);font-style:normal;margin-bottom:3px}.bar b{font-size:7px;color:#5b574e;margin-top:4px}
 .reference{display:grid;grid-template-columns:1.05fr .95fr;gap:10px}.ref-main{background:var(--g);color:#fff;border-radius:15px;padding:17px}.ref-main h3{font-size:13px;margin:0}.ref-value{font:700 29px Georgia,serif;color:var(--gold);margin:9px 0 4px}.ref-main p{font-size:9px;line-height:1.55;color:#dbe7e0;margin:0}.ref-list{display:grid;gap:8px}.ref-row{background:#faf6ee;border:1px solid var(--line);border-radius:12px;padding:11px}.ref-row b{font-size:10px}.ref-row span{display:block;color:var(--muted);font-size:9px;margin-top:4px}
 .sales{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.sale{background:#faf6ee;border:1px solid var(--line);border-radius:13px;padding:12px}.sale-top{display:flex;justify-content:space-between;gap:7px}.sale-top b{font-size:10px}.price{font-size:10px;font-weight:900;color:#8a6c2e}.sale p{font-size:8.5px;line-height:1.55;color:var(--muted);margin:7px 0}.tag{display:inline-block;background:#eaf0e9;color:#52635a;border-radius:999px;padding:5px 7px;font-size:7px;font-weight:900}
@@ -71,7 +71,6 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
    <p>On ne regarde pas seulement le prix au m² : on identifie aussi les éléments du quotidien qu'un acheteur peut valoriser autour de l'adresse.</p>
   </div>
   <div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
-  <details class="diag" id="diagnostics"><summary>🔎 Diagnostic des sources</summary><div id="diagRows"><div class="diag-row"><span>Initialisation</span><b class="diag-code">JML-D000</b></div></div></details>
   <div class="benefit-grid">
    <div class="benefit"><h3>🗣️ Arguments à reprendre dans la présentation</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs et vérifiables.</p></div>
    <div class="benefit"><h3>📌 Repères vendeur</h3><div class="proof" id="proof"><div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div></div></div>
@@ -158,37 +157,14 @@ function getSpace(){
  return x;
 }
 
-const diagnostics=[];
-function addDiag(source,code,detail){
- diagnostics.push({source,code,detail:String(detail||"")});
- const box=$("#diagRows");
- if(box) box.innerHTML=diagnostics.map(x=>'<div class="diag-row"><span class="diag-source">'+esc(x.source)+'</span><b class="diag-code">'+esc(x.code)+'</b><span>'+esc(x.detail)+'</span></div>').join("");
-}
-async function getData(url,ms,source="API JML"){
+async function getData(url,ms){
  const ctl=new AbortController();
  const timer=setTimeout(()=>ctl.abort(),ms);
- const started=performance.now();
  try{
   const r=await fetch(url,{cache:"no-store",signal:ctl.signal});
   const j=await r.json().catch(()=>({}));
-  if(!r.ok){
-   const err=new Error(j.error||("HTTP "+r.status));
-   err.code=j.code||("JML-HTTP-"+r.status);
-   err.httpStatus=r.status;
-   err.payload=j;
-   throw err;
-  }
-  addDiag(source,"JML-OK-"+r.status,Math.round(performance.now()-started)+" ms");
+  if(!r.ok) throw new Error(j.error||("HTTP "+r.status));
   return j;
- }catch(e){
-  if(e.name==="AbortError"){
-   e.code="JML-TIMEOUT";
-   e.message="Délai dépassé après "+ms+" ms";
-  }else if(!e.code){
-   e.code="JML-NETWORK";
-  }
-  addDiag(source,e.code,e.message||"Erreur réseau");
-  throw e;
  }finally{clearTimeout(timer)}
 }
 
@@ -205,13 +181,7 @@ function setProject(d){
 
 function renderAssets(data){
  const box=$("#assets");
- if(!data||!data.available){
-  const code=data?.code||data?.errorCode||"JML-ASSET-UNAVAILABLE";
-  addDiag("Équipements / source locale",code,data?.message||"Réponse indisponible");
-  box.innerHTML='<div class="empty"><b>'+esc(code)+'</b> · '+esc(data?.message||"Les équipements autour de l'adresse sont indisponibles pour cette session.")+'</div>';
-  return;
- }
- addDiag(data.source||"Équipements / source locale","JML-ASSET-OK",String(data.provider||"source répondante"));
+ if(!data||!data.available){box.innerHTML='<div class="empty">'+esc(data?.message||"Les équipements autour de l'adresse sont indisponibles pour cette session.")+'</div>';return}
  const cats=data.categories||{};
  const order=[
   ["schools","🎓 Écoles & famille","Établissements scolaires autour de l'adresse."],
@@ -327,7 +297,6 @@ function renderRows(el,data){
 async function run(){
  const d=getSpace();
  setProject(d);
- addDiag("Page / navigateur","JML-D001","Données du projet récupérées depuis l’espace vendeur / URL");
  if(!d.city){
   $("#status").textContent="Commune manquante";
   $("#marketMessage").className="message bad";
@@ -343,7 +312,7 @@ async function run(){
 
  // 1. Marché communal indépendant : il doit fonctionner même si le moteur de comparables tombe.
  try{
-  const market=await getData("/api/commune-market?"+new URLSearchParams({city:d.city}).toString(),12000,"Marché communal");
+  const market=await getData("/api/commune-market?"+new URLSearchParams({city:d.city}).toString(),12000);
   renderMarket(market);
   renderSales(market.recentSales||[]);
   $("#status").textContent="Marché communal chargé";
@@ -357,7 +326,6 @@ async function run(){
    explanation:"Repère calculé à partir du prix médian communal disponible et de la surface renseignée. Il ne constitue pas une estimation certifiée."
   });
  }catch(e){
-  addDiag("Marché communal",e.code||"JML-MARKET-CLIENT",e.message||"Erreur");
   $("#status").textContent="Marché partiellement indisponible";
   $("#marketMessage").className="message bad";
   $("#marketMessage").textContent="Les données communales n'ont pas répondu : "+(e.message||"erreur temporaire")+". Les autres blocs continuent indépendamment.";
@@ -367,35 +335,34 @@ async function run(){
  // 1bis. Atouts géolocalisés : totalement indépendant du moteur marché.
  try{
   const assetParams=new URLSearchParams();
-  if(d.address) assetParams.set("address",d.address);
-  if(d.city) assetParams.set("city",d.city);
-  const assets=await getData("/api/territory-assets?"+assetParams.toString(),13500,"Équipements / géocodage");
+  if(space.address) assetParams.set("address",space.address);
+  if(space.city) assetParams.set("city",space.city);
+  const assets=await getData("/api/territory-assets?"+assetParams.toString(),13500);
   renderAssets(assets);
  }catch(e){
-  renderAssets({available:false,code:e.code||"JML-ASSET-CLIENT",message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+"."});
+  renderAssets({available:false,message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+"."});
  }
 
  // 2. Comparables : appel séparé.
  try{
-  const territory=await getData("/api/territory-summary?"+base.toString(),14500,"Comparables / territoire");
+  const territory=await getData("/api/territory-summary?"+base.toString(),14500);
   renderComps(territory.market?.comparables||{});
   if(territory.sellerReference) renderReference(territory.sellerReference);
   if(Array.isArray(territory.nearby))renderNearby(territory.nearby);
   $("#status").textContent=territory.market?.found?"Données marché + comparables chargés":"Page chargée · comparables traités";
  }catch(e){
-  addDiag("Comparables / territoire",e.code||"JML-COMP-CLIENT",e.message||"Erreur");
-  $("#comps").innerHTML='<div class="error"><b>'+esc(e.code||"JML-COMP-CLIENT")+'</b> · La recherche autour de l’adresse a échoué ou dépassé son délai. Les données communales restent indépendantes.</div>';
+  $("#comps").innerHTML='<div class="error">La recherche autour de l’adresse a échoué ou dépassé son délai. Les données communales restent indépendantes.</div>';
   $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
  }
 
  // 3. Enrichissements : complètement séparés.
  try{
-  const territory=await getData("/api/territory-summary?"+base.toString(),5000,"Enrichissement / commune");
+  const territory=await getData("/api/territory-summary?"+base.toString(),5000);
   const c=territory.commune;
   const coords=c?.centre?.coordinates;
   if(/^\d{5}$/.test(String(c?.code||""))&&Array.isArray(coords)&&coords.length>=2){
    const q=new URLSearchParams({code:c.code,lat:String(coords[1]),lon:String(coords[0])});
-   const env=await getData("/api/territory-enrichment?"+q.toString(),10500,"Sécurité / risques / services");
+   const env=await getData("/api/territory-enrichment?"+q.toString(),10500);
    renderRows("#security",env.security);
    renderRows("#risks",env.risks);
    renderRows("#environment",env.environment);
@@ -403,7 +370,6 @@ async function run(){
    renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
   }
  }catch(e){
-  addDiag("Sécurité / risques / services",e.code||"JML-ENV-CLIENT",e.message||"Erreur");
   renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
  }
 }
