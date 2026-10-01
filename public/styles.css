@@ -3,3 +3,19 @@
 .ardenne-visual{position:relative;overflow:hidden;background-image:linear-gradient(90deg,rgba(23,59,50,.96) 0%,rgba(23,59,50,.82) 48%,rgba(23,59,50,.42) 100%),url('/assets/ardenne-market-style.svg');background-size:cover;background-position:center;border-color:#b8944e!important}.ardenne-visual:after{content:"";position:absolute;right:-70px;bottom:-90px;width:240px;height:240px;border:18px solid rgba(216,187,122,.14);border-radius:50%;pointer-events:none}.ardenne-visual>*{position:relative;z-index:2}.ardenne-accent{position:relative;overflow:hidden}.ardenne-accent:before{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,transparent,#b8944e 18%,#e2c875 50%,#b8944e 82%,transparent);opacity:.9}.ardenne-stamp{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid rgba(216,187,122,.35);border-radius:999px;background:rgba(255,255,255,.07);color:#f4efe4;font-size:10px;font-weight:800;letter-spacing:.05em}@media(max-width:650px){.ardenne-visual{background-position:center}.ardenne-visual:after{right:-110px;bottom:-110px}}
 
 .jml-social-links{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:22px auto 4px;padding:14px 16px;max-width:760px;border-top:1px solid rgba(184,148,78,.35);color:#68746f;font-size:11px}.jml-social-links span{font-weight:800;color:#173b32;letter-spacing:.03em}.jml-social-links a{display:inline-flex;align-items:center;padding:8px 12px;border:1px solid #d8c69e;border-radius:999px;background:#fffdf8;color:#173b32;text-decoration:none;font-weight:800}.jml-social-links a:hover{background:#173b32;color:#fff}.ardenne-visual .jml-social-links{border-top-color:rgba(216,187,122,.3)}
+
+/* V2.2 — identité éditoriale « itinéraire » inspirée des publications JML */
+.jml-itineraire{position:relative;overflow:hidden!important;background:#173b32 url('/assets/itineraire-jml.svg') center/cover no-repeat!important;color:#fff!important;border-color:#c9a85e!important;min-height:250px;isolation:isolate}
+.jml-itineraire:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(23,59,50,.97) 0%,rgba(23,59,50,.72) 48%,rgba(23,59,50,.18) 100%);z-index:-0}
+.jml-itineraire>*{position:relative;z-index:1}
+.jml-itineraire .k,.jml-itineraire .eyebrow{color:#d8bb7a!important}
+.jml-itineraire h1{max-width:620px}
+.jml-itineraire p{max-width:620px}
+.jml-itineraire .nav{position:relative;z-index:2}
+.jml-itineraire .nav a{box-shadow:0 5px 14px rgba(0,0,0,.12)}
+.jml-route-strip{display:flex;align-items:center;gap:0;margin-top:18px;max-width:620px}
+.jml-route-node{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:800;color:#f7f2e7;white-space:nowrap}
+.jml-route-node i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#c9a85e;color:#173b32;font-style:normal;font-size:9px}
+.jml-route-line{height:2px;flex:1;background:rgba(247,242,231,.5);margin:0 7px}
+.jml-social-links{background:#fffdf8;border-radius:16px;box-shadow:0 8px 24px rgba(23,51,44,.05)}
+@media(max-width:650px){.jml-itineraire{min-height:290px;background-position:62% center!important}.jml-route-node{font-size:8px}.jml-route-line{margin:0 4px}.jml-itineraire h1{font-size:29px!important}}
