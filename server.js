@@ -127,7 +127,7 @@ const SELLER_BPE_CODE_TO_GROUP = Object.entries(SELLER_BPE_TYPES).reduce((acc,[g
 }, {});
 
 async function getBpeAssets(lat,lon,communeCode){
-  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^d{5}$/.test(String(communeCode||""))) return {rows:[],ready:false,importedAt:null};
+  if(!pool||!Number.isFinite(lat)||!Number.isFinite(lon)||!/^[0-9]{5}$/.test(String(communeCode||""))) return {rows:[],ready:false,importedAt:null};
   const key=String(communeCode)+"|"+lat.toFixed(4)+"|"+lon.toFixed(4);
   const cached=territoryAssetCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return cached.data;
