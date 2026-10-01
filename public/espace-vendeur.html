@@ -338,6 +338,18 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
  .seller-guide-grid a:before{width:64px}
 }
 
+/* V3.5 — visuels mobiles robustes */
+.seller-dashboard-hero{background:#123c34!important;isolation:isolate}
+.seller-dashboard-photo{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;object-position:center center;z-index:0}
+.seller-dashboard-hero:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(5,38,32,.88) 0%,rgba(5,38,32,.52) 45%,rgba(5,38,32,.16) 78%,rgba(5,38,32,.06) 100%)}
+.seller-dashboard-overlay{z-index:2}
+.seller-quick-card .seller-quick-photo{z-index:0!important;opacity:1!important}
+.seller-quick-card:after{display:none!important}
+@media(max-width:600px){
+ .seller-dashboard-photo{object-position:center center}
+ .seller-dashboard-hero:before{background:linear-gradient(180deg,rgba(5,38,32,.12) 0%,rgba(5,38,32,.30) 38%,rgba(5,38,32,.82) 100%)}
+ .seller-quick-card .seller-quick-photo{width:112px;height:82px}
+}
 /* V4.0 — espace vendeur interactif */
 .fb-extra-details{border:1px solid var(--line);border-radius:12px;background:#faf7ef;padding:11px 13px}
 .fb-extra-details summary{cursor:pointer;font-weight:800;color:#173b31;font-size:12px}
@@ -460,6 +472,7 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 
   <div class="seller-space">
     <div class="seller-dashboard-hero jml-architecture">
+      <img class="seller-dashboard-photo" src="/assets/charleville-hero.svg?v=3.5.0" alt="Paysage des Ardennes" loading="eager" decoding="async">
       <div class="seller-dashboard-overlay">
         <div class="seller-dashboard-kicker">JML IMMOBILIER · ARDENNES</div>
         <h3>Votre espace vendeur</h3>
