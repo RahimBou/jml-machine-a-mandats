@@ -1,6 +1,89 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#153b32"><title>JML Immobilier — Votre bien</title><link rel="stylesheet" href="/styles.css?v=2.0.0"><style>
-body{background:#f7f2e7;color:#173b31}.page{max-width:1040px;margin:auto;padding:22px 18px 60px}.top{background:#153b32;color:#fff;border:1px solid #b8944e;border-radius:22px;padding:25px;margin-bottom:14px}.k{color:#d8bb7a;font-size:10px;font-weight:900;letter-spacing:.14em}.top h1{font:700 34px Georgia,serif;margin:8px 0}.top p{margin:0;color:#e5eee8;line-height:1.55}.nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.nav a{background:#d8bb7a;color:#173b31;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:800;font-size:12px}.nav a.alt{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}.card{background:#fffdf8;border:1px solid #e2dccf;border-radius:18px;padding:20px;margin-top:12px;box-shadow:0 7px 22px rgba(23,51,44,.05)}.card h2{margin-top:0;font-size:20px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.fact{padding:14px;border:1px solid #e2dccf;border-radius:12px;background:#f8f3e8}.fact span{display:block;font-size:9px;color:#777;text-transform:uppercase}.fact strong{display:block;margin-top:5px;font-size:18px}.list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.row{padding:14px;border-radius:12px;background:#f8f3e8;border:1px solid #e2dccf}.row strong{display:block;font-size:14px}.row p{margin:5px 0 0;color:#606861;font-size:12px;line-height:1.5}.note{margin-top:14px;padding:13px 14px;border-left:3px solid #d8bb7a;background:#f8f3e8;color:#59625d;font-size:11px;line-height:1.5}.cta{display:inline-block;margin-top:14px;background:#173b31;color:#fff;padding:11px 16px;border-radius:10px;text-decoration:none;font-weight:800;font-size:12px}@media(max-width:650px){.grid,.list{grid-template-columns:1fr}.top h1{font-size:29px}}</style></head><body><main class="page">
+body{background:#f7f2e7;color:#173b31}.page{max-width:1040px;margin:auto;padding:22px 18px 60px}.top{background:#153b32;color:#fff;border:1px solid #b8944e;border-radius:22px;padding:25px;margin-bottom:14px}.k{color:#d8bb7a;font-size:10px;font-weight:900;letter-spacing:.14em}.top h1{font:700 34px Georgia,serif;margin:8px 0}.top p{margin:0;color:#e5eee8;line-height:1.55}.nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.nav a{background:#d8bb7a;color:#173b31;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:800;font-size:12px}.nav a.alt{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}.card{background:#fffdf8;border:1px solid #e2dccf;border-radius:18px;padding:20px;margin-top:12px;box-shadow:0 7px 22px rgba(23,51,44,.05)}.card h2{margin-top:0;font-size:20px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.fact{padding:14px;border:1px solid #e2dccf;border-radius:12px;background:#f8f3e8}.fact span{display:block;font-size:9px;color:#777;text-transform:uppercase}.fact strong{display:block;margin-top:5px;font-size:18px}.list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.row{padding:14px;border-radius:12px;background:#f8f3e8;border:1px solid #e2dccf}.row strong{display:block;font-size:14px}.row p{margin:5px 0 0;color:#606861;font-size:12px;line-height:1.5}.note{margin-top:14px;padding:13px 14px;border-left:3px solid #d8bb7a;background:#f8f3e8;color:#59625d;font-size:11px;line-height:1.5}.cta{display:inline-block;margin-top:14px;background:#173b31;color:#fff;padding:11px 16px;border-radius:10px;text-decoration:none;font-weight:800;font-size:12px}@media(max-width:650px){.grid,.list{grid-template-columns:1fr}.top h1{font-size:29px}}.section-k{font-size:9px;letter-spacing:.16em;font-weight:900;color:#b08a43;margin-bottom:6px;}
+.intro{margin:0 0 14px;color:#5f6862;line-height:1.55;font-size:13px;}
+.property-card .grid{grid-template-columns:repeat(4,1fr);}
+.property-card .fact-wide{grid-column:span 2;}
+.data-status{display:flex;flex-direction:column;gap:3px;margin-top:14px;padding:12px 14px;background:#edf3ee;border:1px solid #d8e3db;border-radius:10px;color:#46554d;font-size:12px;}
+.data-status span{color:#68736d;font-size:11px;}
+.data-status.ok{background:#f2f6ef;border-color:#dce7d7;}
+.data-status.warn{background:#f8f3e8;border-color:#e9dfcb;}
+.checklist{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+.check{padding:12px 14px;border:1px solid #e2dccf;border-radius:12px;background:#f8f3e8;}
+.check b{display:block;font-size:13px;color:#173b31;}
+.check span{display:block;margin-top:4px;color:#69726c;font-size:11px;line-height:1.45;}
+.check.ok{background:#f2f6ef;border-color:#d9e5db;}
+@media(max-width:800px){.property-card .grid{grid-template-columns:repeat(2,1fr);}.property-card .fact-wide{grid-column:span 2;}}
+@media(max-width:650px){.property-card .grid,.checklist{grid-template-columns:1fr;}.property-card .fact-wide{grid-column:auto;}.top h1{font-size:29px;}}
+</style></head><body><main class="page">
 <section class="top"><div class="k">JML IMMOBILIER · VOTRE BIEN</div><h1>Votre bien, votre point de départ</h1><p>Les informations renseignées servent à préparer un échange plus précis et à croiser votre bien avec les références disponibles dans votre secteur.</p><nav class="nav"><a data-space href="/espace-vendeur">← Mon espace</a><a class="alt" data-sector href="/vendeur-secteur.html">Voir le secteur</a></nav></section>
-<section class="card"><h2>🏠 Les informations de votre bien</h2><div class="grid"><div class="fact"><span>Commune</span><strong data-city>—</strong></div><div class="fact"><span>Adresse</span><strong data-address>—</strong></div><div class="fact"><span>Type</span><strong data-type>—</strong></div><div class="fact"><span>Surface</span><strong data-surface>—</strong></div><div class="fact"><span>Pièces / chambres</span><strong data-rooms>—</strong></div><div class="fact"><span>DPE</span><strong data-dpe>—</strong></div><div class="fact"><span>Terrain</span><strong data-terrain>—</strong></div><div class="fact"><span>Projet</span><strong data-horizon>—</strong></div></div><div class="note">Ces informations sont des éléments de préparation. Elles ne constituent pas à elles seules une estimation de valeur.</div></section>
-<section class="card"><h2>🔎 Ce qui sera regardé</h2><div class="list"><div class="row"><strong>01 · Le bien lui-même</strong><p>Type, surface, pièces, terrain, état général, travaux et caractéristiques particulières.</p></div><div class="row"><strong>02 · Les ventes du secteur</strong><p>Références de transactions disponibles, en privilégiant les biens réellement comparables lorsque les données le permettent.</p></div><div class="row"><strong>03 · L'environnement</strong><p>Services, mobilité, risques et autres éléments territoriaux utiles à la lecture du secteur.</p></div><div class="row"><strong>04 · Votre projet</strong><p>Votre calendrier, vos attentes et les conditions qui comptent pour vous.</p></div></div><a class="cta" data-sector href="/vendeur-secteur.html">Consulter les repères du secteur →</a></section></main>
-<script>(function(){const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};const d=read(),token=d.token||"";document.querySelectorAll("[data-space]").forEach(a=>{if(token)a.href="/espace-vendeur/"+encodeURIComponent(token)});document.querySelectorAll("[data-sector]").forEach(a=>a.href="/vendeur-secteur.html?city="+encodeURIComponent(d.city||"")+"&address="+encodeURIComponent(d.address||"")+"&propertyType="+encodeURIComponent(d.propertyType||"")+"&surface="+encodeURIComponent(d.surface||"")+"&dpe="+encodeURIComponent(d.dpe||""));const set=(s,v)=>document.querySelectorAll(s).forEach(e=>e.textContent=v);set("[data-city]",d.city||"À compléter");set("[data-address]",d.address||"À compléter");set("[data-type]",d.propertyType||"À compléter");set("[data-surface]",d.surface?d.surface+" m²":"À compléter");set("[data-rooms]",d.rooms||"À compléter");set("[data-dpe]",d.dpe||"À compléter");set("[data-terrain]",d.terrain||"À compléter");set("[data-horizon]",({"0-3":"Dans les 3 mois","3-6":"Dans 3 à 6 mois","6-12":"Dans 6 à 12 mois","unknown":"Calendrier à définir"})[d.horizon]||"Calendrier à définir")})();</script></body></html>
+<section class="card property-card">
+ <div class="section-k">VOTRE DOSSIER</div>
+ <h2>🏠 Les informations de votre bien</h2>
+ <p class="intro">Voici les éléments actuellement renseignés dans votre dossier. Ils servent de base pour rapprocher votre bien des ventes réellement comparables.</p>
+ <div class="grid">
+  <div class="fact"><span>Commune</span><strong data-city>—</strong></div>
+  <div class="fact fact-wide"><span>Adresse</span><strong data-address>—</strong></div>
+  <div class="fact"><span>Type</span><strong data-type>—</strong></div>
+  <div class="fact"><span>Surface habitable</span><strong data-surface>—</strong></div>
+  <div class="fact"><span>Pièces / chambres</span><strong data-rooms>—</strong></div>
+  <div class="fact"><span>DPE</span><strong data-dpe>—</strong></div>
+  <div class="fact"><span>Terrain</span><strong data-terrain>—</strong></div>
+  <div class="fact"><span>Projet</span><strong data-horizon>—</strong></div>
+ </div>
+ <div class="data-status" id="dataStatus"><b>Lecture du dossier</b><span>Vérification des informations renseignées…</span></div>
+</section>
+
+<section class="card">
+ <div class="section-k">COMMENT LIRE CES INFORMATIONS</div>
+ <h2>🎯 Ce qui peut réellement faire varier la valeur</h2>
+ <div class="list">
+  <div class="row"><strong>01 · Les caractéristiques du bien</strong><p>Type, surface, pièces, terrain, état, travaux, prestations et particularités du logement.</p></div>
+  <div class="row"><strong>02 · Les ventes comparables</strong><p>Les transactions les plus proches et les plus comparables servent de référence lorsque les données sont suffisantes.</p></div>
+  <div class="row"><strong>03 · La localisation</strong><p>La commune, le quartier, les services proches et l'environnement permettent de remettre les ventes dans leur contexte.</p></div>
+  <div class="row"><strong>04 · Le moment de la vente</strong><p>La date des transactions compte : une vente ancienne ne doit pas être interprétée comme si elle était récente.</p></div>
+ </div>
+ <div class="note"><b>À retenir :</b> aucun élément isolé ne suffit à déterminer le prix d'un bien. La lecture se fait en croisant les caractéristiques du logement avec les transactions comparables et le contexte local.</div>
+ <a class="cta" data-sector href="/vendeur-secteur.html">Voir l'analyse du marché autour du bien →</a>
+</section>
+
+<section class="card checklist-card">
+ <div class="section-k">POUR PRÉPARER L'ÉCHANGE</div>
+ <h2>📋 Les informations qui peuvent encore affiner le dossier</h2>
+ <div id="checklist" class="checklist"></div>
+</section></main>
+<script>(function(){const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};const d=read(),token=d.token||"";document.querySelectorAll("[data-space]").forEach(a=>{if(token)a.href="/espace-vendeur/"+encodeURIComponent(token)});document.querySelectorAll("[data-sector]").forEach(a=>a.href="/vendeur-secteur.html?city="+encodeURIComponent(d.city||"")+"&address="+encodeURIComponent(d.address||"")+"&propertyType="+encodeURIComponent(d.propertyType||"")+"&surface="+encodeURIComponent(d.surface||"")+"&dpe="+encodeURIComponent(d.dpe||""));const set=(s,v)=>document.querySelectorAll(s).forEach(e=>e.textContent=v);
+const value=(v,fallback="À compléter")=>v!=null&&String(v).trim()!==""?String(v):fallback;
+const horizon=({"0-3":"Dans les 3 mois","3-6":"Dans 6 à 12 mois","6-12":"Dans 6 à 12 mois","unknown":"Calendrier à définir"})[d.horizon]||"Calendrier à définir";
+set("[data-city]",value(d.city));
+set("[data-address]",value(d.address));
+set("[data-type]",value(d.propertyType));
+set("[data-surface]",d.surface?d.surface+" m²":"À compléter");
+set("[data-rooms]",value(d.rooms));
+set("[data-dpe]",value(d.dpe));
+set("[data-terrain]",value(d.terrain));
+set("[data-horizon]",horizon);
+
+const fields=[
+ ["Adresse","d.address","Adresse utilisée pour les recherches de secteur."],
+ ["Type de bien","d.propertyType","Nécessaire pour comparer des biens de même nature."],
+ ["Surface","d.surface","Permet de rapprocher le bien de surfaces comparables."],
+ ["Pièces / chambres","d.rooms","Utile pour affiner la comparaison entre maisons ou appartements."],
+ ["DPE","d.dpe","À confirmer avec le diagnostic lorsque nécessaire."],
+ ["Terrain","d.terrain","Important notamment pour comparer les maisons disposant de terrains différents."]
+];
+const missing=fields.filter(([_,key])=>!key.split(".").reduce((o,k)=>o?.[k],d));
+const status=document.querySelector("#dataStatus");
+if(status){
+ status.classList.toggle("ok",missing.length===0);
+ status.classList.toggle("warn",missing.length>0);
+ status.innerHTML=missing.length
+   ? "<b>Dossier à compléter</b><span>"+missing.length+" élément"+(missing.length>1?"s":"")+" important"+(missing.length>1?"s":"")+" reste"+(missing.length>1?"nt":"")+" à préciser pour affiner les comparaisons.</span>"
+   : "<b>Dossier suffisamment renseigné</b><span>Les principales caractéristiques nécessaires à la lecture du marché sont présentes.</span>";
+}
+const list=document.querySelector("#checklist");
+if(list){
+ list.innerHTML=fields.map(([label,key,why])=>{
+   const present=!!key.split(".").reduce((o,k)=>o?.[k],d);
+   return '<div class="check '+(present?"ok":"")+'"><b>'+(present?"✓ ":"")+label+'</b><span>'+ (present?"Information renseignée dans le dossier.":why) +'</span></div>';
+ }).join("");
+}})();</script></body></html>
