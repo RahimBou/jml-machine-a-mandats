@@ -99,3 +99,13 @@
 @media(max-width:600px){
   .seller-dashboard-hero{background-position:center center!important;}
 }
+
+
+/* V2.7 — hero réaliste Ardennes fourni pour le projet */
+.seller-dashboard-hero{
+  background-image:linear-gradient(90deg,rgba(8,48,39,.88) 0%,rgba(8,48,39,.66) 42%,rgba(8,48,39,.18) 78%,rgba(8,48,39,.06) 100%),url("/assets/hero-ardennais-realiste.jpg")!important;
+  background-position:center!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+@media(max-width:600px){.seller-dashboard-hero{background-position:center center!important;}}
