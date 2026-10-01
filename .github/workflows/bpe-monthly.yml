@@ -1,6 +1,10 @@
 name: BPE mensuel
 
 on:
+  push:
+    paths:
+      - "scripts/import-bpe.js"
+      - ".github/workflows/bpe-monthly.yml"
   schedule:
     - cron: "45 4 1 * *"
   workflow_dispatch:
