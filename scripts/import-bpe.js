@@ -14,6 +14,8 @@ const pool=new Pool({
 });
 
 const URL="https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.zip";
+const ZIP_PATH="/tmp/BPE25.zip";
+const EXPECTED_MEMBER="BPE25.csv";
 const YEAR=2025;
 const DEP="08";
 const BATCH=500;
@@ -69,25 +71,39 @@ async function main(){
     console.log("Téléchargement BPE 2025 INSEE (archive officielle)...");
     const response=await fetch(URL,{headers:{"User-Agent":"JML-Projet-Vendeur-BPE/1.0"},signal:AbortSignal.timeout(180000)});
     if(!response.ok) throw new Error("INSEE BPE HTTP "+response.status);
-    const zipPath="/tmp/BPE25.zip";
+    const zipPath=ZIP_PATH;
     await new Promise(async(resolve,reject)=>{
       const file=fs.createWriteStream(zipPath);
       file.on("error",reject); file.on("finish",resolve);
       try{Readable.fromWeb(response.body).pipe(file);}catch(error){reject(error);}
     });
 
-    const csvStream=spawn("unzip",["-p",zipPath,"BPE25.csv"],{stdio:["ignore","pipe","pipe"]});
+    const list=spawn("unzip",["-l",zipPath],{stdio:["ignore","pipe","pipe"]});
+    let listOut="",listErr="";
+    list.stdout.on("data",d=>{listOut+=String(d);});
+    list.stderr.on("data",d=>{listErr+=String(d);});
+    await new Promise((resolve,reject)=>list.on("close",code=>{
+      if(code!==0)return reject(new Error("Lecture de l’archive BPE impossible: "+listErr));
+      if(!new RegExp("\\b"+EXPECTED_MEMBER.replace(/[.*+?^$()|[\]\\]/g,"\\    const csvStream=spawn("unzip",["-p",zipPath,"BPE25.csv"],{stdio:["ignore","pipe","pipe"]});")+"\\b").test(listOut)){
+        return reject(new Error("Le fichier "+EXPECTED_MEMBER+" est absent de l’archive INSEE."));
+      }
+      resolve();
+    }));
+    console.log("Archive BPE validée : "+EXPECTED_MEMBER);
+    const csvStream=spawn("unzip",["-p",zipPath,EXPECTED_MEMBER],{stdio:["ignore","pipe","pipe"]});
     let unzipErr="";
     csvStream.stderr.on("data",d=>{unzipErr+=String(d);});
     const input=csvStream.stdout;
     input.on("error",()=>{});
     await client.query("BEGIN");
+    console.log("Filtrage BPE : département "+DEP+" ; domaines A-G ; coordonnées obligatoires.");
     const del=await client.query("DELETE FROM jml_bpe_assets WHERE year=$1 AND commune_code LIKE $2",[YEAR,DEP+"%"]);
     deleted=del.rowCount||0;
 
     const rl=readline.createInterface({input,crlfDelay:Infinity});
     let header=null,idx={};
     let batch=[];
+    let scanned=0,validArdennes=0,skippedNoCoords=0;
     for await(const line of rl){
       if(!line) continue;
       if(!header){
@@ -97,11 +113,13 @@ async function main(){
         continue;
       }
       const row=parseCsv(line);
+      scanned++;
       const commune=pick(row,idx,"depcom");
       if(!/^08\d{3}$/.test(commune)) continue;
       const lat=num(pick(row,idx,"latitude"));
       const lon=num(pick(row,idx,"longitude"));
-      if(lat===null||lon===null) continue;
+      if(lat===null||lon===null){skippedNoCoords++;continue;}
+      validArdennes++;
       const domain=pick(row,idx,"dom");
       if(!/^[A-G]$/.test(domain)) continue;
       const subdomain=pick(row,idx,"sdom");
@@ -124,7 +142,8 @@ async function main(){
     await client.query("COMMIT");
     await new Promise((resolve,reject)=>csvStream.on("close",code=>code===0?resolve():reject(new Error("Extraction BPE25.csv impossible: "+unzipErr))));
     try{fs.unlinkSync(zipPath);}catch(_){}
-    console.log(`BPE terminé : supprimés=${deleted}, insérés=${inserted}`);
+    console.log(`BPE terminé : supprimés=${deleted}, insérés=${inserted}, lignes_scannées=${scanned}, Ardennes_avec_coordonnées=${validArdennes}, sans_coordonnées=${skippedNoCoords}`);
+    if(inserted===0) throw new Error("Aucun équipement BPE Ardennes n’a été importé : vérifier le format DEPCOM et les coordonnées.");
   }catch(error){
     try{await client.query("ROLLBACK");}catch(_){}
     throw error;
