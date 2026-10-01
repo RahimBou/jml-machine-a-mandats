@@ -1,0 +1,22 @@
+name: DVF mensuel
+
+on:
+  schedule:
+    - cron: "15 3 1 * *"
+  workflow_dispatch:
+
+jobs:
+  import-dvf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node scripts/import-dvf.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SSL: "true"
+          DVF_IMPORT_YEARS: "2025,2024,2023,2022"
