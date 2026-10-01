@@ -1,0 +1,24 @@
+name: BPE mensuel
+
+on:
+  schedule:
+    - cron: "45 4 1 * *"
+  workflow_dispatch:
+
+jobs:
+  import-bpe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Importer le BPE 2025 INSEE pour les Ardennes
+        run: node scripts/import-bpe.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SSL: "true"
