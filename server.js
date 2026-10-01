@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.3.2";
-const BUILD_MARKER = "dvf-local-official-09";
+const VERSION = "3.4.0";
+const BUILD_MARKER = "dvf-postgres-monthly-01";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -493,510 +493,28 @@ function parseEstimusCommunePage(html, city){
 }
 
 async function getCommuneMarketData(city,code){
-  const cleanCity=clean(city,100);
-  const key="v4|"+normalizeSearchCity(cleanCity)+"|"+String(code||"");
+  const cleanCity=clean(city,100), communeCode=String(code||"").trim();
+  const key="pg1|"+normalizeSearchCity(cleanCity)+"|"+communeCode;
   const cached=communeMarketCache.get(key);
-  if(cached && cached.expiresAt>Date.now()) return {...cached.data,cache:true};
-  const fallback={
-    city:cleanCity,found:false,source:"DVF+ / données publiques",sourceUrl:"https://www.data.gouv.fr/datasets/dvf-open-data",
-    message:"Aucune médiane communale suffisamment fiable n’a été récupérée. Aucun chiffre estimé n’est affiché.",
-    recentSales:[],nearby:[],history:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null
-  };
+  if(cached&&cached.expiresAt>Date.now()) return {...cached.data,cache:true};
+  const empty={city:cleanCity,found:false,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:"Aucune donnée DVF importée n'est encore disponible pour cette commune.",recentSales:[],recentSalesSource:"PostgreSQL DVF local",nearby:[],history:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null};
+  if(!pool||!/^\d{5}$/.test(communeCode)) return empty;
   try{
-    let communeUrl=null;
-    if(/^08\d{3}$/.test(String(code||""))){
-      const slug=normalizeSearchCity(cleanCity).replace(/\s+/g,"-");
-      communeUrl="https://estimus.fr/commune/"+slug+"-"+String(code);
-    }
-    let communeResponse=null;
-    if(communeUrl){
-      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
-      if(!communeResponse.ok) communeResponse=null;
-    }
-    if(!communeResponse){
-      const departmentResponse=await fetch("https://estimus.fr/departement/08-ardennes",{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
-      if(!departmentResponse.ok) throw new Error("Estimus département HTTP "+departmentResponse.status);
-      const departmentHtml=await departmentResponse.text();
-      communeUrl=findEstimusCommuneUrl(departmentHtml,cleanCity);
-      if(!communeUrl) throw new Error("Commune Estimus introuvable pour "+cleanCity);
-      communeResponse=await fetch(communeUrl,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(7000)});
-    }
-    if(!communeResponse.ok) throw new Error("Estimus commune HTTP "+communeResponse.status);
-    const communeHtml=await communeResponse.text();
-    const parsed=parseEstimusCommunePage(communeHtml,cleanCity);
-    if(!parsed) throw new Error("Médiane communale non trouvée pour "+cleanCity);
-    const existingSales=Array.isArray(parsed.recentSales)?parsed.recentSales:[];
-    if(existingSales.length<6){
-      const fallbackSales=await fetchCeremaRecentSales(code);
-      if(fallbackSales.length){
-        const seen=new Set(existingSales.map(s=>[s.date,s.address,s.price,s.surface].join("|")));
-        const merged=existingSales.concat(fallbackSales.filter(s=>!seen.has([s.date,s.address,s.price,s.surface].join("|"))));
-        parsed.recentSales=merged.slice(0,12);
-        parsed.recentSalesSource=existingSales.length?"Estimus + DVF+ / Cerema":"DVF+ / Cerema";
-      }
-    }
-    if(!Array.isArray(parsed.recentSales)||!parsed.recentSales.length){
-      const fallbackSales=await fetchImmoDvfRecentSales(cleanCity,code);
-      if(fallbackSales.length){parsed.recentSales=fallbackSales;parsed.recentSalesSource="DVF / source publique de secours";}
-    }
-    parsed.sourceUrl=communeUrl;
-    communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data:parsed});
-    return {...parsed,cache:false};
-  }catch(error){
-    console.warn("JML commune-market fallback:",error.message);
-    // Secours direct DVF+ : le rapport reste alimenté même si Estimus est indisponible.
-    try{
-      const rows=await fetchCeremaRecentSales(code);
-      const medianOf=list=>{
-        const v=list.map(x=>Number(x.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
-        if(!v.length) return null;
-        const m=Math.floor(v.length/2);
-        return v.length%2?v[m]:Math.round((v[m-1]+v[m])/2);
-      };
-      const houses=rows.filter(x=>classifyDvfType(x.type,x.codtypbien)==="Maison");
-      const apartments=rows.filter(x=>classifyDvfType(x.type,x.codtypbien)==="Appartement");
-      const years=new Map();
-      for(const row of rows){
-        const m=String(row.date||"").match(/^(20\d{2})/);
-        if(!m) continue;
-        const y=Number(m[1]);
-        if(!years.has(y)) years.set(y,[]);
-        years.get(y).push(row);
-      }
-      const history=[...years.entries()].sort((a,b)=>a[0]-b[0])
-        .map(([year,list])=>({year,value:medianOf(list)})).filter(x=>x.value!=null);
-      const data={
-        city:cleanCity,found:rows.length>0,source:"DVF+ / Cerema — secours direct",
-        sourceUrl:"https://apidf.cerema.fr/dvf_opendata/geomutations/",
-        message:rows.length
-          ?"Repère communal construit directement à partir des ventes DVF+. La source secondaire n'a pas répondu."
-          :"Aucune vente DVF+ exploitable n’a été récupérée. Aucun chiffre estimé n’est affiché.",
-        recentSales:rows.slice(0,12),recentSalesSource:"DVF+ / Cerema",
-        nearby:[],history,transactions:rows.length||null,
-        communalPrice:medianOf(rows),housePrice:medianOf(houses),apartmentPrice:medianOf(apartments),
-        period:"DVF+ / 2023–2025"
-      };
-      communeMarketCache.set(key,{expiresAt:Date.now()+30*60*1000,data});
-      return {...data,cache:false};
-    }catch(fallbackError){
-      console.warn("JML DVF+ direct fallback:",fallbackError.message);
-      communeMarketCache.set(key,{expiresAt:Date.now()+30*60*1000,data:fallback});
-      return {...fallback,cache:false};
-    }
-  }
+    const summary=await db(`SELECT COUNT(*)::int AS transactions,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS communal_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Maison') AS house_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Appartement') AS apartment_price FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months'`,[communeCode]);
+    const recent=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months' ORDER BY sale_date DESC LIMIT 12`,[communeCode]);
+    const history=await db(`SELECT EXTRACT(YEAR FROM sale_date)::int AS year,COUNT(*)::int AS transactions,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS value FROM jml_dvf_sales WHERE commune_code=$1 GROUP BY EXTRACT(YEAR FROM sale_date) ORDER BY year`,[communeCode]);
+    const s=summary.rows[0]||{};
+    const data={city:cleanCity,found:Number(s.transactions||0)>0,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:Number(s.transactions||0)>0?"Repère communal calculé directement à partir des transactions DVF importées dans PostgreSQL.":"Aucune transaction DVF importée n'est disponible pour cette commune.",recentSales:recent.rows,recentSalesSource:"DVF local JML / PostgreSQL",nearby:[],history:history.rows.map(x=>({year:x.year,value:x.value!=null?Math.round(Number(x.value)):null,transactions:x.transactions})),transactions:Number(s.transactions||0)||null,communalPrice:s.communal_price!=null?Math.round(Number(s.communal_price)):null,housePrice:s.house_price!=null?Math.round(Number(s.house_price)):null,apartmentPrice:s.apartment_price!=null?Math.round(Number(s.apartment_price)):null,period:"DVF importé / 24 derniers mois"};
+    communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data}); return {...data,cache:false};
+  }catch(error){console.warn("JML PostgreSQL DVF market:",error.message);return {...empty,message:"La base DVF PostgreSQL est temporairement indisponible."};}
 }
-
-function normalizeAddress(value){
-  return normalizeSearchCity(String(value||"").replace(/[0-9]+/g," ").replace(/\s+/g," "));
+async function getLocalDvfComparables(origin,maxKm=3){
+  if(!pool||!origin)return [];
+  const lat=Number(origin.lat),lon=Number(origin.lon); if(!Number.isFinite(lat)||!Number.isFinite(lon))return [];
+  const dLat=maxKm/111,dLon=maxKm/(111*Math.max(0.2,Math.cos(lat*Math.PI/180)));
+  const result=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source FROM jml_dvf_sales WHERE sale_date>=CURRENT_DATE-INTERVAL '24 months' AND property_type IN ('Maison','Appartement') AND latitude BETWEEN $1 AND $2 AND longitude BETWEEN $3 AND $4 ORDER BY sale_date DESC LIMIT 3000`,[lat-dLat,lat+dLat,lon-dLon,lon+dLon]);
+  return result.rows;
 }
-
-const geocodeCache=new Map();
-
-async function geocodeAddress(address,city){
-  const raw=String(address||"").trim(), commune=String(city||"").trim();
-  if(!raw||!commune) return null;
-  const variants=[];
-  const add=(v)=>{
-    v=String(v||"").trim();
-    if(v&&!variants.includes(v)) variants.push(v);
-  };
-  add(raw);
-  // BAN est parfois plus fiable sans le numéro.
-  add(raw.replace(/^\s*\d+(?:\s*(?:bis|ter|quater))?\s*/i,""));
-  add(raw.replace(/-/g," "));
-  add(raw.replace(/\s+/g," ").trim());
-  // Certaines saisies abrégées ne reprennent pas le nom officiel de la voie.
-  if(/\b(?:bd|boulevard)\s+poirier\b/i.test(raw) && !/georges\s+poirier/i.test(raw)){
-    add(raw.replace(/\b(?:bd|boulevard)\s+poirier\b/i,"Boulevard Georges Poirier"));
-  }
-  if(/\bbd\s+georges\s+poirier\b/i.test(raw)){
-    add(raw.replace(/\bbd\b/i,"Boulevard"));
-  }
-  const key=normalizeSearchCity(variants[0]+" "+commune);
-  const cached=geocodeCache.get(key);
-  if(cached && cached.expiresAt>Date.now()) return cached.value;
-  let best=null;
-  try{
-    for(const q0 of variants){
-      const url="https://data.geopf.fr/geocodage/search/?q="+encodeURIComponent(q0+" "+commune)+"&limit=5";
-      const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(4500)});
-      if(!response.ok) continue;
-      const payload=await response.json();
-      const features=Array.isArray(payload.features)?payload.features:[];
-      for(const feature of features){
-        const coords=feature?.geometry?.coordinates;
-        const score=Number(feature?.properties?.score);
-        if(!Array.isArray(coords)||coords.length<2) continue;
-        const value={
-          lon:Number(coords[0]),
-          lat:Number(coords[1]),
-          score:Number.isFinite(score)?score:null,
-          label:String(feature?.properties?.label||"")
-        };
-        if(!Number.isFinite(value.lon)||!Number.isFinite(value.lat)) continue;
-        if(!best || (value.score||0)>(best.score||0)) best=value;
-      }
-      if(best && Number(best.score)>=0.75) break;
-    }
-    geocodeCache.set(key,{expiresAt:Date.now()+24*60*60*1000,value:best});
-    return best;
-  }catch(error){
-    console.warn("JML géocodage adresse:",error.message);
-    return null;
-  }
-}
-
-async function fetchCeremaRecentSales(code){
-  if(!/^\d{5}$/.test(String(code||""))) return [];
-  const load=async(codtypbien)=>{
-    const params=new URLSearchParams({
-      code_insee:String(code),
-      anneemut_min:String(Math.max(2023,DVF_LATEST_YEAR-2)),
-      anneemut_max:String(DVF_LATEST_YEAR),
-      fields:"all",page_size:"1000"
-    });
-    if(codtypbien) params.set("codtypbien",codtypbien);
-    const response=await fetch("https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString(),{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(9000)});
-    if(!response.ok) throw new Error("Cerema recent DVF HTTP "+response.status);
-    const payload=await response.json();
-    return Array.isArray(payload?.features)?payload.features:[];
-  };
-  try{
-    let features=await load("111,121");
-    if(!features.length) features=await load("");
-    return features.map(f=>{
-      const p=f?.properties||{}, codeType=p.codtypbien??p.cod_typ_bien??"", typeValue=p.libtypbien??p.type_local??p.type??"";
-      const price=Number(p.valeurfonc??p.valeur_fonciere??p.valeur_fonc??p.price);
-      const surface=Number(p.sbati??p.surface_reelle_bati??p.surface_batie??p.surface);
-      return {
-        type:classifyDvfType(typeValue,codeType)||typeValue,codtypbien:codeType,
-        address:p.adresse||p.adresse_nom_voie||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
-        date:p.datemut||p.date_mutation||null,surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales??p.nb_pieces)||null,
-        price,pricePerM2:price>0&&surface>0?price/surface:null,source:"DVF+ / Cerema"
-      };
-    }).filter(s=>s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000)
-      .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,1000);
-  }catch(error){console.warn("JML Cerema recent sales:",error.message);return [];}
-}
-
-async function fetchImmoDvfRecentSales(city,code){
-  const slug=normalizeSearchCity(city).replace(/\s+/g,"-");
-  if(!slug||!/^08\d{3}$/.test(String(code||""))) return [];
-  const url="https://datafonciere.fr/analyse/08-ardennes/"+slug;
-  try{
-    const response=await fetch(url,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(8000)});
-    if(!response.ok) throw new Error("DataFonciere HTTP "+response.status);
-    const html=await response.text(),text=stripHtml(html);
-    const section=(text.split(/Dernières transactions immobilières enregistrées/i)[1]||text).split(/Pourquoi certaines rues|Prix moyen vs prix médian|©/i)[0];
-    const re=/(\d{1,2}\/\d{1,2}\/\d{4})\s+(Appartement|Maison)\s+([0-9\s]+)\s*m²\s+([0-9\s]+)\s*€\s+([0-9\s]+)\s*€\/m²/gi;
-    const out=[];let m;
-    while((m=re.exec(section))&&out.length<12){
-      const surface=Number(m[3].replace(/\s/g,"")),price=Number(m[4].replace(/\s/g,"")),psm=Number(m[5].replace(/\s/g,""));
-      if(surface>0&&price>0&&psm>=300&&psm<=6000) out.push({type:m[2],address:"Commune · adresse publiée par DVF",date:m[1],surface,rooms:null,price,pricePerM2:psm,source:"DVF / DataFonciere"});
-    }
-    return out;
-  }catch(error){console.warn("JML DataFonciere fallback:",error.message);return [];}
-}
-
-async function fetchCeremaDvfRadiusSales(origin,property,radiusMeters=500){
-  if(!origin) return [];
-  const type=String(property?.propertyType||"").toLowerCase();
-  const wantedCode=/appartement|studio|duplex|loft/i.test(type)?"121":/maison/i.test(type)?"111":"111,121";
-  const r=Math.max(500,Number(radiusMeters)||500);
-  const latDelta=r/111320;
-  const lonDelta=r/(111320*Math.max(0.2,Math.cos(origin.lat*Math.PI/180)));
-  const bbox=[origin.lon-lonDelta,origin.lat-latDelta,origin.lon+lonDelta,origin.lat+latDelta]
-    .map(v=>Number(v.toFixed(6))).join(",");
-
-  const load=async(codtypbien)=>{
-    const params=new URLSearchParams({
-      in_bbox:bbox,
-      fields:"all",
-      anneemut_min:String(Math.max(2023,DVF_LATEST_YEAR-2)),
-      anneemut_max:String(DVF_LATEST_YEAR),
-      page_size:"1000"
-    });
-    if(codtypbien) params.set("codtypbien",codtypbien);
-    const url="https://apidf.cerema.fr/dvf_opendata/geomutations/?"+params.toString();
-    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.0"},signal:AbortSignal.timeout(10000)});
-    if(!response.ok) throw new Error("Cerema DVF HTTP "+response.status);
-    const payload=await response.json();
-    return Array.isArray(payload?.features)?payload.features:[];
-  };
-
-  try{
-    // 1) Requête typée, comme dans la documentation Cerema (111 = maisons, 121 = appartements).
-    let features=await load(wantedCode);
-
-    // 2) Secours : certaines réponses DVF+ peuvent être trop restrictives selon
-    // le millésime / l'API. On recharge alors sans filtre de typologie et on
-    // laisse le moteur JML appliquer le type strict ensuite.
-    if(!features.length) features=await load("");
-
-    return features.map(f=>{
-      const p=f?.properties||{}, geom=f?.geometry;
-      const coords=Array.isArray(geom?.coordinates)?geom.coordinates:[];
-      let lon=Number(p.lon??p.longitude??p.geom_x??p.x),lat=Number(p.lat??p.latitude??p.geom_y??p.y);
-      if(!Number.isFinite(lon)||!Number.isFinite(lat)){
-        const flat=[];
-        const walk=v=>{
-          if(!Array.isArray(v)) return;
-          if(v.length>=2&&Number.isFinite(Number(v[0]))&&Number.isFinite(Number(v[1]))&&Math.abs(Number(v[0]))<=180&&Math.abs(Number(v[1]))<=90) flat.push([Number(v[0]),Number(v[1])]);
-          else v.forEach(walk);
-        };
-        walk(coords);
-        if(flat.length){
-          lon=flat.reduce((s,v)=>s+v[0],0)/flat.length;
-          lat=flat.reduce((s,v)=>s+v[1],0)/flat.length;
-        }
-      }
-      const code=p.codtypbien??p.cod_typ_bien??"";
-      const typeValue=p.libtypbien??p.type_local??p.type??"";
-      const price=Number(p.valeurfonc??p.valeur_fonciere??p.valeur_fonc??p.price);
-      const surface=Number(p.sbati??p.surface_reelle_bati??p.surface_batie??p.surface);
-      const distanceKm=Number.isFinite(lat)&&Number.isFinite(lon)?haversineKm(origin,{lat,lon}):null;
-      const psm=price>0&&surface>0?price/surface:null;
-      return {
-        type:classifyDvfType(typeValue,code)||typeValue,
-        codtypbien:code,
-        address:p.adresse||p.adresse_nom_voie||[p.numerovoi,p.nomvoie].filter(Boolean).join(" ")||"Adresse cadastrale non renseignée",
-        date:p.datemut||p.date_mutation||p.anneemut||null,
-        surface,rooms:Number(p.nbpprinc??p.nombre_pieces_principales??p.nb_pieces)||null,
-        land:Number(p.sbati_terrain??p.surface_terrain??p.sterr??p.terrain)||null,
-        price,pricePerM2:psm,
-        distanceKm:distanceKm!=null?Number(distanceKm.toFixed(3)):null,
-        source:"DVF+ / Cerema"
-      };
-    }).filter(s=>
-      s.price>0&&s.surface>0&&s.pricePerM2>=300&&s.pricePerM2<=6000&&
-      s.distanceKm!=null&&s.distanceKm<=r/1000
-    );
-  }catch(error){
-    console.warn("JML DVF+ Cerema:",error.message);
-    return [];
-  }
-}
-
-function haversineKm(a,b){
-  if(!a||!b) return null;
-  const rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad,lat1=a.lat*rad,lat2=b.lat*rad;
-  const h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-  return 6371*2*Math.asin(Math.sqrt(h));
-}
-
-function classifyDvfType(value,code){
-  const raw=String(value||"").toLowerCase().trim();
-  const c=String(code||"").toLowerCase().trim();
-  // DVF+ utilise plusieurs niveaux de typologie : 111/111x pour les maisons,
-  // 121/121x pour les appartements. Le libellé peut parfois être lui-même
-  // un code (ex. 1113) au lieu du texte "UNE MAISON ANCIENNE".
-  if(/^12/.test(c)||/^12/.test(raw)||/appartement|studio|duplex|loft/.test(raw)) return "Appartement";
-  if(/^11/.test(c)||/^11/.test(raw)||/maison/.test(raw)) return "Maison";
-  return null;
-}
-
-async function buildComparableSales(market,property){
-  // Même logique que le moteur d'estimation : recherche progressive,
-  // puis sélection pondérée par type, localisation, récence, surface et pièces.
-  const wantedType=String(property?.propertyType||"").toLowerCase();
-  const isApartment=/appartement|studio|duplex|loft/i.test(wantedType);
-  const typeWanted=isApartment?"Appartement":/maison/i.test(wantedType)?"Maison":null;
-  const surface=Number(property?.surface), rooms=Number(property?.rooms), city=String(property?.city||"").trim();
-  const origin=await geocodeAddress(property?.address,city);
-  if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:0.5,searchScope:"Adresse non géolocalisée",origin:null,message:"Adresse du bien non géolocalisable avec suffisamment de précision."};
-
-  const tiers=[
-    {radius:500,months:6,label:"500 m / 6 mois"},
-    {radius:1000,months:6,label:"1 km / 6 mois"},
-    {radius:2000,months:12,label:"2 km / 12 mois"},
-    {radius:3000,months:24,label:"3 km / 24 mois"}
-  ];
-  const now=Date.now();
-  const parseSaleDate=v=>{
-    if(v instanceof Date && !Number.isNaN(v.getTime())) return v;
-    const raw=String(v??"").trim();
-    if(!raw) return null;
-    const direct=new Date(raw);
-    if(!Number.isNaN(direct.getTime())) return direct;
-    const normalized=raw.toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-      .replace(/\s+/g," ");
-    const fr=normalized.match(/^(\d{1,2})[\s/-]+(janvier|janv|fevrier|fevr|mars|avril|avr|mai|juin|juillet|juil|aout|septembre|sept|octobre|oct|novembre|nov|decembre|dec)[a-z.]*[\s/-]+(\d{4})$/i);
-    if(fr){
-      const months={janvier:0,janv:0,fevrier:1,fevr:1,mars:2,avril:3,avr:3,mai:4,juin:5,juillet:6,juil:6,aout:7,septembre:8,sept:8,octobre:9,oct:9,novembre:10,nov:10,decembre:11,dec:11};
-      const day=Number(fr[1]),month=months[fr[2]],year=Number(fr[3]);
-      const d=new Date(year,month,day);
-      return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day?d:null;
-    }
-    const slash=raw.match(/^(\d{1,2})[\\/.-](\d{1,2})[\\/.-](\d{4})$/);
-    if(slash){
-      const d=new Date(Number(slash[3]),Number(slash[2])-1,Number(slash[1]));
-      return d.getFullYear()===Number(slash[3])&&d.getMonth()===Number(slash[2])-1&&d.getDate()===Number(slash[1])?d:null;
-    }
-    const isoYear=raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-    if(isoYear){
-      const d=new Date(Number(isoYear[1]),Number(isoYear[2])-1,Number(isoYear[3]));
-      return d.getFullYear()===Number(isoYear[1])&&d.getMonth()===Number(isoYear[2])-1&&d.getDate()===Number(isoYear[3])?d:null;
-    }
-    return null;
-  };
-  const ageMonths=v=>{
-    const d=parseSaleDate(v);
-    return d?Math.max(0,(now-d.getTime())/(30.4375*86400000)):99;
-  };
-  const streetKey=v=>normalizeAddress(v).replace(/\b\d+\b/g,"").trim();
-
-  const scoreSale=(sale,tier)=>{
-    if(typeWanted && classifyDvfType(sale.type,sale.codtypbien)!==typeWanted) return null;
-    const dist=Number(sale.distanceKm);
-    if(!Number.isFinite(dist)||dist>tier.radius/1000) return null;
-    const gap=Number.isFinite(surface)&&surface>0&&Number(sale.surface)>0
-      ?Math.abs(Number(sale.surface)-surface)/surface:null;
-    if(gap!==null && gap>0.30) return null;
-    const saleRooms=Number(sale.rooms);
-    if(Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0&&Math.abs(saleRooms-rooms)>2) return null;
-    const age=ageMonths(sale.date);
-    if(age>tier.months) return null;
-
-    const distanceScore=Math.max(0,1-(dist/(tier.radius/1000)))*30;
-    const recencyScore=Math.max(0,1-(age/tier.months))*25;
-    const surfaceScore=gap===null?12.5:Math.max(0,1-(gap/0.30))*25;
-    const roomsScore=Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0
-      ?Math.max(0,1-(Math.abs(saleRooms-rooms)/2))*10:5;
-    const sameStreet=streetKey(sale.address)===streetKey(property?.address);
-    const streetScore=sameStreet?10:0;
-    const qualityScore=Number.isFinite(Number(sale.pricePerM2))?10:0;
-    const scoreRaw=distanceScore+recencyScore+surfaceScore+roomsScore+streetScore+qualityScore;
-    // Les composantes représentent 110 points bruts ; le moteur expose toujours un score normalisé sur 100.
-    const score=Math.max(0,Math.min(100,scoreRaw/110*100));
-    return {...sale,score:Number(score.toFixed(1)),scoreRaw:Number(scoreRaw.toFixed(1)),sameStreet,surfaceGap:gap,ageMonths:Number(age.toFixed(1)),tier:tier.label};
-  };
-
-  const seen=new Set(), candidates=[];
-  // Les données communales peuvent ne pas fournir de coordonnées. On les géocode
-  // ponctuellement afin de conserver le même calcul de distance que l'estimateur.
-  const enrichDistances=async (rows)=>{
-    const list=(Array.isArray(rows)?rows:[]).slice(0,12);
-    const out=[];
-    for(let i=0;i<list.length;i+=4){
-      const batch=list.slice(i,i+4);
-      const values=await Promise.all(batch.map(async sale=>{
-        if(Number.isFinite(Number(sale?.distanceKm))) return sale;
-        const label=String(sale?.address||"").trim();
-        if(!label||/commune|adresse cadastrale non renseignée|adresse non renseignée/i.test(label)) return sale;
-        const point=await geocodeAddress(label,city);
-        if(!point) return sale;
-        const distanceKm=haversineKm(origin,point);
-        return distanceKm!=null?{...sale,distanceKm:Number(distanceKm.toFixed(3))}:sale;
-      }));
-      out.push(...values.filter(Boolean));
-    }
-    return out;
-  };
-  // Les données Estimus sont testées d'abord, puis DVF+ complète la recherche.
-  const estimus=await enrichDistances(Array.isArray(market?.recentSales)?market.recentSales:[]);
-  let localWithDistance=[];
-  try{
-    const local=await Promise.race([loadLocalDvfSales(),new Promise(resolve=>setTimeout(()=>resolve([]),12000))]);
-    localWithDistance=(local||[]).filter(s=>!property?.city||normalizeSearchCity(s.city)===normalizeSearchCity(property.city)).slice(0,500).map(s=>{
-      const distanceKm=haversineKm(origin,{lat:Number(s.lat),lon:Number(s.lon)});
-      return distanceKm!=null?{...s,distanceKm:Number(distanceKm.toFixed(3))}:s;
-    });
-  }catch(_){}
-  const diagnostics={origin:true,estimusRows:estimus.length,localDvfRows:localWithDistance.length,candidatesBeforeExternal:0,externalByTier:[],cquestFallbackRows:0,candidatesAfterExternal:0};
-  for(const tier of tiers){
-    for(const sale of [...estimus,...localWithDistance]){
-      const x=scoreSale(sale,tier);
-      if(x){
-        const key=[sale.date,sale.address,sale.price,sale.surface].join("|");
-        if(!seen.has(key)){seen.add(key);candidates.push(x);}
-      }
-    }
-    if(candidates.length>=6) break;
-  }
-
-  let selectedTier=tiers.find(t=>candidates.some(x=>x.tier===t.label))||null;
-  if(!selectedTier || candidates.length<6){
-    for(const tier of tiers){
-      const external=await enrichDistances(await fetchCeremaDvfRadiusSales(origin,property,tier.radius));
-      diagnostics.externalByTier.push({tier:tier.label,rows:external.length});
-      for(const sale of external){
-        const x=scoreSale(sale,tier);
-        if(!x) continue;
-        const key=[sale.date,sale.address,sale.price,sale.surface].join("|");
-        if(!seen.has(key)){seen.add(key);candidates.push(x);}
-      }
-      const tierCount=candidates.filter(x=>x.tier===tier.label).length;
-      if(tierCount>=6){selectedTier=tier;break;}
-      if(candidates.length>=12){selectedTier=tier;break;}
-    }
-  }
-
-  diagnostics.candidatesBeforeExternal=candidates.length;
-  if(!candidates.length){
-    const external=await enrichDistances(await fetchDvfRadiusSales(origin,property,property?.cityCode));
-    diagnostics.cquestFallbackRows=external.length;
-    for(const sale of external){
-      const x=scoreSale(sale,tiers[tiers.length-1]);
-      if(x)candidates.push(x);
-    }
-    selectedTier=tiers[tiers.length-1];
-  }
-
-  // Retire les valeurs aberrantes avant le calcul, comme dans l'estimateur.
-  const valid=candidates.filter(s=>Number.isFinite(Number(s.pricePerM2)));
-  const sortedValues=valid.map(s=>Number(s.pricePerM2)).sort((a,b)=>a-b);
-  let filtered=valid;
-  if(sortedValues.length>=5){
-    const q1=sortedValues[Math.floor((sortedValues.length-1)*0.25)];
-    const q3=sortedValues[Math.floor((sortedValues.length-1)*0.75)];
-    const iqr=q3-q1,low=q1-1.5*iqr,high=q3+1.5*iqr;
-    const kept=valid.filter(s=>Number(s.pricePerM2)>=low&&Number(s.pricePerM2)<=high);
-    if(kept.length>=3) filtered=kept;
-  }
-
-  const ranked=filtered.sort((a,b)=>b.score-a.score).slice(0,20);
-  const display=ranked.slice(0,6);
-  const weights=display.map(s=>Math.max(1,Number(s.score)));
-  const weightedTotal=display.reduce((sum,s,i)=>sum+Number(s.pricePerM2)*weights[i],0);
-  const weightSum=weights.reduce((a,b)=>a+b,0);
-  const weightedPriceM2=weightSum?Math.round(weightedTotal/weightSum):null;
-  const prices=display.map(s=>Number(s.pricePerM2)).sort((a,b)=>a-b);
-  const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:Math.round((prices[prices.length/2-1]+prices[prices.length/2])/2)):null;
-  const radiusKm=selectedTier?selectedTier.radius/1000:0.5;
-  const scope=selectedTier?selectedTier.label:"500 m / 6 mois";
-  return {
-    sales:display,
-    sameStreet:display.filter(s=>s.sameStreet),
-    median,
-    weightedPriceM2,
-    matchCount:display.length,
-    totalCandidates:candidates.length,
-    radiusKm,
-    searchScope:scope,
-    origin,
-    source:display.some(s=>/Cerema/i.test(s.source))?"DVF+ / Cerema + Estimus":"Estimus",
-    method:"Moteur JML Estimateur V7.4 partagé — ventes classiques, type strict, récence ≤24 mois, surface ±30 %, pièces ±2, score proximité/récence/similarité, IQR et pondération.",
-    engineVersion:"7.4.0-PRO-DVF",
-    diagnostics:{...diagnostics,candidatesAfterExternal:candidates.length}
-  };
-}
-
-app.get("/api/commune-market", async (req,res) => {
-  const city=clean(req.query.city,100);
-  const address=clean(req.query.address,180);
-  if(!city) return res.status(400).json({ok:false,code:"JML-MARKET-400",error:"Commune requise."});
-  try{
-    const commune=await resolveTerritoryCommune(city,address);
-    if(!commune) return res.status(422).json({ok:false,code:"JML-MARKET-COMMUNE",error:"Commune introuvable. Impossible de charger le marché communal."});
-    const data=await getCommuneMarketData(commune.nom,commune.code);
-    return res.json({ok:true,commune,...data});
-  }catch(error){
-    const detail=String(error?.message||error||"Erreur inconnue").slice(0,400);
-    console.error("JML commune-market route:",detail);
-    return res.status(500).json({ok:false,code:"JML-MARKET-500",error:"Le marché communal n'a pas pu être chargé.",detail});
-  }
-});
 
 function buildSellerReference(market,property){
   const type=String(property?.propertyType||"").toLowerCase();
@@ -1741,6 +1259,16 @@ async function initDb() {
       consent BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS jml_dvf_sales (
+      id BIGSERIAL PRIMARY KEY, mutation_id TEXT NOT NULL, sale_date DATE,
+      property_type TEXT NOT NULL, price NUMERIC NOT NULL, surface NUMERIC NOT NULL,
+      rooms NUMERIC, land_surface NUMERIC, latitude DOUBLE PRECISION NOT NULL, longitude DOUBLE PRECISION NOT NULL,
+      address TEXT, street TEXT, postal_code TEXT, commune_code TEXT, commune_name TEXT, parcel_id TEXT,
+      source_year INTEGER NOT NULL, price_per_m2 NUMERIC NOT NULL, source TEXT NOT NULL DEFAULT 'DVF',
+      imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(mutation_id,property_type,price,surface,address,parcel_id)
+    );
   `);
 
   const columns = {
@@ -1803,6 +1331,9 @@ async function initDb() {
       AND p.id > d.id
   `);
 
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_dvf_commune_date ON jml_dvf_sales(commune_code,sale_date DESC)");
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_dvf_geo_date ON jml_dvf_sales(latitude,longitude,sale_date DESC)");
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_dvf_type_surface ON jml_dvf_sales(property_type,surface)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_prospects_updated ON jml_prospects(updated_at DESC)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_prospects_status ON jml_prospects(status)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_prospects_next_action ON jml_prospects(next_action_at)");
