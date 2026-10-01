@@ -4,302 +4,308 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="jml-version" content="2026-09-30-mon-secteur-v1">
+<meta name="jml-version" content="2026-10-01-mon-secteur-rebuild-1">
 <title>JML Immobilier — Mon secteur</title>
-<link rel="stylesheet" href="/styles.css">
 <style>
-:root{--green:#173b32;--green2:#245346;--gold:#c9a85b;--cream:#f5f0e6;--paper:#fffdf8;--line:#e5ddcf;--ink:#173b32;--muted:#68736c}
+:root{--g:#173b32;--g2:#245346;--gold:#c9a85b;--cream:#f5f0e6;--paper:#fffdf8;--line:#e4dccd;--ink:#173b32;--muted:#68736c;--bad:#8a5147}
 *{box-sizing:border-box}
-body{margin:0;background:linear-gradient(180deg,#f4efe5,#fbfaf7 55%,#f1eadf);color:var(--ink);font-family:Arial,sans-serif}
-.page{max-width:1120px;margin:auto;padding:20px 16px 60px}
-.hero{background:linear-gradient(135deg,#12362e,#245244);color:#fff;border-radius:24px;padding:26px;box-shadow:0 14px 40px rgba(23,59,50,.14)}
-.eyebrow{font-size:9px;letter-spacing:.16em;font-weight:900;color:var(--gold)}
-.hero h1{font:700 38px Georgia,serif;margin:7px 0}
-.hero p{max-width:760px;margin:0;color:#dce7e1;font-size:13px;line-height:1.6}
-.back{display:inline-block;margin-top:18px;background:var(--gold);color:var(--green);padding:10px 15px;border-radius:999px;text-decoration:none;font-size:11px;font-weight:900}
-.card{background:rgba(255,253,248,.97);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 7px 25px rgba(23,59,50,.05)}
-.section{margin-top:26px}
-.section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin:0 2px 10px}
-.section-head h2{font:700 24px Georgia,serif;margin:4px 0}
-.source{font-size:9px;font-weight:900;color:#65736b;background:#eaf0e9;border-radius:999px;padding:7px 10px}
-.property{margin-top:14px}
-.property-top{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}
-.property h2{font:700 25px Georgia,serif;margin:4px 0}
-.property-address{font-size:11px;color:var(--muted)}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
-.info{background:#f6f1e7;border-radius:14px;padding:14px}
-.info span{display:block;color:#7a827d;font-size:9px;text-transform:uppercase;font-weight:900;letter-spacing:.06em}
-.info strong{display:block;margin-top:6px;font-size:15px}
-.map{display:inline-block;margin-top:14px;color:var(--green);font-size:11px;font-weight:900;text-decoration:none}
-.status{font-size:9px;font-weight:900;color:#52635a;background:#eef2ed;border-radius:999px;padding:7px 10px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.stat{background:#f6f1e7;border:1px solid #e8dfcf;border-radius:15px;padding:15px}
-.stat label{display:block;font-size:9px;text-transform:uppercase;font-weight:900;color:#7a827d}
-.stat strong{display:block;font-size:23px;margin:7px 0 3px}
-.stat small{font-size:9px;color:var(--muted)}
-.types{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:10px;margin-top:10px}
-.type{border:1px solid var(--line);border-radius:15px;padding:15px}
-.type b{font-size:12px}.type strong{display:block;font-size:19px;margin-top:7px}.type small{color:var(--muted);font-size:9px}
-.evolution{margin-top:10px;background:var(--green);color:#fff;border-radius:15px;padding:16px}
-.evolution h3{margin:0 0 5px;font-size:13px}.evolution p{margin:0;color:#dce7e1;font-size:10px;line-height:1.55}
-.history{margin-top:18px}.history h3{font-size:14px;margin:0}.bars{height:150px;display:flex;align-items:flex-end;gap:6px;border-bottom:1px solid #d5cdbc;margin-top:12px;padding:0 3px}
-.bar{flex:1;min-width:12px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;text-align:center}
-.bar i{display:block;background:#a9894d;border-radius:5px 5px 0 0;min-height:3px}.bar b{font-size:7px;color:#5b574e;margin-top:4px}.bar em{font-size:7px;color:var(--muted);font-style:normal;margin-bottom:4px}
-.sales{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sale{border:1px solid var(--line);background:#faf6ee;border-radius:14px;padding:14px}.sale-top{display:flex;justify-content:space-between;gap:8px}.sale strong{font-size:12px}.price{font-size:12px;font-weight:900;color:#8a6c2e}.sale p{font-size:9.5px;line-height:1.55;color:var(--muted);margin:8px 0 0}.tag{display:inline-block;margin-top:9px;padding:5px 8px;background:#eaf0e9;color:#50635a;border-radius:999px;font-size:8px;font-weight:900}
-.compare{display:grid;grid-template-columns:1.05fr .95fr;gap:12px}.compare-main{background:var(--green);color:#fff;border-radius:16px;padding:19px}.compare-main h3{font-size:14px;margin:0}.compare-main .big{font:700 30px Georgia,serif;color:var(--gold);margin:10px 0 3px}.compare-main p{font-size:10px;line-height:1.6;color:#dce7e1;margin:0}.compare-list{display:grid;gap:9px}.compare-item{border:1px solid var(--line);background:#faf6ee;border-radius:13px;padding:12px}.compare-item b{font-size:11px}.compare-item span{display:block;color:var(--muted);font-size:9.5px;margin-top:4px}
-.comp-sales{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.comp{border:1px solid var(--line);border-radius:13px;padding:12px;background:#fff}.comp strong{font-size:11px}.comp p{font-size:9px;color:var(--muted);line-height:1.5;margin:6px 0}.comp .score{color:#8a6c2e;font-weight:900}
-.nearby{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.near{background:#faf6ee;border:1px solid var(--line);border-radius:14px;padding:14px}.near strong{font-size:12px}.near p{margin:6px 0 0;color:var(--muted);font-size:9.5px}
-.env{display:grid;grid-template-columns:1fr 1fr;gap:10px}.env .card{box-shadow:none}.env h3{font-size:14px;margin:0 0 8px}.env p{font-size:10px;color:var(--muted);line-height:1.5}.env-list{display:grid;gap:6px}.env-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eee6d9;font-size:9.5px}.env-row b{font-size:10px}
-.note{margin-top:10px;background:#f1eadc;border-radius:12px;padding:12px;font-size:9.5px;color:#69736d;line-height:1.55}
-.loading{color:var(--muted);font-size:10px;padding:8px 0}.empty{color:var(--muted);font-size:10px;line-height:1.55}.error{background:#f6e9e5;color:#87564b;border:1px solid #e5cfc8;border-radius:12px;padding:13px;font-size:10px;line-height:1.55}
-@media(max-width:800px){.hero h1{font-size:32px}.grid4,.stats,.types,.sales,.compare,.nearby,.env,.comp-sales{grid-template-columns:1fr}.section-head,.property-top{display:block}.source,.status{display:inline-block;margin-top:8px}}
+body{margin:0;background:linear-gradient(180deg,#f3eee4,#fffdf9 45%,#f3ede3);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+.wrap{max-width:1080px;margin:auto;padding:18px 14px 55px}
+.hero{background:linear-gradient(135deg,#12362e,#285848);color:#fff;border-radius:24px;padding:24px 24px 22px;box-shadow:0 16px 38px rgba(23,59,50,.14)}
+.eyebrow{font-size:9px;font-weight:900;letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
+.hero h1{font-size:36px;line-height:1.08;margin:8px 0}
+.hero p{max-width:760px;color:#dbe7e0;font-size:12px;line-height:1.6;margin:0}
+.back{display:inline-block;margin-top:17px;padding:10px 14px;border-radius:999px;background:var(--gold);color:var(--g);font-size:11px;font-weight:900;text-decoration:none}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 7px 25px rgba(23,59,50,.05)}
+.section{margin-top:25px}.head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 2px 10px}.head h2{font-size:24px;margin:4px 0}.source{font-size:8px;font-weight:900;color:#59675f;background:#eaf0e9;padding:7px 9px;border-radius:999px}
+.project{margin-top:14px}.project-top{display:flex;justify-content:space-between;gap:15px}.project h2{font-size:25px;margin:4px 0}.address{font-size:11px;color:var(--muted)}.status{font-size:9px;font-weight:900;background:#eef2ed;color:#52635a;border-radius:999px;padding:7px 10px;height:max-content}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:17px}.box{background:#f6f1e7;border-radius:13px;padding:13px}.box label{display:block;font-size:8px;text-transform:uppercase;font-weight:900;color:#7a827d}.box strong{display:block;font-size:15px;margin-top:6px}.map{display:inline-block;margin-top:12px;color:var(--g);font-size:10px;font-weight:900}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric{background:#f7f2e8;border:1px solid #e8dfcf;border-radius:14px;padding:14px}.metric label{font-size:8px;text-transform:uppercase;font-weight:900;color:#7a827d}.metric strong{display:block;font-size:22px;margin:7px 0 3px}.metric small{font-size:8px;color:var(--muted)}
+.types{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:9px;margin-top:9px}.type{border:1px solid var(--line);border-radius:14px;padding:13px}.type b{font-size:11px}.type strong{display:block;font-size:17px;margin-top:7px}.type small{font-size:8px;color:var(--muted)}
+.message{margin-top:10px;border-radius:13px;padding:12px;background:#eef2ed;color:#52635a;font-size:9px;line-height:1.55}.message.bad{background:#f6e9e5;color:var(--bad);border:1px solid #e4cec7}
+.history{margin-top:17px}.history h3{font-size:13px;margin:0}.bars{height:145px;display:flex;align-items:flex-end;gap:6px;border-bottom:1px solid #d9d0c0;padding:0 3px;margin-top:10px}.bar{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;text-align:center}.bar i{display:block;background:#a9894d;border-radius:5px 5px 0 0;min-height:3px}.bar em{font-size:7px;color:var(--muted);font-style:normal;margin-bottom:3px}.bar b{font-size:7px;color:#5b574e;margin-top:4px}
+.reference{display:grid;grid-template-columns:1.05fr .95fr;gap:10px}.ref-main{background:var(--g);color:#fff;border-radius:15px;padding:17px}.ref-main h3{font-size:13px;margin:0}.ref-value{font:700 29px Georgia,serif;color:var(--gold);margin:9px 0 4px}.ref-main p{font-size:9px;line-height:1.55;color:#dbe7e0;margin:0}.ref-list{display:grid;gap:8px}.ref-row{background:#faf6ee;border:1px solid var(--line);border-radius:12px;padding:11px}.ref-row b{font-size:10px}.ref-row span{display:block;color:var(--muted);font-size:9px;margin-top:4px}
+.sales{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.sale{background:#faf6ee;border:1px solid var(--line);border-radius:13px;padding:12px}.sale-top{display:flex;justify-content:space-between;gap:7px}.sale-top b{font-size:10px}.price{font-size:10px;font-weight:900;color:#8a6c2e}.sale p{font-size:8.5px;line-height:1.55;color:var(--muted);margin:7px 0}.tag{display:inline-block;background:#eaf0e9;color:#52635a;border-radius:999px;padding:5px 7px;font-size:7px;font-weight:900}
+.comps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.comp{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px}.comp-top{display:flex;justify-content:space-between;gap:6px}.comp b{font-size:10px}.score{font-size:9px;color:#8a6c2e;font-weight:900}.comp p{font-size:8.5px;line-height:1.5;color:var(--muted);margin:7px 0}.pill{font-size:7px;font-weight:900;background:#eef2ed;color:#52635a;border-radius:999px;padding:5px 7px;display:inline-block}
+.nearby{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.near{background:#faf6ee;border:1px solid var(--line);border-radius:13px;padding:12px}.near b{font-size:10px}.near p{font-size:8.5px;color:var(--muted);margin:6px 0 0}
+.env{display:grid;grid-template-columns:1fr 1fr;gap:9px}.env h3{font-size:13px;margin:0 0 7px}.env p{font-size:8.5px;color:var(--muted);line-height:1.5}.rows{display:grid}.row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eee6d9;padding:8px 0;font-size:8.5px}.row b{font-size:9px}
+.loading,.empty{font-size:9px;color:var(--muted);padding:7px 0}.error{background:#f6e9e5;border:1px solid #e4cec7;color:var(--bad);border-radius:12px;padding:12px;font-size:9px;line-height:1.55}
+.footer{margin-top:25px;font-size:8.5px;color:var(--muted);line-height:1.6}
+@media(max-width:760px){.hero h1{font-size:30px}.grid,.metrics,.types,.sales,.comps,.nearby,.env,.reference{grid-template-columns:1fr}.head,.project-top{display:block}.source,.status{display:inline-block;margin-top:8px}}
 </style>
 </head>
 <body>
-<main class="page">
+<main class="wrap">
 <section class="hero">
-  <div class="eyebrow">JML IMMOBILIER · MON SECTEUR</div>
-  <h1>Le marché autour de votre bien</h1>
-  <p>Un aperçu simple des ventes réelles de votre commune, des repères de prix et des transactions les plus proches de votre projet.</p>
-  <a class="back" id="backLink" href="/projet-vendeur">← Retour à mon espace</a>
+  <div class="eyebrow">JML IMMOBILIER · ESPACE VENDEUR</div>
+  <h1>Mon secteur</h1>
+  <p>Une lecture claire du marché autour de votre bien : transactions réelles, prix signés, repère indicatif et ventes comparables autour de l'adresse.</p>
+  <a id="back" class="back" href="/projet-vendeur">← Retour à mon espace</a>
 </section>
 
-<section class="card property">
-  <div class="property-top">
-    <div><div class="eyebrow">VOTRE PROJET</div><h2 id="city">Votre commune</h2><div class="property-address" id="address">Adresse non renseignée</div></div>
-    <div class="status" id="status">Chargement des données publiques…</div>
+<section class="card project">
+  <div class="project-top">
+    <div><div class="eyebrow">VOTRE BIEN</div><h2 id="city">Chargement…</h2><div class="address" id="address">—</div></div>
+    <div class="status" id="status">Initialisation…</div>
   </div>
-  <div class="grid4">
-    <div class="info"><span>Type</span><strong id="type">—</strong></div>
-    <div class="info"><span>Surface</span><strong id="surface">—</strong></div>
-    <div class="info"><span>Pièces</span><strong id="rooms">—</strong></div>
-    <div class="info"><span>DPE</span><strong id="dpe">—</strong></div>
+  <div class="grid">
+    <div class="box"><label>Type</label><strong id="type">—</strong></div>
+    <div class="box"><label>Surface</label><strong id="surface">—</strong></div>
+    <div class="box"><label>Pièces</label><strong id="rooms">—</strong></div>
+    <div class="box"><label>DPE</label><strong id="dpe">—</strong></div>
   </div>
-  <a class="map" id="map" target="_blank" rel="noopener">Voir la localisation ↗</a>
-</section>
-
-<section class="section">
-  <div class="section-head"><div><div class="eyebrow">01 · MARCHÉ LOCAL</div><h2>Les chiffres de votre commune</h2></div><div class="source">DVF+ · Cerema · DGFiP</div></div>
-  <div class="card">
-    <div class="stats" id="stats">
-      <div class="stat"><label>Prix médian</label><strong>—</strong><small>€/m²</small></div>
-      <div class="stat"><label>Transactions</label><strong>—</strong><small>ventes disponibles</small></div>
-      <div class="stat"><label>Population</label><strong>—</strong><small>INSEE</small></div>
-      <div class="stat"><label>Code commune</label><strong>—</strong><small>COG</small></div>
-    </div>
-    <div class="types" id="types">
-      <div class="type"><b>Maisons</b><strong>—</strong><small>médiane €/m²</small></div>
-      <div class="type"><b>Appartements</b><strong>—</strong><small>médiane €/m²</small></div>
-      <div class="type"><b>Dernière vente connue</b><strong>—</strong><small>source DVF</small></div>
-    </div>
-    <div class="evolution" id="evolution"><h3>Lecture du marché</h3><p>Chargement des ventes réelles…</p></div>
-    <div class="history"><h3>Historique annuel des prix signés</h3><div class="bars" id="history"><div class="loading">Chargement…</div></div></div>
-  </div>
+  <a id="map" class="map" target="_blank" rel="noopener">Voir la localisation ↗</a>
 </section>
 
 <section class="section">
-  <div class="section-head"><div><div class="eyebrow">02 · REPÈRE VENDEUR</div><h2>Ce que le marché donne comme repère</h2></div><div class="source">Repère indicatif</div></div>
-  <div class="card compare" id="sellerReference">
-    <div class="compare-main"><h3>Valeur de référence</h3><div class="big">—</div><p>Le repère est calculé à partir du prix médian du type de bien et de la surface renseignée. Ce n'est pas une estimation certifiée.</p></div>
-    <div class="compare-list">
-      <div class="compare-item"><b>Base utilisée</b><span>—</span></div>
-      <div class="compare-item"><b>Surface</b><span>—</span></div>
-      <div class="compare-item"><b>Fourchette indicative</b><span>—</span></div>
-      <div class="compare-item"><b>Transactions de référence</b><span>—</span></div>
-    </div>
-  </div>
+ <div class="head"><div><div class="eyebrow">01 · MARCHÉ LOCAL</div><h2>Les chiffres de votre commune</h2></div><div class="source">DVF+ / Cerema / DGFiP</div></div>
+ <div class="card">
+  <div class="metrics" id="metrics"></div>
+  <div class="types" id="types"></div>
+  <div class="message" id="marketMessage">Chargement des données de marché…</div>
+  <div class="history"><h3>Historique annuel des prix signés</h3><div class="bars" id="history"><div class="loading">Chargement…</div></div></div>
+ </div>
 </section>
 
 <section class="section">
-  <div class="section-head"><div><div class="eyebrow">03 · VENTES RÉELLES</div><h2>Transactions récentes dans la commune</h2></div></div>
-  <div class="card">
-    <div class="sales" id="sales"><div class="loading">Chargement des transactions…</div></div>
-    <div class="note" id="salesNote">Les ventes affichées sont des transactions enregistrées dans les données DVF. Elles donnent un repère de marché mais ne décrivent pas à elles seules l'état du bien vendu.</div>
-  </div>
+ <div class="head"><div><div class="eyebrow">02 · REPÈRE VENDEUR</div><h2>Une valeur de référence simple</h2></div><div class="source">Indicatif · non certifié</div></div>
+ <div class="card reference" id="reference">
+  <div class="ref-main"><h3>Valeur de référence</h3><div class="ref-value">—</div><p>Calculée uniquement lorsque le type, la surface et un prix de marché exploitable sont disponibles.</p></div>
+  <div class="ref-list"><div class="ref-row"><b>Prix de base</b><span>—</span></div><div class="ref-row"><b>Fourchette</b><span>—</span></div><div class="ref-row"><b>Transactions</b><span>—</span></div></div>
+ </div>
 </section>
 
 <section class="section">
-  <div class="section-head"><div><div class="eyebrow">04 · COMPARABLES</div><h2>Premiers repères autour de votre adresse</h2></div><div class="source">Méthode JML Estimateur V7.4</div></div>
-  <div class="card">
-    <div class="compare" id="comparableSummary">
-      <div class="compare-main"><h3>Repère des ventes proches</h3><div class="big">—</div><p>Recherche progressive selon la distance, la récence, le type et la surface.</p></div>
-      <div class="compare-list">
-        <div class="compare-item"><b>Ventes retenues</b><span>—</span></div>
-        <div class="compare-item"><b>Périmètre</b><span>—</span></div>
-        <div class="compare-item"><b>Même rue</b><span>—</span></div>
-      </div>
-    </div>
-    <div class="comp-sales" id="comparables"><div class="loading">Recherche des ventes comparables…</div></div>
-  </div>
+ <div class="head"><div><div class="eyebrow">03 · TRANSACTIONS</div><h2>Ventes réelles dans la commune</h2></div><div class="source">DVF</div></div>
+ <div class="card"><div class="sales" id="sales"><div class="loading">Chargement…</div></div></div>
 </section>
 
 <section class="section">
-  <div class="section-head"><div><div class="eyebrow">05 · TERRITOIRE</div><h2>Les communes proches</h2></div></div>
-  <div class="card"><div class="nearby" id="nearby"><div class="loading">Recherche…</div></div></div>
+ <div class="head"><div><div class="eyebrow">04 · AUTOUR DE L'ADRESSE</div><h2>Ventes comparables</h2></div><div class="source">Moteur JML</div></div>
+ <div class="card">
+  <div class="reference" id="compSummary"><div class="ref-main"><h3>Recherche locale</h3><div class="ref-value">—</div><p>Le moteur recherche d'abord les ventes proches, puis élargit progressivement si nécessaire.</p></div><div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>—</span></div><div class="ref-row"><b>Périmètre</b><span>—</span></div><div class="ref-row"><b>Ventes retenues</b><span>—</span></div></div></div>
+  <div style="margin-top:10px"><div class="comps" id="comps"><div class="loading">Recherche des comparables…</div></div></div>
+ </div>
 </section>
 
 <section class="section">
-  <div class="section-head"><div><div class="eyebrow">06 · ENVIRONNEMENT</div><h2>Sécurité, risques et services</h2></div><div class="source">Données publiques</div></div>
-  <div class="env">
-    <div class="card"><h3>🛡️ Sécurité</h3><p>Faits enregistrés et indicateurs publics. Aucun score n'est fabriqué.</p><div class="env-list" id="security"><div class="loading">Chargement…</div></div></div>
-    <div class="card"><h3>⚠️ Risques</h3><p>Informations communales à vérifier ensuite à l'adresse exacte.</p><div class="env-list" id="risks"><div class="loading">Chargement…</div></div></div>
-  </div>
-  <div class="card" style="margin-top:10px"><h3 style="font-size:14px;margin:0 0 8px">🏫 Services et mobilité</h3><p style="font-size:10px;color:var(--muted)">Équipements publics cartographiés autour du centre communal.</p><div class="env-list" id="environment"><div class="loading">Chargement…</div></div></div>
+ <div class="head"><div><div class="eyebrow">05 · TERRITOIRE</div><h2>Les communes proches</h2></div></div>
+ <div class="card"><div class="nearby" id="nearby"><div class="loading">Chargement…</div></div></div>
 </section>
 
 <section class="section">
-  <div class="card">
-    <div class="eyebrow">TRANSPARENCE</div>
-    <h2 style="font:700 22px Georgia,serif;margin:5px 0">Sources et méthode</h2>
-    <p style="font-size:10px;color:var(--muted);line-height:1.65;margin:0">Les prix et transactions proviennent des données publiques DVF/DGFiP lorsqu'elles sont disponibles via DVF+ / Cerema. Les informations communales proviennent de l'API officielle de découpage administratif. Les comparables utilisent la logique JML Estimateur V7.4 : type strict, distance, récence, surface, pièces, filtrage des valeurs aberrantes et pondération. Si une donnée n'est pas disponible, aucun chiffre n'est inventé.</p>
-  </div>
+ <div class="head"><div><div class="eyebrow">06 · ENVIRONNEMENT</div><h2>Sécurité, risques et services</h2></div><div class="source">Données publiques</div></div>
+ <div class="env">
+  <div class="card"><h3>🛡️ Sécurité</h3><p>Indicateurs publics disponibles pour la commune.</p><div class="rows" id="security"><div class="loading">Chargement…</div></div></div>
+  <div class="card"><h3>⚠️ Risques</h3><p>Informations communales, à compléter par une vérification à l'adresse exacte.</p><div class="rows" id="risks"><div class="loading">Chargement…</div></div></div>
+ </div>
+ <div class="card" style="margin-top:9px"><h3>🏫 Services et mobilité</h3><p>Équipements et services publics disponibles autour de la commune.</p><div class="rows" id="environment"><div class="loading">Chargement…</div></div></div>
+</section>
+
+<section class="section">
+ <div class="card footer">
+  <div class="eyebrow">SOURCES & MÉTHODE</div>
+  <p>Les transactions immobilières proviennent des données DVF/DVF+ lorsqu'elles sont disponibles. Le repère vendeur est une multiplication du prix médian disponible par la surface renseignée, avec une fourchette indicative de ±15 %. Les comparables utilisent le moteur JML partagé avec l'estimateur : type, distance, récence, surface, pièces et filtrage des valeurs aberrantes.</p>
+  <p>Cette page ne fabrique pas de chiffre lorsqu'une source ne répond pas. Chaque bloc est chargé séparément afin qu'une panne d'un service ne masque pas les autres données.</p>
+ </div>
 </section>
 </main>
 
 <script>
-(async function(){
-  const $=s=>document.querySelector(s);
-  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const money=v=>Number.isFinite(Number(v))?Number(v).toLocaleString("fr-FR")+" €/m²":"—";
-  const euros=v=>Number.isFinite(Number(v))?Number(v).toLocaleString("fr-FR")+" €":"—";
-  const read=()=>{try{return JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){return{}}};
-  let d=read();
-  const params=new URLSearchParams(location.search);
-  d={...d,city:d.city||params.get("city")||"",address:d.address||params.get("address")||"",propertyType:d.propertyType||params.get("propertyType")||"",surface:d.surface||params.get("surface")||"",rooms:d.rooms||params.get("rooms")||"",dpe:d.dpe||params.get("dpe")||"",token:d.token||params.get("token")||""};
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const n=v=>Number.isFinite(Number(v))?Number(v):null;
+const eur=v=>n(v)!=null?Math.round(Number(v)).toLocaleString("fr-FR")+" €":"—";
+const m2=v=>n(v)!=null?Math.round(Number(v)).toLocaleString("fr-FR")+" €/m²":"—";
+const fmtDate=v=>v?String(v).slice(0,10):"—";
 
-  if(d.token){
-    try{
-      const r=await fetch("/api/seller-space/"+encodeURIComponent(d.token),{cache:"no-store"});
-      if(r.ok){const x=await r.json();if(x.ok&&x.space)d={...d,...x.space};}
-    }catch(e){}
+function getSpace(){
+ let x={};
+ try{x=JSON.parse(localStorage.getItem("jml-seller-space-v1")||"{}")}catch(e){}
+ const p=new URLSearchParams(location.search);
+ x.city=x.city||p.get("city")||"";
+ x.address=x.address||p.get("address")||"";
+ x.propertyType=x.propertyType||p.get("propertyType")||"";
+ x.surface=x.surface||p.get("surface")||"";
+ x.rooms=x.rooms||p.get("rooms")||"";
+ x.dpe=x.dpe||p.get("dpe")||"";
+ x.token=x.token||p.get("token")||"";
+ return x;
+}
+
+async function getData(url,ms){
+ const ctl=new AbortController();
+ const timer=setTimeout(()=>ctl.abort(),ms);
+ try{
+  const r=await fetch(url,{cache:"no-store",signal:ctl.signal});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error||("HTTP "+r.status));
+  return j;
+ }finally{clearTimeout(timer)}
+}
+
+function setProject(d){
+ $("#city").textContent=d.city||"Votre commune";
+ $("#address").textContent=d.address||"Adresse non renseignée";
+ $("#type").textContent=d.propertyType||"Non renseigné";
+ $("#surface").textContent=d.surface?d.surface+" m²":"Non renseignée";
+ $("#rooms").textContent=d.rooms?d.rooms+" pièce"+(Number(d.rooms)>1?"s":""):"Non renseigné";
+ $("#dpe").textContent=d.dpe||"Non renseigné";
+ if(d.token) $("#back").href="/espace-vendeur/"+encodeURIComponent(d.token);
+ if(d.address||d.city) $("#map").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([d.address,d.city].filter(Boolean).join(", "));
+}
+
+function renderMarket(data){
+ const market=data||{};
+ $("#metrics").innerHTML=[
+  ["Prix médian",m2(market.communalPrice),"commune"],
+  ["Transactions",n(market.transactions)!=null?Number(market.transactions).toLocaleString("fr-FR"):"—","ventes disponibles"],
+  ["Dernière vente",market.recentSales?.[0]?.date?fmtDate(market.recentSales[0].date):"—","DVF"],
+  ["Source",market.source||"—","origine des données"]
+ ].map(x=>'<div class="metric"><label>'+esc(x[0])+'</label><strong>'+esc(x[1])+'</strong><small>'+esc(x[2])+'</small></div>').join("");
+
+ $("#types").innerHTML=
+ '<div class="type"><b>Maisons</b><strong>'+esc(m2(market.housePrice))+'</strong><small>prix médian signé</small></div>'+
+ '<div class="type"><b>Appartements</b><strong>'+esc(m2(market.apartmentPrice))+'</strong><small>prix médian signé</small></div>'+
+ '<div class="type"><b>Dernière transaction</b><strong>'+esc(market.recentSales?.[0]?eur(market.recentSales[0].price):"—")+'</strong><small>'+esc(market.recentSales?.[0]?.address||"Aucune donnée")+'</small></div>';
+
+ $("#marketMessage").textContent=market.message||("Source : "+(market.source||"données publiques"));
+
+ const h=Array.isArray(market.history)?market.history.filter(x=>n(x.value)!=null):[];
+ if(!h.length){$("#history").innerHTML='<div class="empty">Historique annuel indisponible.</div>'}
+ else{
+  const vals=h.map(x=>Number(x.value)),min=Math.min(...vals),max=Math.max(...vals);
+  $("#history").innerHTML=h.map(x=>{
+   const pct=max===min?55:18+((Number(x.value)-min)/(max-min))*72;
+   return '<div class="bar"><em>'+Math.round(Number(x.value)).toLocaleString("fr-FR")+'</em><i style="height:'+pct+'%"></i><b>'+esc(x.year)+'</b></div>';
+  }).join("");
+ }
+}
+
+function renderSales(rows){
+ if(!Array.isArray(rows)||!rows.length){$("#sales").innerHTML='<div class="empty">Aucune transaction exploitable récupérée pour cette commune.</div>';return}
+ $("#sales").innerHTML=rows.slice(0,9).map(s=>
+ '<article class="sale"><div class="sale-top"><b>'+esc(s.type||"Bien")+'</b><span class="price">'+esc(eur(s.price))+'</span></div>'+
+ '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(fmtDate(s.date))+' · '+esc(s.surface?s.surface+" m²":"surface non renseignée")+'<br>'+esc(m2(s.pricePerM2))+'</p>'+
+ '<span class="tag">'+esc(s.source||"DVF")+'</span></article>'
+ ).join("");
+}
+
+function renderReference(ref){
+ const r=ref||{};
+ const value=r.referenceValue;
+ $("#reference").innerHTML=
+ '<div class="ref-main"><h3>Valeur de référence</h3><div class="ref-value">'+esc(eur(value))+'</div><p>'+esc(r.explanation||"Repère indicatif disponible lorsque les données nécessaires sont présentes.")+'</p></div>'+
+ '<div class="ref-list"><div class="ref-row"><b>Prix de base</b><span>'+esc(m2(r.basePriceM2))+'</span></div>'+
+ '<div class="ref-row"><b>Fourchette indicative</b><span>'+(r.range?.low!=null?esc(eur(r.range.low))+" → "+esc(eur(r.range.high)):"—")+'</span></div>'+
+ '<div class="ref-row"><b>Transactions prises en compte</b><span>'+esc(r.transactions??"—")+'</span></div></div>';
+}
+
+function renderComps(c){
+ c=c||{};
+ $("#compSummary").innerHTML=
+ '<div class="ref-main"><h3>Repère des ventes proches</h3><div class="ref-value">'+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"—")+'</div><p>'+esc(c.message||c.method||"Recherche progressive autour de l'adresse.")+'</p></div>'+
+ '<div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>'+esc(c.origin?.lat!=null?"Oui":"Non")+'</span></div>'+
+ '<div class="ref-row"><b>Périmètre retenu</b><span>'+esc(c.searchScope||"—")+'</span></div>'+
+ '<div class="ref-row"><b>Ventes retenues</b><span>'+esc(c.matchCount??"—")+'</span></div></div>';
+ const rows=Array.isArray(c.sales)?c.sales:[];
+ if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
+ $("#comps").innerHTML=rows.map(s=>
+ '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="score">'+esc(s.score!=null?s.score+"/100":"—")+'</span></div>'+
+ '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+'</p>'+
+ '<span class="pill">'+esc(s.sameStreet?"Même rue":"Secteur proche")+'</span></article>'
+ ).join("");
+}
+
+function renderNearby(rows){
+ if(!Array.isArray(rows)||!rows.length){$("#nearby").innerHTML='<div class="empty">Communes proches indisponibles.</div>';return}
+ $("#nearby").innerHTML=rows.map(x=>'<div class="near"><b>'+esc(x.name||x.nom||"—")+'</b><p>'+esc(x.distanceKm!=null?x.distanceKm+" km":"distance non disponible")+(x.population?" · "+Number(x.population).toLocaleString("fr-FR")+" habitants":"")+'</p></div>').join("");
+}
+
+function renderRows(el,data){
+ if(!data){$(el).innerHTML='<div class="empty">Donnée indisponible.</div>';return}
+ const pairs=[];
+ Object.entries(data).forEach(([k,v])=>{
+  if(["available","message"].includes(k))return;
+  if(v==null||typeof v==="object")return;
+  pairs.push('<div class="row"><span>'+esc(k.replace(/_/g," "))+'</span><b>'+esc(v)+'</b></div>');
+ });
+ if(data.message) pairs.push('<div class="row"><span>Information</span><b>'+esc(data.message)+'</b></div>');
+ $(el).innerHTML=pairs.length?pairs.slice(0,8).join(""):'<div class="empty">Aucune donnée détaillée.</div>';
+}
+
+async function run(){
+ const d=getSpace();
+ setProject(d);
+ if(!d.city){
+  $("#status").textContent="Commune manquante";
+  $("#marketMessage").className="message bad";
+  $("#marketMessage").textContent="La commune n'est pas transmise à cette page. Retournez dans l'espace vendeur et ouvrez Mon secteur depuis le projet.";
+  return;
+ }
+
+ const base=new URLSearchParams({city:d.city});
+ if(d.address)base.set("address",d.address);
+ if(d.propertyType)base.set("propertyType",d.propertyType);
+ if(d.surface)base.set("surface",d.surface);
+ if(d.rooms)base.set("rooms",d.rooms);
+
+ // 1. Marché communal indépendant : il doit fonctionner même si le moteur de comparables tombe.
+ try{
+  const market=await getData("/api/commune-market?"+new URLSearchParams({city:d.city}).toString(),12000);
+  renderMarket(market);
+  renderSales(market.recentSales||[]);
+  $("#status").textContent="Marché communal chargé";
+  const isHouse=/maison/i.test(d.propertyType||"");
+  const isApt=/appartement|studio|duplex|loft/i.test(d.propertyType||"");
+  const basePrice=isHouse?market.housePrice:isApt?market.apartmentPrice:market.communalPrice;
+  const surf=n(d.surface);
+  renderReference({basePriceM2:basePrice,surface:surf,referenceValue:n(basePrice)!=null&&surf?Math.round(Number(basePrice)*surf):null,
+   range:n(basePrice)!=null&&surf?{low:Math.round(Number(basePrice)*surf*.85),high:Math.round(Number(basePrice)*surf*1.15)}:null,
+   transactions:market.transactions,type:isHouse?"Maison":isApt?"Appartement":"Tous biens",
+   explanation:"Repère calculé à partir du prix médian communal disponible et de la surface renseignée. Il ne constitue pas une estimation certifiée."
+  });
+ }catch(e){
+  $("#status").textContent="Marché partiellement indisponible";
+  $("#marketMessage").className="message bad";
+  $("#marketMessage").textContent="Les données communales n'ont pas répondu : "+(e.message||"erreur temporaire")+". Les autres blocs continuent indépendamment.";
+  $("#sales").innerHTML='<div class="error">Les transactions communales n’ont pas pu être chargées. Cela n’empêche pas la recherche des comparables.</div>';
+ }
+
+ // 2. Comparables : appel séparé.
+ try{
+  const territory=await getData("/api/territory-summary?"+base.toString(),14500);
+  renderComps(territory.market?.comparables||{});
+  if(territory.sellerReference) renderReference(territory.sellerReference);
+  if(Array.isArray(territory.nearby))renderNearby(territory.nearby);
+  $("#status").textContent=territory.market?.found?"Données marché + comparables chargés":"Page chargée · comparables traités";
+ }catch(e){
+  $("#comps").innerHTML='<div class="error">La recherche autour de l’adresse a échoué ou dépassé son délai. Les données communales restent indépendantes.</div>';
+  $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
+ }
+
+ // 3. Enrichissements : complètement séparés.
+ try{
+  const territory=await getData("/api/territory-summary?"+base.toString(),5000);
+  const c=territory.commune;
+  const coords=c?.centre?.coordinates;
+  if(/^d{5}$/.test(String(c?.code||""))&&Array.isArray(coords)&&coords.length>=2){
+   const q=new URLSearchParams({code:c.code,lat:String(coords[1]),lon:String(coords[0])});
+   const env=await getData("/api/territory-enrichment?"+q.toString(),10500);
+   renderRows("#security",env.security);
+   renderRows("#risks",env.risks);
+   renderRows("#environment",env.environment);
+  }else{
+   renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
   }
-
-  $("#city").textContent=d.city||"Votre commune";
-  $("#address").textContent=d.address||"Adresse non renseignée";
-  $("#type").textContent=d.propertyType||"Non renseigné";
-  $("#surface").textContent=d.surface?d.surface+" m²":"Non renseignée";
-  $("#rooms").textContent=d.rooms?d.rooms+" pièce"+(Number(d.rooms)>1?"s":""):"Non renseigné";
-  $("#dpe").textContent=d.dpe||"Non renseigné";
-  if(d.token) $("#backLink").href="/espace-vendeur/"+encodeURIComponent(d.token);
-  if(d.address||d.city) $("#map").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([d.address,d.city].filter(Boolean).join(", "));
-
-  const qs=new URLSearchParams({city:d.city||""});
-  if(d.address)qs.set("address",d.address);
-  if(d.propertyType)qs.set("propertyType",d.propertyType);
-  if(d.surface)qs.set("surface",d.surface);
-  if(d.rooms)qs.set("rooms",d.rooms);
-
-  function renderStats(commune,market){
-    $("#stats").innerHTML=[
-      ["Prix médian",money(market?.communalPrice),"repère communal"],
-      ["Transactions",market?.transactions?Number(market.transactions).toLocaleString("fr-FR"):"—","ventes disponibles"],
-      ["Population",commune?.population?Number(commune.population).toLocaleString("fr-FR"):"—","INSEE"],
-      ["Code commune",commune?.code||"—","COG INSEE"]
-    ].map(x=>'<div class="stat"><label>'+esc(x[0])+'</label><strong>'+esc(x[1])+'</strong><small>'+esc(x[2])+'</small></div>').join("");
-    const sales=Array.isArray(market?.recentSales)?market.recentSales:[];
-    const last=sales[0];
-    $("#types").innerHTML='<div class="type"><b>Maisons</b><strong>'+esc(money(market?.housePrice))+'</strong><small>médiane €/m²</small></div>'+
-      '<div class="type"><b>Appartements</b><strong>'+esc(money(market?.apartmentPrice))+'</strong><small>médiane €/m²</small></div>'+
-      '<div class="type"><b>Dernière vente connue</b><strong>'+esc(last?.date||"—")+'</strong><small>'+esc(last?((last.type||"Bien")+" · "+(last.pricePerM2?Math.round(last.pricePerM2).toLocaleString("fr-FR")+" €/m²":"prix non disponible")):"Aucune vente")+'</small></div>';
-    const history=Array.isArray(market?.history)?market.history.filter(x=>Number.isFinite(Number(x.value))):[];
-    if(!history.length){$("#history").innerHTML='<div class="empty">Historique annuel non disponible pour cette commune.</div>';}
-    else{
-      const max=Math.max(...history.map(x=>Number(x.value))),min=Math.min(...history.map(x=>Number(x.value)));
-      $("#history").innerHTML=history.map(x=>{
-        const pct=max===min?55:18+((Number(x.value)-min)/(max-min))*72;
-        return '<div class="bar"><em>'+Number(x.value).toLocaleString("fr-FR")+'</em><i style="height:'+pct+'%"></i><b>'+esc(x.year)+'</b></div>';
-      }).join("");
-    }
-    const source=market?.source||"Données publiques";
-    $("#evolution").innerHTML="<h3>Lecture du marché</h3><p>"+esc(market?.message||("Source utilisée : "+source))+"</p>";
-  }
-
-  function renderSales(sales){
-    if(!sales.length){$("#sales").innerHTML='<div class="empty">Aucune transaction exploitable n’a été récupérée pour le moment.</div>';return;}
-    $("#sales").innerHTML=sales.slice(0,9).map(s=>'<article class="sale"><div class="sale-top"><strong>'+esc(s.type||"Bien")+'</strong><span class="price">'+esc(euros(s.price))+'</span></div><p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.date||"Date non renseignée")+' · '+esc(s.surface?Number(s.surface).toLocaleString("fr-FR")+" m²":"surface non renseignée")+'<br>'+esc(s.pricePerM2?Math.round(s.pricePerM2).toLocaleString("fr-FR")+" €/m²":"prix/m² non disponible")+'</p><span class="tag">'+esc(s.source||"DVF")+'</span></article>').join("");
-  }
-
-  function renderReference(x){
-    const r=x?.sellerReference||{};
-    const c=x?.market?.comparables||{};
-    const box=$("#sellerReference");
-    const base=r.basePriceM2?money(r.basePriceM2):"—";
-    const value=r.referenceValue?euros(r.referenceValue):"—";
-    const range=r.range?.low&&r.range?.high?euros(r.range.low)+" → "+euros(r.range.high):"—";
-    box.innerHTML='<div class="compare-main"><h3>Valeur de référence</h3><div class="big">'+esc(value)+'</div><p>'+esc(r.explanation||"Repère indicatif construit à partir des données disponibles.")+'</p></div>'+
-      '<div class="compare-list">'+
-      '<div class="compare-item"><b>Base utilisée</b><span>'+esc(base)+" · "+esc(r.type||d.propertyType||"Type non renseigné")+'</span></div>'+
-      '<div class="compare-item"><b>Surface</b><span>'+esc(r.surface?r.surface+" m²":"—")+'</span></div>'+
-      '<div class="compare-item"><b>Fourchette indicative</b><span>'+esc(range)+'</span></div>'+
-      '<div class="compare-item"><b>Transactions de référence</b><span>'+esc(r.transactions??"—")+'</span></div></div>';
-  }
-
-  function renderComparables(x){
-    const c=x?.market?.comparables||{};
-    $("#comparableSummary").innerHTML='<div class="compare-main"><h3>Repère des ventes proches</h3><div class="big">'+esc(c.weightedPriceM2?money(c.weightedPriceM2):"—")+'</div><p>'+esc(c.method||c.message||"Recherche progressive autour de l’adresse.")+'</p></div>'+
-      '<div class="compare-list"><div class="compare-item"><b>Ventes retenues</b><span>'+esc(c.matchCount??0)+'</span></div><div class="compare-item"><b>Périmètre</b><span>'+esc(c.searchScope||"—")+'</span></div><div class="compare-item"><b>Même rue</b><span>'+esc(Array.isArray(c.sameStreet)?c.sameStreet.length:0)+'</span></div></div>';
-    const rows=Array.isArray(c.sales)?c.sales:[];
-    if(!rows.length){$("#comparables").innerHTML='<div class="empty">'+esc(c.message||"Aucun comparable exploitable pour cette adresse.")+'</div>';return;}
-    $("#comparables").innerHTML=rows.map(s=>'<article class="comp"><strong>'+esc(s.type||"Bien")+' · '+esc(s.address||"Adresse non renseignée")+'</strong><p>'+esc(s.date||"Date inconnue")+' · '+esc(s.surface?Number(s.surface).toLocaleString("fr-FR")+" m²":"surface inconnue")+'<br>'+esc(s.pricePerM2?Math.round(s.pricePerM2).toLocaleString("fr-FR")+" €/m²":"prix/m² —")+' · '+esc(s.distanceKm!=null?Number(s.distanceKm).toLocaleString("fr-FR")+" km":"distance —")+'</p><span class="score">Score '+esc(s.score??"—")+(s.sameStreet?" · même rue":"")+'</span></article>').join("");
-  }
-
-  function renderNearby(rows){
-    if(!Array.isArray(rows)||!rows.length){$("#nearby").innerHTML='<div class="empty">Communes proches non disponibles.</div>';return;}
-    $("#nearby").innerHTML=rows.map(x=>'<article class="near"><strong>'+esc(x.name||"Commune")+'</strong><p>'+esc(x.distanceKm!=null?Number(x.distanceKm).toLocaleString("fr-FR")+" km":"distance non disponible")+' · '+esc(x.population?Number(x.population).toLocaleString("fr-FR")+" habitants":"population non disponible")+'</p></article>').join("");
-  }
-
-  function rowsHtml(data){
-    if(!data||data.available===false)return '<div class="empty">'+esc(data?.message||"Donnée indisponible.")+'</div>';
-    const entries=Array.isArray(data?.indicators)?data.indicators:Array.isArray(data?.items)?data.items:[];
-    if(entries.length)return entries.slice(0,8).map(x=>'<div class="env-row"><span>'+esc(x.label||x.name||x.title||"Indicateur")+'</span><b>'+esc(x.value??x.count??"—")+'</b></div>').join("");
-    const keys=Object.keys(data).filter(k=>!["available","message","source","sourceUrl","year"].includes(k)).slice(0,8);
-    if(!keys.length)return '<div class="empty">'+esc(data?.message||"Aucune donnée détaillée disponible.")+'</div>';
-    return keys.map(k=>'<div class="env-row"><span>'+esc(k)+'</span><b>'+esc(typeof data[k]==="object"?JSON.stringify(data[k]):data[k])+'</b></div>').join("");
-  }
-
-  try{
-    if(!d.city){throw new Error("Commune absente. Revenez à votre espace vendeur et relancez l’analyse.");}
-    const response=await fetch("/api/territory-summary?"+qs.toString(),{cache:"no-store"});
-    const x=await response.json().catch(()=>null);
-    if(!response.ok||!x?.ok){
-      const detail=[x?.stage,x?.detail].filter(Boolean).join(" · ");
-      throw new Error([x?.error||"Les données territoriales sont momentanément indisponibles.",detail].filter(Boolean).join(" — "));
-    }
-    renderStats(x.commune,x.market);
-    renderSales(x.market?.recentSales||[]);
-    renderReference(x);
-    renderComparables(x);
-    renderNearby(x.nearby);
-    $("#status").textContent=x.market?.found?"Données publiques chargées":"Données de marché partielles";
-    if(x.diagnostics?.marketSource) $("#salesNote").textContent="Source de marché : "+x.diagnostics.marketSource+". "+(x.market?.message||"");
-    const code=x.commune?.code, center=x.commune?.centre?.coordinates;
-    if(code&&Array.isArray(center)&&center.length>=2){
-      try{
-        const er=await fetch("/api/territory-enrichment?code="+encodeURIComponent(code)+"&lat="+encodeURIComponent(center[1])+"&lon="+encodeURIComponent(center[0]),{cache:"no-store"});
-        const ex=await er.json().catch(()=>null);
-        if(ex?.ok){
-          $("#security").innerHTML=rowsHtml(ex.security);
-          $("#risks").innerHTML=rowsHtml(ex.risks);
-          $("#environment").innerHTML=rowsHtml(ex.environment);
-        }else{
-          $("#security").innerHTML=rowsHtml({available:false,message:ex?.error});
-          $("#risks").innerHTML=rowsHtml({available:false,message:ex?.error});
-          $("#environment").innerHTML=rowsHtml({available:false,message:ex?.error});
-        }
-      }catch(e){
-        const msg={available:false,message:"Les enrichissements locaux sont temporairement indisponibles."};
-        $("#security").innerHTML=rowsHtml(msg);$("#risks").innerHTML=rowsHtml(msg);$("#environment").innerHTML=rowsHtml(msg);
-      }
-    }
-  }catch(error){
-    $("#status").textContent="Données momentanément indisponibles";
-    document.querySelectorAll(".section").forEach(s=>{if(!s.querySelector(".error")&&!s.querySelector(".card")){}});
-    $("#stats").innerHTML='<div class="error" style="grid-column:1/-1">'+esc(error.message)+'</div>';
-    $("#sales").innerHTML='<div class="empty">Aucune donnée affichée tant que la commune ne peut pas être chargée.</div>';
-    $("#comparableSummary").innerHTML='<div class="error" style="grid-column:1/-1">La page a été simplifiée : aucune donnée inventée n’est affichée en cas d’échec de source.</div>';
-    $("#comparables").innerHTML="";
-    $("#nearby").innerHTML='<div class="empty">—</div>';
-  }
+ }catch(e){
+  renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
+ }
+}
+run();
 })();
 </script>
 </body>
