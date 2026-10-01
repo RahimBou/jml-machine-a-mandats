@@ -1,5 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><defs>
-<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#173b32"/><stop offset=".58" stop-color="#285448"/><stop offset="1" stop-color="#c9a85e"/></linearGradient>
-<linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f7d98b"/><stop offset="1" stop-color="#c9a85e"/></linearGradient>
-<filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity=".18"/></filter>
-</defs><rect width="640" height="360" fill="#173b32"/><rect x="0" y="0" width="640" height="360" fill="url(#g)" opacity=".28"/><path d="M105 285V165l115-90 115 90v120Z" fill="#f5f1e8"/><path d="M78 170L220 55l142 115-22 27-120-96-120 96Z" fill="#c9a85e"/><rect x="190" y="220" width="58" height="65" fill="#173b32"/><circle cx="500" cy="105" r="58" fill="#c9a85e"/><path d="M475 105l18 18 38-48" fill="none" stroke="#173b32" stroke-width="9" stroke-linecap="round"/><text x="500" y="205" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#f5f1e8">VOTRE PROJET</text><text x="500" y="236" text-anchor="middle" font-family="Arial" font-size="16" fill="#d8bb7a">UNE ÉTAPE À LA FOIS</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#edf1e8"/><stop offset="1" stop-color="#ead9b8"/></linearGradient></defs>
+<rect width="640" height="360" fill="url(#bg)"/>
+<path d="M0 250 Q130 195 260 230 T500 220 T640 205V360H0Z" fill="#5e7d70"/>
+<g transform="translate(75 78)">
+<rect x="0" y="80" width="355" height="145" fill="#d9c19a"/>
+<path d="M-20 82L178 -8L375 82Z" fill="#304744"/>
+<g stroke="#8c6a49" stroke-width="7"><path d="M58 85V225M118 85V225M178 60V225M238 85V225M298 85V225"/><path d="M18 140H338M18 190H338"/></g>
+<g fill="#f7e8c8"><rect x="30" y="105" width="40" height="35"/><rect x="85" y="105" width="40" height="35"/><rect x="158" y="92" width="40" height="48"/><rect x="215" y="105" width="40" height="35"/><rect x="270" y="105" width="40" height="35"/></g>
+<rect x="151" y="160" width="55" height="65" fill="#704f3b"/>
+</g>
+<g transform="translate(455 70)" fill="#fffaf0" stroke="#b8944e" stroke-width="3"><rect width="115" height="145" rx="10"/><path d="M18 35H97M18 58H97M18 81H80M18 104H92" stroke="#c8b58e" stroke-width="6"/></g>
+<circle cx="532" cy="53" r="19" fill="#d9bc72"/>
+</svg>
