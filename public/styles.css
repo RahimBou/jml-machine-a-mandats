@@ -24,6 +24,17 @@
 .jml-architecture{background-image:linear-gradient(90deg,rgba(23,59,50,.94) 0%,rgba(23,59,50,.68) 48%,rgba(23,59,50,.16) 100%),url('/assets/charleville-place-ducale.svg')!important;background-size:cover!important;background-position:center!important}
 .jml-architecture:after{content:"";position:absolute;inset:auto 0 0;height:5px;background:linear-gradient(90deg,transparent,#c9a85e 15%,#f1d78e 50%,#c9a85e 85%,transparent);z-index:3}
 
+/* V2.5 — grand hero réaliste : Place Ducale */
+.seller-dashboard-hero{
+  background-image:linear-gradient(90deg,rgba(8,48,39,.92) 0%,rgba(8,48,39,.70) 42%,rgba(8,48,39,.22) 78%,rgba(8,48,39,.08) 100%),url("https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Place_Ducale_28-54_with_terraces%2C_Charleville-M%C3%A9zi%C3%A8res.jpg/1920px-Place_Ducale_28-54_with_terraces%2C_Charleville-M%C3%A9zi%C3%A8res.jpg")!important;
+  background-position:center 48%!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+@media(max-width:600px){
+  .seller-dashboard-hero{background-position:center center!important;}
+}
+
 /* V2.4 — cohérence visuelle locale : architecture Ardennaise partout */
 .seller-dashboard-hero{
   background-image:linear-gradient(180deg,rgba(8,48,39,.10),rgba(8,48,39,.82)),url("/assets/charleville-place-ducale.svg")!important;
