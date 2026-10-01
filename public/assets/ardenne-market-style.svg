@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 620" role="img" aria-labelledby="title desc">
+<title id="title">Identité visuelle Ardennes JML Immobilier</title>
+<desc id="desc">Paysage stylisé des Ardennes avec rivière, pont, architecture, flèche dorée et loupe immobilière.</desc>
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8f4ea"/><stop offset="1" stop-color="#dce8e0"/></linearGradient>
+  <linearGradient id="river" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a9c8c0"/><stop offset="1" stop-color="#547d73"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e9c979"/><stop offset=".55" stop-color="#b8944e"/><stop offset="1" stop-color="#8a6a2d"/></linearGradient>
+  <linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#173b32"/><stop offset="1" stop-color="#285848"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="12" flood-opacity=".18"/></filter>
+</defs>
+<rect width="1600" height="620" fill="url(#sky)"/>
+<path d="M0 300 C180 230 280 250 430 290 S720 250 890 285 S1190 220 1600 270 V430 H0Z" fill="#719176" opacity=".8"/>
+<path d="M0 345 C190 300 300 320 470 350 S800 305 980 345 S1300 290 1600 330 V440 H0Z" fill="#426c5b" opacity=".9"/>
+<path d="M0 410 C260 370 480 390 700 415 S1120 365 1600 400 V620 H0Z" fill="url(#river)"/>
+<path d="M0 454 C300 420 480 438 690 465 S1120 430 1600 445" fill="none" stroke="#dcebe5" stroke-width="8" opacity=".55"/>
+<g fill="#f4efe4" stroke="#8d8068" stroke-width="3">
+  <path d="M250 345 L250 285 L300 245 L360 285 L360 345Z"/><path d="M360 345 L360 275 L425 230 L495 275 L495 345Z"/>
+  <path d="M500 345 L500 255 L575 205 L650 255 L650 345Z"/><path d="M670 345 L670 270 L740 220 L810 270 L810 345Z"/>
+  <path d="M830 345 L830 260 L900 210 L975 260 L975 345Z"/><path d="M1000 345 L1000 275 L1060 235 L1125 275 L1125 345Z"/>
+</g>
+<g fill="#8b5f3d" opacity=".9"><path d="M240 285 L300 238 L370 285Z"/><path d="M350 275 L425 222 L505 275Z"/><path d="M490 255 L575 195 L660 255Z"/><path d="M660 270 L740 212 L820 270Z"/><path d="M820 260 L900 202 L985 260Z"/><path d="M990 275 L1060 228 L1135 275Z"/></g>
+<g fill="#f8f4ea" stroke="#81745f" stroke-width="4">
+  <path d="M555 345 V205 L600 165 L645 205 V345Z"/>
+  <path d="M585 165 L600 75 L615 165Z"/>
+</g>
+<path d="M0 455 Q170 420 340 445 T680 450" fill="none" stroke="#8d8068" stroke-width="26"/>
+<path d="M0 442 Q170 408 340 432 T680 438" fill="none" stroke="#d8cdb8" stroke-width="15"/>
+<g fill="#173b32"><circle cx="170" cy="385" r="28"/><circle cx="215" cy="375" r="34"/><circle cx="1170" cy="385" r="35"/><circle cx="1230" cy="375" r="30"/><circle cx="1290" cy="385" r="36"/><circle cx="1360" cy="375" r="30"/></g>
+<g filter="url(#shadow)">
+  <path d="M170 545 L720 405" stroke="url(#gold)" stroke-width="24" stroke-linecap="round"/>
+  <path d="M700 392 L790 380 L735 455 Z" fill="url(#gold)"/>
+</g>
+<g transform="translate(1160 430) rotate(-18)" filter="url(#shadow)">
+  <circle cx="0" cy="0" r="105" fill="#fffdf8" stroke="url(#gold)" stroke-width="20"/>
+  <circle cx="0" cy="0" r="83" fill="none" stroke="#173b32" stroke-width="11"/>
+  <path d="M-42 20 L0 -18 L45 20 M-28 12 V55 H28 V12" fill="none" stroke="#173b32" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28 55 H47" stroke="#173b32" stroke-width="12" stroke-linecap="round"/>
+  <path d="M72 72 L170 170" stroke="#173b32" stroke-width="34" stroke-linecap="round"/>
+  <path d="M72 72 L170 170" stroke="url(#gold)" stroke-width="10" stroke-linecap="round"/>
+</g>
+<rect x="0" y="0" width="1600" height="620" fill="url(#green)" opacity=".08"/>
+<path d="M0 560 C280 500 500 600 760 550 S1260 500 1600 545 V620 H0Z" fill="#173b32" opacity=".94"/>
+<path d="M0 565 C280 505 500 605 760 555 S1260 505 1600 550" fill="none" stroke="#d8bb7a" stroke-width="4" opacity=".9"/>
+</svg>
