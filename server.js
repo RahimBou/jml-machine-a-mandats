@@ -323,7 +323,7 @@ async function getGeoRisks(code){
   if(!/^\d{5}$/.test(cleanCode)) return {available:false,message:"Code INSEE non disponible."};
   const reportUrl="https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2/"+cleanCode+"/commune/00000";
   try{
-    const response=await fetch("https://www.georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+encodeURIComponent(cleanCode)+"&rayon=1000&page=1&page_size=100,{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"application/json"},signal:AbortSignal.timeout(6000)});
+    const response=await fetch("https://www.georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+encodeURIComponent(cleanCode)+"&rayon=1000&page=1&page_size=100",{headers:{"User-Agent":"JML-Projet-Vendeur/3.0","Accept":"application/json"},signal:AbortSignal.timeout(6000)});
     if(response.ok){
       const payload=await response.json();
       const rawRows=Array.isArray(payload)?payload:(Array.isArray(payload.data)?payload.data:(Array.isArray(payload.resultats)?payload.resultats:[]));
