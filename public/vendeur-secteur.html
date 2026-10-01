@@ -226,55 +226,39 @@ function setProject(d){
 }
 
 function renderSellerPost(){
- const d=pageData.space||{};
- const market=pageData.market||{};
- const ref=pageData.reference||{};
- const assets=pageData.assets||{};
- const comps=pageData.comparables||{};
+ const d=pageData.space||{}, ref=pageData.reference||{}, comps=pageData.comparables||{}, assets=pageData.assets||{};
  const cats=assets.categories||{};
- const shop=Number(cats.commerces?.count||0);
- const health=Number(cats.health?.count||0);
- const services=Number(cats.services?.count||0);
- const schools=Number(cats.schools?.count||0);
- const parks=Number(cats.parks?.count||0);
- const transport=Number(cats.transport?.count||0);
- const base=Number(ref.basePriceM2);
- const compM2=Number(comps.weightedPriceM2||comps.median);
- const refValue=Number(ref.referenceValue);
- const type=d.propertyType||"bien";
- const surface=d.surface?d.surface+" m²":"";
- const commune=d.city||"ce secteur";
+ const base=Number(ref.basePriceM2), compM2=Number(comps.weightedPriceM2||comps.median), refValue=Number(ref.referenceValue);
+ const type=d.propertyType||"bien", surface=d.surface?d.surface+" m²":"", commune=d.city||"ce secteur";
  const priceLine=Number.isFinite(refValue)&&refValue>0
-   ?"Le repère indicatif ressort autour de "+Math.round(refValue).toLocaleString("fr-FR")+" €, à partir d'un prix de référence de "+Math.round(base).toLocaleString("fr-FR")+" €/m² pour "+surface+"."
-   :"Le repère de prix est construit à partir des transactions réelles disponibles dans la commune et, lorsque possible, des ventes comparables autour de l'adresse.";
+   ?"Le repère indicatif ressort autour de "+Math.round(refValue).toLocaleString("fr-FR")+" €, à partir de "+Math.round(base).toLocaleString("fr-FR")+" €/m²."
+   :"Le repère de prix est construit à partir des transactions réelles disponibles.";
  const compLine=Number.isFinite(compM2)&&compM2>0
-   ?"Les ventes comparables retenues autour du bien apportent un second repère à "+Math.round(compM2).toLocaleString("fr-FR")+" €/m²."
-   :"Les ventes comparables sont utilisées séparément lorsqu'elles sont disponibles.";
- const advantages=[];
- if(schools>0)advantages.push(schools+" établissements scolaires");
- if(shop>0)advantages.push(shop+" commerces");
- if(transport>0)advantages.push(transport+" points de mobilité");
- if(parks>0)advantages.push(parks+" équipements de loisirs");
- if(health>0)advantages.push(health+" équipements de santé");
- if(services>0)advantages.push(services+" services");
- const sectorLine=advantages.length
-   ?"Le secteur bénéficie également d'une offre de proximité concrète : "+advantages.join(", ")+" dans le rayon analysé."
-   :"L'environnement du bien est présenté à partir des équipements officiellement identifiés autour de l'adresse.";
+   ?"Les ventes comparables retenues apportent un second repère à "+Math.round(compM2).toLocaleString("fr-FR")+" €/m²."
+   :"Les ventes comparables sont utilisées lorsqu'elles sont disponibles.";
+ const highlights=[];
+ ["family","daily","health","mobility","leisure"].forEach(key=>{
+   const c=cats[key], item=(c?.items||[])[0];
+   if(item) highlights.push((item.type||c.label)+(item.distanceLabel?" ("+item.distanceLabel+")":""));
+ });
+ const sectorLine=highlights.length
+   ?"Pour la présentation du bien, on peut surtout retenir : "+highlights.slice(0,4).join(", ")+"."
+   :"L'environnement du bien pourra être complété avec les atouts de proximité vérifiés lors de la visite.";
  const post=[
-  "🏡 Pourquoi ce prix pour ce "+type+" à "+commune+" ?",
+  "🏡 "+type+" à "+commune+" : les repères utiles pour comprendre le prix",
   "",
   priceLine,
   compLine,
   "",
   sectorLine,
   "",
-  "L'objectif n'est pas de retenir un chiffre théorique, mais de croiser les prix réellement signés avec les caractéristiques du bien et son environnement.",
+  "Ces éléments servent à présenter concrètement le bien et son environnement ; ils ne constituent pas à eux seuls une surcote automatique.",
   "",
-  "📍 Un secteur pratique, des repères de marché concrets et une présentation fondée sur des données vérifiables."
+  "📍 Des données locales, des ventes réelles et des éléments de proximité vérifiables."
  ].join("\n");
- const el=$("#sellerPost");
- if(el)el.textContent=post;
+ const el=$("#sellerPost"); if(el)el.textContent=post;
 }
+
 function renderAssets(data){
  pageData.assets=data||null;
  const box=$("#assets");
@@ -287,41 +271,42 @@ function renderAssets(data){
  addDiag(data.source||"Équipements / source locale","JML-ASSET-OK",String(data.provider||"source répondante"));
  const cats=data.categories||{};
  const order=[
-  ["schools","🎓 Écoles & famille","Établissements scolaires autour de l'adresse."],
-  ["commerces","🛒 Commerces","Commerces de proximité et achats du quotidien."],
-  ["transport","🚌 Mobilité & stationnement","Transports, gares et points de stationnement autour de l'adresse."],
-  ["parks","🌳 Parcs & loisirs","Parcs, aires de jeux et équipements de loisirs."],
-  ["health","⚕️ Santé","Pharmacies, médecins, cliniques et hôpitaux."],
-  ["services","🏪 Services","Poste, banque, bibliothèque, restauration et services."]
+  ["family","🎓 Écoles & famille","Ce qui peut compter pour un ménage avec enfants."],
+  ["daily","🛒 Vie quotidienne","Les commerces réellement utiles au quotidien."],
+  ["health","⚕️ Santé","Les professionnels et services de santé proches."],
+  ["mobility","🚌 Mobilité","Les équipements de transport identifiés autour du bien."],
+  ["leisure","🌳 Loisirs & vie locale","Quelques équipements utiles pour la vie de quartier."]
  ];
- box.innerHTML=order.map(([key,title,desc])=>{
-  const c=cats[key]||{count:0,items:[],available:false};
-  const known=c.available!==false;
-  const countLabel=known?String(c.count||0):"—";
-  const items=(c.items||[]).slice(0,4).map(x=>'<li>'+esc(x.name||"Équipement")+' <span class="distance">'+esc(x.distanceKm)+" km</span></li>").join("");
-  const body=known
-    ? (items||'<li>Aucun équipement identifié dans le rayon.</li>')
-    : '<li><b>Non renseigné</b> — la source officielle n’est pas encore disponible pour ce territoire.</li>';
-  return '<article class="asset"><div class="asset-head"><h3>'+title+'</h3><span class="asset-count">'+esc(countLabel)+'</span></div><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||"Source officielle")+'</small></article>';
+ box.innerHTML=
+ '<div class="asset-intro"><b>Ce qui est réellement utile à un acheteur</b><p>On ne retient plus le nombre brut de services dans la commune. La sélection privilégie les équipements concrets et proches de l’adresse, avec un rayon principal de 800 m.</p></div>'+
+ order.map(([key,title,desc])=>{
+   const c=cats[key]||{items:[],count:0,available:false};
+   const items=(c.items||[]).slice(0,5);
+   const body=items.length
+     ? items.map(x=>{
+         const label=x.type||x.name||"Équipement";
+         const name=x.name&&x.name!==label?x.name:"";
+         return '<li><b>'+esc(label)+'</b>'+(name?' · '+esc(name):'')+' <span class="distance">'+esc(x.distanceLabel||((Number(x.distanceKm)||0).toFixed(2)+" km"))+'</span></li>';
+       }).join("")
+     : (c.available===false?'<li><b>Source indisponible</b> pour cette catégorie.</li>':'<li>Aucun équipement pertinent identifié dans le rayon principal.</li>');
+   return '<article class="asset"><div class="asset-head"><h3>'+title+'</h3><span class="asset-count">'+esc(items.length?String(items.length):"—")+'</span></div><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||"Source officielle")+(c.count!=null&&c.count>items.length?" · "+esc(String(c.count))+" repères à moins de 800 m":"")+'</small></article>';
  }).join("");
- const total=k=>cats[k]?.available===false?null:Number(cats[k]?.count||0);
- const schools=total("schools"),shops=total("commerces"),transport=total("transport"),parks=total("parks"),health=total("health");
- const proofs=[
-  ["Proximité",[parks,shops,schools].some(v=>v!==null&&v>0) ? "Équipements accessibles" : "À vérifier"],
-  ["Vie quotidienne",shops===null?"À compléter":(shops>0?shops+" commerces identifiés":"Aucun identifié")],
-  ["Mobilité",transport===null?"À vérifier":(transport>0?transport+" points de transport":"Aucun identifié")],
-  ["Famille / loisirs",schools!==null&&parks!==null?(schools+parks)+" repères identifiés":(schools!==null?schools+" repères scolaires":"À vérifier")]
- ];
- $("#proof").innerHTML=proofs.map(x=>'<div><b>'+x[0]+'</b><strong>'+esc(x[1])+'</strong></div>').join("");
- const parts=[];
- if(schools)parts.push(schools+" équipement(s) scolaire(s)");
- if(shops)parts.push(shops+" commerce(s)");
- if(transport)parts.push(transport+" repère(s) de mobilité ou stationnement");
- if(parks)parts.push(parks+" parc(s), aire(s) de jeux ou équipement(s) de loisirs");
- if(health)parts.push(health+" équipement(s) de santé");
+ const pick=(key)=>((cats[key]?.items||[])[0]);
+ const proof=[];
+ const f=pick("family"), d=pick("daily"), h=pick("health"), m=pick("mobility"), l=pick("leisure");
+ if(f)proof.push(["Famille",f.type||"Équipement scolaire"]);
+ if(d)proof.push(["Quotidien",d.type||"Commerce de proximité"]);
+ if(h)proof.push(["Santé",h.type||"Professionnel de santé"]);
+ if(m)proof.push(["Mobilité",m.type||"Transport"]);
+ if(l)proof.push(["Loisirs",l.type||"Équipement de loisirs"]);
+ $("#proof").innerHTML=proof.length
+   ?proof.slice(0,4).map(x=>'<div><b>'+esc(x[0])+'</b><strong>'+esc(x[1])+'</strong></div>').join("")
+   :'<div><b>Proximité</b><strong>À compléter</strong></div>';
+ const parts=proof.slice(0,4).map(x=>x[1]);
  $("#sellingPitch").textContent=parts.length
-   ?"À proximité de l'adresse, on peut objectivement mettre en avant "+parts.join(", ")+". Ce sont des éléments concrets à intégrer dans l'argumentaire et la visite."
-   :"Aucun équipement de proximité n'a pu être identifié automatiquement dans le rayon retenu. Il faudra compléter manuellement les atouts du quartier.";
+   ?"Pour le vendeur, les arguments de proximité les plus concrets sont : "+parts.join(", ")+". À présenter comme des éléments de confort et de vie quotidienne, sans leur attribuer automatiquement une valeur financière."
+   :"Aucun repère de proximité suffisamment pertinent n'a pu être identifié automatiquement dans le rayon retenu.";
+ renderSellerPost();
 }
 function renderMarket(data){
  const market=data||{};
