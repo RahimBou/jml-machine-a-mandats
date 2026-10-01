@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="jml-version" content="2026-10-01-mon-secteur-rebuild-1">
+<meta name="jml-version" content="2026-10-01-mon-secteur-rebuild-2">
 <title>JML Immobilier — Mon secteur</title>
 <style>
 :root{--g:#173b32;--g2:#245346;--gold:#c9a85b;--cream:#f5f0e6;--paper:#fffdf8;--line:#e4dccd;--ink:#173b32;--muted:#68736c;--bad:#8a5147}
@@ -64,7 +64,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">01 · LES ATOUTS DE L'ADRESSE</div><h2>Pourquoi ce bien peut séduire</h2></div><div class="source">Données géolocalisées</div></div>
+ <div class="head"><div><div class="eyebrow">01 · LES ATOUTS DE L'ADRESSE</div><h2>Pourquoi ce bien peut séduire</h2></div><div class="source">OSM · rayon 1,5 km</div></div>
  <div class="card">
   <div class="value-intro">
    <h2>Les éléments concrets qui peuvent soutenir la valeur</h2>
@@ -75,7 +75,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
    <div class="benefit"><h3>🗣️ Arguments à reprendre dans la présentation</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs et vérifiables.</p></div>
    <div class="benefit"><h3>📌 Repères vendeur</h3><div class="proof" id="proof"><div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div></div></div>
   </div>
-  <div class="message" style="margin-top:10px">Les distances sont calculées autour de l'adresse géolocalisée. Une présence d'équipement décrit l'environnement : elle ne constitue pas, à elle seule, une preuve de surcote immobilière.</div>
+  <div class="message" style="margin-top:10px">Les distances sont calculées autour de l'adresse géolocalisée, dans un rayon de 1,5 km. Une présence d'équipement décrit l'environnement : elle ne constitue pas, à elle seule, une preuve de surcote immobilière.</div>
  </div>
 </section>
 
@@ -186,7 +186,7 @@ function renderAssets(data){
  const order=[
   ["schools","🎓 Écoles & famille","Établissements scolaires autour de l'adresse."],
   ["commerces","🛒 Commerces","Commerces de proximité et achats du quotidien."],
-  ["transport","🚌 Mobilité","Arrêts, gares et autres points de transport."],
+  ["transport","🚌 Mobilité & stationnement","Transports, gares et points de stationnement autour de l'adresse."],
   ["parks","🌳 Parcs & loisirs","Parcs, aires de jeux et équipements de loisirs."],
   ["health","⚕️ Santé","Pharmacies, médecins, cliniques et hôpitaux."],
   ["services","🏪 Services","Poste, banque, bibliothèque, restauration et services."]
@@ -208,7 +208,7 @@ function renderAssets(data){
  const parts=[];
  if(schools)parts.push(schools+" équipement(s) scolaire(s)");
  if(shops)parts.push(shops+" commerce(s)");
- if(transport)parts.push(transport+" point(s) de transport");
+ if(transport)parts.push(transport+" repère(s) de mobilité ou stationnement");
  if(parks)parts.push(parks+" parc(s), aire(s) de jeux ou équipement(s) de loisirs");
  if(health)parts.push(health+" équipement(s) de santé");
  $("#sellingPitch").textContent=parts.length
