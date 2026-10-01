@@ -62,6 +62,15 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 #reference .ref-main p{max-width:760px;}
 #reference .ref-list .ref-row:first-child{background:#f7f2e8;border-radius:10px;}
 @media(max-width:520px){#reference .ref-value{font-size:28px;}}
+/* Environnement : aucun message technique ne doit être présenté au vendeur. */
+.section-intro{margin:0 0 12px;color:#59645f;font-size:14px;line-height:1.5;}
+.env-card.env-unavailable{opacity:.92;}
+.env-note{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:#f7f3ea;border:1px solid #e9e1d2;border-radius:10px;color:#46534d;}
+.env-note b{font-size:13px;}
+.env-note span{font-size:12px;line-height:1.45;color:#6d756f;}
+.method-note{color:#69736d;font-size:12px;}
+@media(max-width:650px){.nearby{grid-template-columns:1fr 1fr;}.env{grid-template-columns:1fr;}}
+@media(max-width:430px){.nearby{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -141,24 +150,28 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">06 · TERRITOIRE</div><h2>Les communes proches</h2></div></div>
- <div class="card"><div class="nearby" id="nearby"><div class="loading">Chargement…</div></div></div>
+ <div class="head"><div><div class="eyebrow">06 · TERRITOIRE</div><h2>Les communes autour du bien</h2></div><div class="source">Repère géographique</div></div>
+ <div class="card">
+  <p class="section-intro">Ces communes permettent de situer le bien dans son environnement résidentiel. Elles ne servent pas directement au calcul du prix.</p>
+  <div class="nearby" id="nearby"><div class="loading">Chargement…</div></div>
+ </div>
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">07 · ENVIRONNEMENT</div><h2>Sécurité, risques et services</h2></div><div class="source">Données publiques</div></div>
+ <div class="head"><div><div class="eyebrow">07 · ENVIRONNEMENT</div><h2>Points à connaître autour du bien</h2></div><div class="source">Données publiques</div></div>
  <div class="env">
-  <div class="card"><h3>🛡️ Sécurité</h3><p>Indicateurs publics disponibles pour la commune.</p><div class="rows" id="security"><div class="loading">Chargement…</div></div></div>
-  <div class="card"><h3>⚠️ Risques</h3><p>Informations communales, à compléter par une vérification à l'adresse exacte.</p><div class="rows" id="risks"><div class="loading">Chargement…</div></div></div>
+  <div class="card env-card" id="securityCard"><h3>🛡️ Sécurité</h3><p>Indicateurs publics à consulter comme contexte communal.</p><div class="rows" id="security"><div class="loading">Vérification…</div></div></div>
+  <div class="card env-card" id="risksCard"><h3>⚠️ Risques</h3><p>Les risques doivent être vérifiés à l'adresse exacte du bien.</p><div class="rows" id="risks"><div class="loading">Vérification…</div></div></div>
  </div>
- <div class="card" style="margin-top:9px"><h3>🏫 Services et mobilité</h3><p>Équipements et services publics disponibles autour de la commune.</p><div class="rows" id="environment"><div class="loading">Chargement…</div></div></div>
+ <div class="card env-card" id="environmentCard" style="margin-top:9px"><h3>🏫 Services et mobilité</h3><p>Complément des équipements déjà présentés dans « Les atouts de l'adresse ».</p><div class="rows" id="environment"><div class="loading">Vérification…</div></div></div>
 </section>
 
 <section class="section">
  <div class="card footer">
   <div class="eyebrow">SOURCES & MÉTHODE</div>
-  <p>Les transactions immobilières proviennent des données DVF/DVF+ lorsqu'elles sont disponibles. Le repère vendeur est une multiplication du prix médian disponible par la surface renseignée, avec une fourchette indicative de ±15 %. Les comparables utilisent le moteur JML partagé avec l'estimateur : type, distance, récence, surface, pièces et filtrage des valeurs aberrantes.</p>
-  <p>Cette page ne fabrique pas de chiffre lorsqu'une source ne répond pas. Chaque bloc est chargé séparément afin qu'une panne d'un service ne masque pas les autres données.</p>
+  <p><strong>Marché :</strong> données DVF disponibles dans la base JML. Le prix communal sert de contexte ; lorsque suffisamment de ventes comparables sont disponibles, le repère vendeur privilégie leur prix au m² pondéré selon le type, la surface, les pièces, la distance et la récence.</p>
+  <p><strong>Environnement :</strong> les équipements et informations territoriales sont présentés uniquement lorsqu'ils sont vérifiés. Une donnée indisponible n'est pas remplacée par une estimation.</p>
+  <p class="method-note">Le repère présenté est indicatif et destiné à aider à comprendre le marché local. Il ne constitue pas une expertise immobilière certifiée.</p>
  </div>
 </section>
 </main>
@@ -438,31 +451,31 @@ function renderNearby(rows){
 }
 
 function renderRows(el,data){
- if(!data){$(el).innerHTML='<div class="empty">Donnée indisponible.</div>';return}
- const pairs=[];
- if(data.available===false){
-  if(data.message) pairs.push('<div class="row"><span>Information</span><b>'+esc(data.message)+'</b></div>');
- }else{
-  if(data.year!=null) pairs.push('<div class="row"><span>Année</span><b>'+esc(data.year)+'</b></div>');
-  if(data.source) pairs.push('<div class="row"><span>Source</span><b>'+esc(data.source)+'</b></div>');
-  if(Array.isArray(data.indicators)&&data.indicators.length){
-   pairs.push('<div class="row"><span>Indicateurs</span><b>'+data.indicators.slice(0,8).map(x=>esc(x.label||x.indicator||"Indicateur")+" : "+(x.rate!=null?x.rate+" "+(x.unit||""):x.count!=null?x.count+" faits":"donnée disponible")).join("<br>")+'</b></div>');
-  }
-  if(Array.isArray(data.risks)&&data.risks.length){
-   pairs.push('<div class="row"><span>Risques recensés</span><b>'+data.risks.slice(0,12).map(esc).join("<br>")+'</b></div>');
-  }
-  if(data.catNatCount!=null) pairs.push('<div class="row"><span>Arrêtés catastrophe naturelle</span><b>'+esc(data.catNatCount)+'</b></div>');
-  if(data.counters&&typeof data.counters==="object"){
-   const labels={schools:"Écoles",health:"Santé",pharmacies:"Pharmacies",shops:"Commerces",stations:"Gares / mobilité",busStops:"Arrêts de bus",postOffices:"Poste",totalServices:"Total repères"};
-   Object.entries(labels).forEach(([key,label])=>{
-    if(data.counters[key]!=null) pairs.push('<div class="row"><span>'+esc(label)+'</span><b>'+esc(data.counters[key])+'</b></div>');
-   });
-  }
-  if(data.radiusKm!=null) pairs.push('<div class="row"><span>Rayon</span><b>'+esc(data.radiusKm)+" km"+'</b></div>');
-  if(data.note) pairs.push('<div class="row"><span>Précision</span><b>'+esc(data.note)+'</b></div>');
-  if(data.message) pairs.push('<div class="row"><span>Information</span><b>'+esc(data.message)+'</b></div>');
+ const node=$(el), card=node?.closest(".env-card");
+ if(!node)return;
+ if(!data||data.available===false){
+   if(card) card.classList.add("env-unavailable");
+   node.innerHTML='<div class="env-note"><b>À vérifier avant la mise en vente</b><span>La source publique n’est pas disponible pour cette session. Aucun chiffre n’est affiché sans vérification.</span></div>';
+   return;
  }
- $(el).innerHTML=pairs.length?pairs.slice(0,10).join(""):'<div class="empty">Aucune donnée détaillée.</div>';
+ if(card) card.classList.remove("env-unavailable");
+ const pairs=[];
+ if(data.year!=null) pairs.push('<div class="row"><span>Année</span><b>'+esc(data.year)+'</b></div>');
+ if(data.source) pairs.push('<div class="row"><span>Source</span><b>'+esc(data.source)+'</b></div>');
+ if(Array.isArray(data.indicators)&&data.indicators.length){
+   pairs.push('<div class="row"><span>Indicateurs</span><b>'+data.indicators.slice(0,8).map(x=>esc(x.label||x.indicator||"Indicateur")+" : "+(x.rate!=null?x.rate+" "+(x.unit||""):x.count!=null?x.count+" faits":"donnée disponible")).join("<br>")+'</b></div>');
+ }
+ if(Array.isArray(data.risks)&&data.risks.length){
+   pairs.push('<div class="row"><span>Risques recensés</span><b>'+data.risks.slice(0,12).map(esc).join("<br>")+'</b></div>');
+ }
+ if(data.catNatCount!=null) pairs.push('<div class="row"><span>Arrêtés catastrophe naturelle</span><b>'+esc(data.catNatCount)+'</b></div>');
+ if(data.counters&&typeof data.counters==="object"){
+   const labels={schools:"Écoles",health:"Santé",pharmacies:"Pharmacies",shops:"Commerces",stations:"Gares / mobilité",busStops:"Arrêts de bus",postOffices:"Poste",totalServices:"Total repères"};
+   Object.entries(labels).forEach(([key,label])=>{if(data.counters[key]!=null)pairs.push('<div class="row"><span>'+esc(label)+'</span><b>'+esc(data.counters[key])+'</b></div>');});
+ }
+ if(data.radiusKm!=null)pairs.push('<div class="row"><span>Rayon</span><b>'+esc(data.radiusKm)+" km"+'</b></div>');
+ if(data.note)pairs.push('<div class="row"><span>Précision</span><b>'+esc(data.note)+'</b></div>');
+ node.innerHTML=pairs.length?pairs.slice(0,10).join(""):'<div class="env-note"><b>Pas de donnée exploitable</b><span>Aucun indicateur vérifié n’est affiché.</span></div>';
 }
 
 async function run(){
