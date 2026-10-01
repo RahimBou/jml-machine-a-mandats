@@ -312,7 +312,10 @@ function renderComps(c){
  '<div class="ref-main"><h3>Repère des ventes proches</h3><div class="ref-value">'+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"—")+'</div><p>'+esc(c.message||c.method||"Recherche progressive autour de l'adresse.")+'</p></div>'+
  '<div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>'+esc(c.origin?.lat!=null?"Oui":"Non")+'</span></div>'+
  '<div class="ref-row"><b>Périmètre retenu</b><span>'+esc(c.searchScope||"—")+'</span></div>'+
- '<div class="ref-row"><b>Ventes retenues</b><span>'+esc(c.matchCount??"—")+'</span></div></div>';
+ '<div class="ref-row"><b>Ventes retenues</b><span>'+esc(c.matchCount??"—")+'</span></div>'+
+ '<div class="ref-row"><b>Médiane des comparables</b><span>'+esc(c.median!=null?m2(c.median):"—")+'</span></div>'+
+ '<div class="ref-row"><b>Fourchette observée</b><span>'+esc(c.minPriceM2!=null&&c.maxPriceM2!=null?m2(c.minPriceM2)+" → "+m2(c.maxPriceM2):"—")+'</span></div>'+
+ '<div class="ref-row"><b>Très proches</b><span>'+esc(c.closeCount??"0")+'</span></div></div>';
  const rows=Array.isArray(c.sales)?c.sales:[];
  if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
  $("#comps").innerHTML=rows.map(s=>
