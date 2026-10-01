@@ -388,10 +388,13 @@ async function run(){
   $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
  }
 
- // 3. Enrichissements : complètement séparés.
+ // 3. Enrichissements : résolution de commune indépendante du moteur marché.
  try{
-  const territory=await getData("/api/territory-summary?"+base.toString(),5000,"Enrichissement / commune");
-  const c=territory.commune;
+  const communeData=await getData("/api/territory-commune?"+new URLSearchParams({
+   city:d.city||"",
+   address:d.address||""
+  }).toString(),8000,"Enrichissement / commune");
+  const c=communeData.commune;
   const coords=c?.centre?.coordinates;
   if(/^\d{5}$/.test(String(c?.code||""))&&Array.isArray(coords)&&coords.length>=2){
    const q=new URLSearchParams({code:c.code,lat:String(coords[1]),lon:String(coords[0])});
