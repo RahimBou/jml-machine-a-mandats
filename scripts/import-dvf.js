@@ -6,7 +6,7 @@ const { Pool } = require("pg");
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 if (!DATABASE_URL) throw new Error("DATABASE_URL manquante.");
 
-const YEARS = String(process.env.DVF_IMPORT_YEARS || "2025,2024,2023,2022")
+const YEARS = String(process.env.DVF_IMPORT_YEARS || "2026,2025,2024,2023")
   .split(",").map(x => Number(x.trim())).filter(Number.isInteger);
 
 const pool = new Pool({
@@ -46,6 +46,7 @@ async function importYear(client, year){
   const required=["id_mutation","date_mutation","nature_mutation","valeur_fonciere","type_local","surface_reelle_bati","latitude","longitude","code_commune","nom_commune"];
   for(const key of required) if(idx[key]===undefined) throw new Error("Colonne DVF absente: "+key);
 
+  await client.query("BEGIN");
   await client.query("DELETE FROM jml_dvf_sales WHERE source_year=$1",[year]);
 
   const rows=[];
@@ -96,6 +97,7 @@ async function importYear(client, year){
       ON CONFLICT DO NOTHING`,params);
     process.stdout.write("\rDVF "+year+": "+Math.min(i+chunk,data.length)+"/"+data.length);
   }
+  await client.query("COMMIT");
   console.log("\nDVF "+year+": "+data.length+" mutations résidentielles importées.");
   return data.length;
 }
@@ -129,7 +131,13 @@ async function main(){
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_dvf_commune_date ON jml_dvf_sales(commune_code,sale_date DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_dvf_geo_date ON jml_dvf_sales(latitude,longitude,sale_date DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_jml_dvf_type_surface ON jml_dvf_sales(property_type,surface)");
-    for(const year of YEARS) await importYear(client,year);
+    for(const year of YEARS){
+    try{ await importYear(client,year); }
+    catch(error){
+      try{ await client.query("ROLLBACK"); }catch(_){}
+      console.warn("DVF "+year+" ignorée:",String(error?.message||error));
+    }
+  }
     const count=await client.query("SELECT COUNT(*)::int AS count, MAX(imported_at) AS imported_at FROM jml_dvf_sales");
     console.log("DVF import terminé:",count.rows[0]);
   } finally {
