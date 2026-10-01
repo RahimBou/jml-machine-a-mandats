@@ -157,6 +157,21 @@ function getSpace(){
  x.token=x.token||p.get("token")||"";
  return x;
 }
+async function loadServerSpace(){
+ const p=new URLSearchParams(location.search);
+ const token=p.get("token")||"";
+ if(!token) return getSpace();
+ try{
+  const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{cache:"no-store"});
+  const j=await r.json().catch(()=>({}));
+  if(r.ok&&j.ok&&j.space){
+   const space={...j.space,token,submitted:true};
+   try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(space));}catch(_e){}
+   return space;
+  }
+ }catch(_e){}
+ return getSpace();
+}
 
 const diagnostics=[];
 function addDiag(source,code,detail){
@@ -325,7 +340,7 @@ function renderRows(el,data){
 }
 
 async function run(){
- const d=getSpace();
+ const d=await loadServerSpace();
  setProject(d);
  addDiag("Page / navigateur","JML-D001","Données du projet récupérées depuis l’espace vendeur / URL");
  if(!d.city){
