@@ -128,8 +128,22 @@ async function main(){
 
 async function insertBatch(client,rows){
   if(!rows.length)return;
+  // PostgreSQL refuse ON CONFLICT DO UPDATE lorsque deux lignes
+  // du même INSERT portent exactement la même clé unique (SQLSTATE 21000).
+  // Le fichier BPE peut contenir ce type de doublon : on déduplique donc
+  // chaque lot avant de construire la requête SQL.
+  const uniqueRows=[];
+  const seen=new Set();
+  for(const r of rows){
+    const key=[r[0],r[1],r[4],r[6],r[7],r[8]].map(v=>String(v??"")).join("\x1f");
+    if(seen.has(key)) continue;
+    seen.add(key);
+    uniqueRows.push(r);
+  }
+  if(!uniqueRows.length)return;
+
   const values=[]; const params=[];
-  rows.forEach((r,rowIndex)=>{
+  uniqueRows.forEach((r,rowIndex)=>{
     const base=rowIndex*10;
     values.push(`(${Array.from({length:10},(_,i)=>"$"+(base+i+1)).join(",")})`);
     params.push(...r);
