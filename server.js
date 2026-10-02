@@ -35,8 +35,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.9.0";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-zip-fulltext";
+const VERSION = "3.9.1";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-ban-address-v13";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -1131,13 +1131,23 @@ function ademeRowAddressParts(row){
   if(!row||typeof row!=="object")return {label:"",street:"",number:"",city:"",postal:"",cityCode:""};
   const banType=String(ademeText(row,["ban_type"])).toLowerCase();
   const useBan=/housenumber|locality/.test(banType)||!banType;
-  const number=ademeText(row,useBan?["ban_housenumber","numero_voie","num_voie"]:["numero_voie","num_voie"]);
-  const street=ademeText(row,useBan?["ban_street","adresse_voie","nom_voie"]:["adresse_voie","nom_voie"]);
-  const city=ademeText(row,useBan?["ban_city","nom_commune_brut","nom_commune"]:["nom_commune_brut","nom_commune","ban_city"]);
-  const postal=ademeText(row,useBan?["ban_postcode","code_postal_brut","code_postal"]:["code_postal_brut","code_postal","ban_postcode"]);
+  const number=ademeText(row,useBan?["ban_housenumber","numero_voie_ban","numero_voie","num_voie"]:["numero_voie","numero_voie_ban","num_voie"]);
+  const street=ademeText(row,useBan?["ban_street","nom_rue_ban","adresse_voie","nom_voie"]:["adresse_voie","nom_voie","nom_rue_ban","ban_street"]);
+  const city=ademeText(row,useBan?["ban_city","nom_commune_ban","nom_commune_brut","nom_commune"]:["nom_commune_brut","nom_commune","nom_commune_ban","ban_city"]);
+  const postal=ademeText(row,useBan?["ban_postcode","code_postal_ban","code_postal_brut","code_postal"]:["code_postal_brut","code_postal","code_postal_ban","ban_postcode"]);
   const cityCode=ademeText(row,["ban_citycode","code_insee_commune","code_commune"]);
-  const label=ademeText(row,useBan?["ban_label","label_brut","adresse_brut"]:["label_brut","adresse_brut","ban_label"]);
-  return {label,street,number,city,postal,cityCode};
+  const label=ademeText(row,useBan?["ban_label","adresse_ban","label_brut","adresse_brut"]:["adresse_ban","label_brut","adresse_brut","ban_label"]);
+  let parsedNumber=number,parsedStreet=street;
+  if((!parsedNumber||!parsedStreet)&&label){
+    const compact=String(label).replace(/\s+/g," ").trim();
+    const beforePostal=compact.split(/\s+\d{5}\b/)[0].trim();
+    const match=beforePostal.match(/^([0-9]+[A-Za-z]?(?:\s*(?:bis|ter|quater))?)\s+(.+)$/i);
+    if(match){
+      if(!parsedNumber)parsedNumber=match[1].trim();
+      if(!parsedStreet)parsedStreet=match[2].trim();
+    }
+  }
+  return {label,street:parsedStreet,number:parsedNumber,city,postal,cityCode};
 }
 function scoreAdemeAddress(row,address,city){
   const parts=ademeRowAddressParts(row);
@@ -1157,7 +1167,7 @@ function scoreAdemeAddress(row,address,city){
   else if(targetStreet&&rowStreet&&(rowStreet.includes(targetStreet)||targetStreet.includes(rowStreet)))score+=35;
   if(targetNumber&&rowNumber===normalizeAddress(targetNumber))score+=45;
   if(targetCity&&rowCity===targetCity)score+=25;
-  const targetPostal=(raw.match(/\b(\d{5})\b/)||[])[1]||"";
+  const targetPostal=String(postal||"").trim()||((raw.match(/\b(\d{5})\b/)||[])[1]||"");
   if(targetPostal&&rowPostal===normalizeAddress(targetPostal))score+=20;
   return {score,parts};
 }
@@ -1222,7 +1232,7 @@ async function getAdemeDpeByAddress(address,city="",postal=""){
     // Secours textuel pour les adresses sans code postal ou lorsque BAN n'est pas
     // disponible dans la ligne ADEME.
     if(bestScore<90){
-      const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines";
+      const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe03existant/lines";
       const queries=[...new Set([
         [targetNumber,targetStreet,city].filter(Boolean).join(" "),
         [targetStreet,city].filter(Boolean).join(" "),
