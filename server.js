@@ -35,8 +35,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.9.3";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15";
+const VERSION = "3.9.4";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15-ai-v16";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -51,6 +51,7 @@ app.get("/health", (req, res) => {
     persistentDashboard:true
   });
 });
+app.post("/api/address-intelligence", async (req,res)=>{res.setHeader("Cache-Control","no-store");try{res.status(200).json(await generateSellerAddressIntelligence(req.body||{}));}catch(error){console.error("JML address-intelligence:",error);res.status(200).json({ok:false,code:"JML-AI-SERVER"});}});
 app.get("/api/bpe-status", async (req,res) => {
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
   if(!pool) return res.status(200).json({ok:true,ready:false,total:0,reason:"database_unavailable"});
@@ -332,6 +333,68 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
     radiusKm:1.5,sellerRadiusKm:0.8,importedAt:bpeData.importedAt,categories,roadSource:roadData.source||"OpenStreetMap / Overpass",roadRadiusKm:3,attractivenessSource:attractData.source||"OpenStreetMap / Overpass",
     diagnostics:{education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible"),roads:roads.status==="fulfilled"?(roadData.available?"OK":"indisponible"):String(roads.reason?.message||"indisponible"),attractiveness:attractiveness.status==="fulfilled"?(attractData.available?"OK":"indisponible"):String(attractiveness.reason?.message||"indisponible")}
   };
+}
+
+
+const sellerAiCache = new Map();
+const SELLER_AI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const SELLER_AI_TTL_MS = 12 * 60 * 60 * 1000;
+function sellerAiCacheKey(payload){return crypto.createHash("sha256").update(JSON.stringify({city:clean(payload?.city,120),address:clean(payload?.address,240),propertyType:clean(payload?.propertyType,80),surface:Number(payload?.surface)||null,categories:payload?.categories||{}})).digest("hex");}
+function flattenSellerEvidence(categories){const out=[],seen=new Set();for(const [category,value] of Object.entries(categories||{})){for(const item of (Array.isArray(value?.items)?value.items:[])){const name=clean(item?.name,180),distanceKm=Number(item?.distanceKm);if(!name||!Number.isFinite(distanceKm))continue;const key=name.toLowerCase()+"|"+distanceKm.toFixed(2);if(seen.has(key))continue;seen.add(key);out.push({name,distanceKm:Number(distanceKm.toFixed(2)),category});}}return out.slice(0,80);}
+function validateSellerAiResult(result,evidence){
+ if(!result||typeof result!=="object")return{ok:false,code:"JML-AI-INVALID"};
+ const allowed=new Map(evidence.map(x=>[x.name.toLowerCase()+"|"+x.distanceKm.toFixed(2),x]));
+ const forbidden=/\b(exceptionnel|exceptionnelle|unique|rare|idéal|idéale|parfait|parfaite|meilleur|meilleure|numéro 1|n° ?1)\b/i;
+ const cleanArgs=[];
+ for(const raw of (Array.isArray(result.arguments)?result.arguments:[]).slice(0,5)){
+  const title=clean(raw?.title,100),text=clean(raw?.text,500),proof=clean(raw?.proof,300);
+  if(!title||!text||forbidden.test(title+" "+text+" "+proof))continue;
+  const verified=[];
+  for(const ref of (Array.isArray(raw?.evidence)?raw.evidence:[]).slice(0,4)){
+   const name=clean(ref?.name,180),distanceKm=Number(ref?.distanceKm);
+   if(!name||!Number.isFinite(distanceKm))continue;
+   const exact=allowed.get(name.toLowerCase()+"|"+distanceKm.toFixed(2));
+   if(exact)verified.push(exact);
+  }
+  if(!verified.length)continue;
+  if(proof&&!verified.some(x=>proof.toLowerCase().includes(x.name.toLowerCase())))continue;
+  cleanArgs.push({title,text,proof:proof||verified.map(x=>x.name+" · "+x.distanceKm.toFixed(2)+" km").join(" · "),evidence:verified.map(x=>({name:x.name,category:x.category,distanceKm:x.distanceKm}))});
+ }
+ const signature=clean(result.signature,180);
+ if(!cleanArgs.length)return{ok:false,code:"JML-AI-NO-VALID-ARGUMENT"};
+ if(forbidden.test(signature))return{ok:false,code:"JML-AI-FORBIDDEN-CLAIM"};
+ return{ok:true,data:{status:"ok",signature:signature||cleanArgs[0].title,arguments:cleanArgs,warnings:[]}};
+}
+async function generateSellerAddressIntelligence(payload){
+ const apiKey=String(process.env.GEMINI_API_KEY||"").trim();
+ if(!apiKey)return{ok:false,code:"JML-AI-NOKEY",message:"GEMINI_API_KEY non configurée sur Render."};
+ const evidence=flattenSellerEvidence(payload?.categories);
+ if(evidence.length<2)return{ok:false,code:"JML-AI-INSUFFICIENT",message:"Pas assez de repères vérifiés."};
+ const key=sellerAiCacheKey(payload),cached=sellerAiCache.get(key);if(cached&&cached.expiresAt>Date.now())return cached.data;
+ const facts=evidence.map((x,i)=>({id:i+1,name:x.name,category:x.category,distanceKm:x.distanceKm}));
+ const prompt=[
+ "Tu es le rédacteur immobilier de JML Immobilier. Raconte cette adresse à un propriétaire vendeur français.",
+ "RÈGLE ABSOLUE : utilise UNIQUEMENT les faits JSON fournis. N'invente aucun lieu, distance, service, qualité, temps de trajet, stationnement, attractivité, valeur immobilière ou clientèle.",
+ "Aucun prix, aucun €/m² et aucune promesse de vente. N'utilise pas : exceptionnel, unique, rare, idéal, parfait, meilleur, numéro 1.",
+ "Tu peux regrouper plusieurs faits vérifiés pour créer une phrase naturelle et mémorisable. Chaque argument doit être démontrable par ses références.",
+ "Évite les formulations génériques. Cherche ce qui distingue CETTE adresse parmi les faits fournis.",
+ "Adresse : "+(clean(payload?.address,240)||"non précisée"),
+ "Commune : "+(clean(payload?.city,120)||"non précisée"),
+ "Type : "+(clean(payload?.propertyType,80)||"non précisé"),
+ "Surface : "+(Number(payload?.surface)||"non précisée"),
+ "Faits vérifiés : "+JSON.stringify(facts),
+ "Retourne UNIQUEMENT ce JSON valide : {\"signature\":\"courte phrase\",\"arguments\":[{\"title\":\"titre court\",\"text\":\"2 phrases maximum\",\"proof\":\"preuve avec un nom exact\",\"evidence\":[{\"name\":\"nom exact\",\"distanceKm\":0.00}]}],\"warnings\":[]}",
+ "Produis 2 à 5 arguments. Favorise les combinaisons pertinentes de 2 ou 3 faits."
+ ].join("\n");
+ const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(SELLER_AI_MODEL)+":generateContent?key="+encodeURIComponent(apiKey);
+ try{
+  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:0.35,responseMimeType:"application/json"}}),signal:AbortSignal.timeout(12000)});
+  const raw=await response.text();if(!response.ok)throw new Error("Gemini HTTP "+response.status+" · "+raw.slice(0,300));
+  const parsed=JSON.parse(raw),text=parsed?.candidates?.[0]?.content?.parts?.map(p=>p?.text||"").join("").trim()||"";
+  const result=JSON.parse(text.replace(/^\\`\\`\\`json\\s*/i,"").replace(/\\s*\\`\\`\\`$/,""));
+  const validated=validateSellerAiResult(result,evidence);if(!validated.ok)return{ok:false,code:validated.code,message:"Réponse Gemini écartée par le contrôle JML."};
+  sellerAiCache.set(key,{expiresAt:Date.now()+SELLER_AI_TTL_MS,data:validated.data});return validated.data;
+ }catch(error){console.warn("JML Gemini vendeur:",error.message);return{ok:false,code:"JML-AI-ERROR",message:"Analyse Gemini indisponible temporairement."};}
 }
 
 const communeExternalDvfCache = new Map();
