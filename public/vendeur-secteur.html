@@ -133,7 +133,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
  #sellerMicroApp{display:block!important;margin:0!important;padding:24mm 16mm!important;min-height:257mm;background:#173b32!important;box-shadow:none!important;border-radius:0!important}
  #sellerMicroApp .micro-actions{display:none!important}.seller-microapp:after{display:none}
 }
-</style></head>
+.micro-control{margin-top:8px;font-size:7px;line-height:1.4;color:#cbd8d2;opacity:.9}\n</style></head>
 <body>
 <main class="wrap">
 <section class="hero jml-architecture jml-architecture ardenne-visual">
@@ -848,10 +848,34 @@ function buildSellerStories(data){
  }
  return stories.sort((a,b)=>b.rank-a.rank).slice(0,5);
 }
+
+function validateSellerStory(story,data){
+  if(!story || !story.title || !story.text || !story.proof) return null;
+  const proof=String(story.proof||"").toLowerCase();
+  const hay=JSON.stringify(data||{}).toLowerCase();
+  // Contrôle JML : une histoire doit rester rattachée à un élément réellement reçu.
+  if(proof && !hay.includes(proof.split(" · ")[0].trim())) return null;
+  if(/exceptionnel|unique|rare|idéal|parfait|meilleur/i.test(story.title+" "+story.text)) return null;
+  return story;
+}
+function validateSellerStories(stories,data){
+  const out=[], seen=new Set();
+  for(const story of (Array.isArray(stories)?stories:[])){
+    const valid=validateSellerStory(story,data);
+    if(!valid) continue;
+    const key=String(valid.title).toLowerCase();
+    if(seen.has(key)) continue;
+    seen.add(key);
+    out.push(valid);
+  }
+  return out.slice(0,5);
+}
+
 function renderSellerMicroApp(data){
  const el=$("#sellerMicroApp"), sig=$("#microSignature"), grid=$("#microStories");
  if(!el||!grid)return;
- const stories=buildSellerStories(data);
+ const rawStories=buildSellerStories(data);
+ const stories=validateSellerStories(rawStories,data);
  window.jmlSellerStories=stories;
  if(!stories.length){
   sig.innerHTML="<b>Une adresse se raconte avec des faits vérifiés.</b><span>Aucun ensemble de repères suffisamment complet n’a été identifié pour construire un argumentaire automatique. Les données détaillées restent disponibles ci-dessus.</span>";
