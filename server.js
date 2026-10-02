@@ -981,6 +981,7 @@ app.get("/api/territory-summary", async (req,res) => {
   const address=clean(req.query.address,180);
   const propertyType=clean(req.query.propertyType,60);
   const surface=clean(req.query.surface,40);
+  const landSurface=clean(req.query.landSurface ?? req.query.terrain,40);
   const rooms=clean(req.query.rooms,40);
   if(!city) return res.status(400).json({ok:false,error:"Commune requise."});
 
@@ -1001,7 +1002,7 @@ app.get("/api/territory-summary", async (req,res) => {
       sourceUrl:"https://www.data.gouv.fr/datasets/demandes-de-valeurs-foncieres/",
       message:"Les données de marché sont temporairement indisponibles.",
       recentSales:[],recentSalesSource:null,history:[],transactions:null,
-      communalPrice:null,housePrice:null,apartmentPrice:null,nearby:[]
+      communalPrice:null,housePrice:null,apartmentPrice:null,terrainPrice:null,nearby:[]
     };
     try{
       market=await getCommuneMarketData(commune.nom,commune.code);
@@ -1017,7 +1018,7 @@ app.get("/api/territory-summary", async (req,res) => {
     };
     try{
       comparable=await Promise.race([
-        buildComparableSales(market,{address,propertyType,surface,rooms,city:commune.nom}),
+        buildComparableSales(market,{address,propertyType,surface,landSurface,rooms,city:commune.nom}),
         new Promise(resolve=>setTimeout(()=>resolve({
           sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,
           radiusKm:null,searchScope:"Recherche trop lente — données communales conservées",origin:null,
@@ -1041,8 +1042,6 @@ app.get("/api/territory-summary", async (req,res) => {
     // On ne dépend plus de buildSellerReference() afin qu'une erreur interne
     // de cette fonction ne puisse plus faire tomber Mon secteur.
     const propertyTypeText=String(propertyType||"").toLowerCase();
-    const sellerIsApartment=/appartement|studio|duplex|loft/i.test(propertyTypeText);
-    const sellerIsHouse=/maison/i.test(propertyTypeText);
     const sellerIsApartment=/appartement|studio|duplex|loft/i.test(propertyTypeText);
     const sellerIsHouse=/maison/i.test(propertyTypeText);
     const sellerIsLand=/terrain/i.test(propertyTypeText);
