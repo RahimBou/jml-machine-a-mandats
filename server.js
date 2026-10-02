@@ -1060,8 +1060,8 @@ async function getLocalDpeByAddress(address,city="",postal=""){
   try{
     const targetPostal=String(postal||"").trim()||((raw.match(/\b(\d{5})\b/)||[])[1]||"");
     const targetNumber=dpeNumber(raw);
-    const targetStreet=dpeNorm(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(dpeNorm(city),"").trim();
-    const q=await db("SELECT numero_dpe,dpe,ges,dpe_date,address,number_text,street,city,postal_code,surface_habitable FROM jml_dpe WHERE ($1='' OR postal_code=$1) AND (($2<>'' AND number_norm=$2 AND street_norm=$3) OR ($3<>'' AND street_norm=$3) OR ($4<>'' AND address_norm=$4)) ORDER BY CASE WHEN $2<>'' AND number_norm=$2 AND street_norm=$3 THEN 0 ELSE 1 END, CASE WHEN dpe_date IS NULL THEN 1 ELSE 0 END, dpe_date DESC LIMIT 20",[targetPostal,targetNumber,targetStreet,dpeNorm(raw),dpeNorm(city)]);
+    const targetStreet=dpeNorm(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(dpeNorm(city),"").replace(/^(rue|ru|avenue|av|boulevard|bd|chemin|ch|impasse|imp|place|pl|route|rte|allee|allée|quai|faubourg|fg|square|cours|passage)\s+/,"").trim();
+    const q=await db("SELECT numero_dpe,dpe,ges,dpe_date,address,number_text,street,city,postal_code,surface_habitable FROM jml_dpe WHERE ($1='' OR postal_code=$1) AND (($2<>'' AND number_norm=$2 AND street_norm=$3) OR ($3<>'' AND street_norm=$3) OR ($4<>'' AND address_norm=$4)) ORDER BY CASE WHEN $2<>'' AND number_norm=$2 AND street_norm=$3 THEN 0 ELSE 1 END, CASE WHEN dpe_date IS NULL THEN 1 ELSE 0 END, dpe_date DESC LIMIT 20",[targetPostal,targetNumber,targetStreet,dpeNorm(raw)]);
     if(!q.rowCount){localDpeCache.set(cacheKey,null);return null;}
     const exact=q.rows[0];
     const exactMatch=targetNumber&&targetStreet&&exact.number_norm===targetNumber&&exact.street_norm===targetStreet;
