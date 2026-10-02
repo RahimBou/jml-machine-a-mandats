@@ -246,9 +246,16 @@ async function loadServerSpace(){
  const token=p.get("token")||local.token||"";
  const effectiveToken=token||local.token||"";
 
+ // Toujours afficher immédiatement les données déjà présentes localement.
+ // Le serveur vient ensuite les confirmer sans bloquer toute la page.
+ if(local.city){
+   setProject(local);
+   $("#status").textContent="Dossier local chargé · vérification serveur…";
+ }
+
  if(effectiveToken){
    const ctl=new AbortController();
-   const timer=setTimeout(()=>ctl.abort(),8000);
+   const timer=setTimeout(()=>ctl.abort(),5000);
    try{
      const r=await fetch("/api/seller-space/"+encodeURIComponent(effectiveToken),{cache:"no-store",signal:ctl.signal});
      const j=await r.json().catch(()=>({}));
@@ -587,9 +594,10 @@ function renderSellerPost(){
 }
 
 async function run(){
- const d=await loadServerSpace();
- pageData.space=d;
- setProject(d);
+ try{
+  const d=await loadServerSpace();
+  pageData.space=d;
+  setProject(d);
  addDiag("Page / navigateur","JML-D001",PAGE_BUILD+" · données du projet récupérées depuis l’espace vendeur / URL");
  $("#status").textContent="Dossier chargé · recherche des données locales…";
  if(!d.city){
@@ -705,6 +713,11 @@ async function run(){
  }catch(e){
   addDiag("Sécurité / risques / services",e.code||"JML-ENV-CLIENT",e.message||"Erreur");
   renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
+ }catch(error){
+  addDiag("Initialisation de la page",error?.code||"JML-INIT-CLIENT",error?.message||"Erreur inattendue.");
+  $("#status").textContent="Erreur de chargement";
+  $("#marketMessage").className="message bad";
+  $("#marketMessage").textContent="Le dossier vendeur n'a pas pu être chargé correctement. Rechargez votre espace vendeur depuis son lien personnel.";
  }
 }
 const copyPost=$("#copyPost");
