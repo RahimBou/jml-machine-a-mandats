@@ -214,7 +214,7 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
     daily:{label:"Commerces du quotidien",count:bpeGroup("daily").length,available:bpeReady,items:nearest(bpeGroup("daily").map(x=>({...x,group:"daily",distanceLabel:sellerDistanceLabel(x.distanceKm)})),6),source:"INSEE BPE 2025"},
     family:{label:"Écoles & famille",count:family.length,available:education.status==="fulfilled"||bpeReady,items:family,source:"Éducation nationale + INSEE BPE 2025"},
     health:{label:"Santé de proximité",count:bpeGroup("health").length,available:bpeReady,items:nearest(bpeGroup("health").map(x=>({...x,group:"health",distanceLabel:sellerDistanceLabel(x.distanceKm)})),6),source:"INSEE BPE 2025"},
-    mobility:{label:"Mobilité",count:bpeRows.filter(x=>x.domain==="E"&&x.distanceKm<=0.8).length,available:bpeReady,items:nearest(bpeRows.filter(x=>x.domain==="E"&&x.distanceKm<=1.5).map(x=>({...x,group:"mobility",type:x.type||"Équipement de mobilité",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"},
+    mobility:{label:"Mobilité",count:bpeRows.filter(x=>["E107","E108","E109"].includes(x.typeCode)&&x.distanceKm<=0.8).length,available:bpeReady,items:nearest(bpeRows.filter(x=>["E107","E108","E109"].includes(x.typeCode)&&x.distanceKm<=1.5).map(x=>({...x,group:"mobility",type:x.type||"Gare de voyageurs",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"},
     leisure:{label:"Loisirs & vie locale",count:bpeGroup("leisure").length,available:bpeReady,items:nearest(bpeGroup("leisure").map(x=>({...x,group:"leisure",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"}
   };
   return {
