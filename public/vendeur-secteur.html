@@ -260,7 +260,7 @@ async function loadServerSpace(){
      const r=await fetch("/api/seller-space/"+encodeURIComponent(effectiveToken),{cache:"no-store",signal:ctl.signal});
      const j=await r.json().catch(()=>({}));
      if(r.ok&&j.ok&&j.space){
-       const space={...j.space,token:effectiveToken,submitted:true};
+       const space={...j.space,dpe:j.space.dpe||local.dpe||p.get("dpe")||"",token:effectiveToken,submitted:true};
        try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(space));}catch(_e){}
        return space;
      }
@@ -494,7 +494,8 @@ function setProject(d){
   $("#type").textContent=d.propertyType||"—";
   $("#surface").textContent=d.surface?String(d.surface)+" m²":"—";
   $("#rooms").textContent=d.rooms?String(d.rooms):"—";
-  $("#dpe").textContent=d.dpe||"—";
+  const dpeValue=d.dpe||getSpace().dpe||"";
+  $("#dpe").textContent=dpeValue||"—";
   const map=$("#map");
   if(map){
     const q=[d.address,d.city].filter(Boolean).join(", ");
