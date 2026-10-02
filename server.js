@@ -1035,9 +1035,15 @@ function normalizeDpeLabel(value){
   const m=String(value??"").toUpperCase().match(/\b([A-G])\b/);
   return m?m[1]:null;
 }
+function ademeText(row,keys){
+  for(const key of keys){
+    if(Object.prototype.hasOwnProperty.call(row,key)&&row[key]!=null&&String(row[key]).trim()!=="") return String(row[key]).trim();
+  }
+  return "";
+}
 function extractDpeFromAdemeRow(row){
   if(!row||typeof row!=="object")return null;
-  const preferred=["Etiquette_DPE","Etiquette DPE","etiquette_dpe","classe_dpe","Classe_DPE","classe_energie","Etiquette énergétique"];
+  const preferred=["classe_bilan_dpe","classe_conso_energie","Etiquette_DPE","Etiquette DPE","etiquette_dpe","classe_dpe","Classe_DPE","classe_energie"];
   for(const key of preferred){
     if(Object.prototype.hasOwnProperty.call(row,key)){
       const v=normalizeDpeLabel(row[key]); if(v)return v;
@@ -1050,10 +1056,39 @@ function extractDpeFromAdemeRow(row){
   }
   return null;
 }
-function ademeRowAddress(row){
-  if(!row||typeof row!=="object")return "";
-  return Object.entries(row).filter(([k])=>/adresse|voie|rue|num[eé]ro.*voie|localisation/i.test(k))
-    .map(([,v])=>String(v??"")).filter(Boolean).join(" ");
+function ademeRowAddressParts(row){
+  if(!row||typeof row!=="object")return {label:"",street:"",number:"",city:"",postal:"",cityCode:""};
+  const banType=String(ademeText(row,["ban_type"])).toLowerCase();
+  const useBan=/housenumber|locality/.test(banType)||!banType;
+  const number=ademeText(row,useBan?["ban_housenumber","numero_voie","num_voie"]:["numero_voie","num_voie"]);
+  const street=ademeText(row,useBan?["ban_street","adresse_voie","nom_voie"]:["adresse_voie","nom_voie"]);
+  const city=ademeText(row,useBan?["ban_city","nom_commune_brut","nom_commune"]:["nom_commune_brut","nom_commune","ban_city"]);
+  const postal=ademeText(row,useBan?["ban_postcode","code_postal_brut","code_postal"]:["code_postal_brut","code_postal","ban_postcode"]);
+  const cityCode=ademeText(row,["ban_citycode","code_insee_commune","code_commune"]);
+  const label=ademeText(row,useBan?["ban_label","label_brut","adresse_brut"]:["label_brut","adresse_brut","ban_label"]);
+  return {label,street,number,city,postal,cityCode};
+}
+function scoreAdemeAddress(row,address,city){
+  const parts=ademeRowAddressParts(row);
+  const raw=String(address||"").trim();
+  const target=normalizeAddress(raw);
+  const targetCity=normalizeAddress(city);
+  const targetNumber=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1]||"";
+  const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").trim();
+  const rowStreet=normalizeAddress(parts.street);
+  const rowNumber=normalizeAddress(parts.number);
+  const rowCity=normalizeAddress(parts.city);
+  const rowPostal=normalizeAddress(parts.postal);
+  const rowLabel=normalizeAddress(parts.label);
+  let score=0;
+  if(parts.label&&rowLabel===target)score+=120;
+  if(targetStreet&&rowStreet===targetStreet)score+=55;
+  else if(targetStreet&&rowStreet&&(rowStreet.includes(targetStreet)||targetStreet.includes(rowStreet)))score+=35;
+  if(targetNumber&&rowNumber===normalizeAddress(targetNumber))score+=45;
+  if(targetCity&&rowCity===targetCity)score+=25;
+  const targetPostal=(raw.match(/\b(\d{5})\b/)||[])[1]||"";
+  if(targetPostal&&rowPostal===normalizeAddress(targetPostal))score+=20;
+  return {score,parts};
 }
 async function getAdemeDpeByAddress(address,city=""){
   const raw=String(address||"").trim(), normalized=normalizeAddress(raw);
@@ -1061,26 +1096,28 @@ async function getAdemeDpeByAddress(address,city=""){
   const cacheKey=normalized+"|"+normalizeAddress(city);
   if(dpeCache.has(cacheKey))return dpeCache.get(cacheKey);
   try{
-    const q=[raw,city].filter(Boolean).join(" ");
-    const url="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?size=20&q="+encodeURIComponent(q);
-    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(5000)});
-    if(!response.ok){dpeCache.set(cacheKey,null);return null;}
-    const payload=await response.json().catch(()=>({}));
-    const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
-    const streetTarget=normalizeAddress(raw).replace(/\b\d+\b/g,"").trim();
+    const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines";
+    const queries=[[raw,city].filter(Boolean).join(" "),[raw.replace(/^\s*\d+[A-Za-z]?\s*/,""),city].filter(Boolean).join(" "),city];
     let best=null,bestScore=-1;
-    for(const row of rows){
-      const dpe=extractDpeFromAdemeRow(row); if(!dpe)continue;
-      const ra=normalizeAddress(ademeRowAddress(row));
-      let score=0;
-      if(ra===normalized)score+=100;
-      if(streetTarget&&ra.includes(streetTarget))score+=30;
-      const targetNum=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1];
-      if(targetNum&&ra.includes(normalizeAddress(targetNum)))score+=20;
-      if(score>bestScore){bestScore=score;best={dpe,source:"ADEME DPE",address:ademeRowAddress(row),matchScore:score};}
+    for(const q of queries){
+      if(!q)continue;
+      const response=await fetch(endpoint+"?size=50&q="+encodeURIComponent(q),{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/1.1"},signal:AbortSignal.timeout(7000)});
+      if(!response.ok)continue;
+      const payload=await response.json().catch(()=>({}));
+      const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
+      for(const row of rows){
+        const dpe=extractDpeFromAdemeRow(row); if(!dpe)continue;
+        const match=scoreAdemeAddress(row,raw,city);
+        if(match.score>bestScore){
+          bestScore=match.score;
+          best={dpe,source:"ADEME DPE",address:match.parts.label||[match.parts.number,match.parts.street,match.parts.postal,match.parts.city].filter(Boolean).join(" "),matchScore:match.score,matchLevel:match.score>=120?"Adresse exacte":match.score>=90?"Numéro + voie":match.score>=55?"Voie correspondante":"Commune seulement"};
+        }
+      }
+      if(bestScore>=120)break;
     }
-    dpeCache.set(cacheKey,best);
-    return best;
+    const result=bestScore>=55?best:null;
+    dpeCache.set(cacheKey,result);
+    return result;
   }catch(_e){
     dpeCache.set(cacheKey,null);
     return null;
@@ -1219,7 +1256,7 @@ async function buildComparableSales(market,property){
   const top40=candidates.slice(0,40);
   // Enrichissement ADEME limité aux meilleurs comparables : le DPE est un signal
   // secondaire et ne remplace jamais les critères DVF de prix, surface, pièces et distance.
-  const dpeRows=top40.slice(0,12);
+  const dpeRows=top40.slice(0,20);
   for(let i=0;i<dpeRows.length;i+=4){
     const batch=dpeRows.slice(i,i+4);
     const enriched=await Promise.all(batch.map(async sale=>{
