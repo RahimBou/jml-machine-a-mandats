@@ -573,8 +573,10 @@ function setProject(d){
 function normalizeAssetCategories(data){
   const source=data?.categories||{};
   const aliases={
-    schools:["schools","school","education"],
-    commerces:["commerces","commerce","shops","shopping"],
+    // API officielle : family/daily/mobility/leisure.
+    // On les rattache explicitement aux catégories lisibles vendeur.
+    schools:["schools","school","education","family"],
+    commerces:["commerces","commerce","shops","shopping","daily"],
     health:["health","sante","santé","medical","pharmacies"],
     transport:["transport","mobility","mobilite","mobilité"],
     parks:["parks","loisirs","leisure","sport"],
@@ -614,7 +616,7 @@ function renderAssets(data){
     (Array.isArray(cat.items)?cat.items:[]).forEach(item=>{
       const name=String(item.name||item.type||"").trim();
       const distanceKm=n(item.distanceKm);
-      const generic=/^taxi|^taxis|taxi|vsl|transport de personnes/i.test(name);
+      const generic=/taxi|taxis|vsl|transport de personnes|transport routier|ambulance|chauffeur|vtc/i.test(name);
       const match=itemPriority[key]?.[0]?.test(name)?0:1;
       all.push({
         key,label:title,name,
@@ -641,11 +643,12 @@ function renderAssets(data){
   const usedNames=new Set();
   for(const item of all){
     const sig=item.name.toLowerCase()+"|"+item.key;
+    const categorySig=String(item.label||item.key).toLowerCase();
     if(usedNames.has(sig))continue;
-    if(item.generic && selected.length<5)continue;
-    if(usedCategories.has(item.key))continue;
+    if(item.generic)continue;
+    if(usedCategories.has(categorySig))continue;
     usedNames.add(sig);
-    usedCategories.add(item.key);
+    usedCategories.add(categorySig);
     selected.push(item);
     if(selected.length>=5)break;
   }
@@ -654,8 +657,10 @@ function renderAssets(data){
   if(selected.length<5){
     for(const item of all){
       const sig=item.name.toLowerCase()+"|"+item.key;
-      if(usedNames.has(sig))continue;
+      const categorySig=String(item.label||item.key).toLowerCase();
+      if(usedNames.has(sig)||item.generic||usedCategories.has(categorySig))continue;
       usedNames.add(sig);
+      usedCategories.add(categorySig);
       selected.push(item);
       if(selected.length>=5)break;
     }
