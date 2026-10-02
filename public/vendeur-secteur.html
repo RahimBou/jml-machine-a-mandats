@@ -557,12 +557,12 @@ function renderAssets(data){
     return;
   }
   if(!selected.length){
-    root.innerHTML='<div class="asset-intro"><b>Aucun repère de proximité suffisamment pertinent</b><p>La source a répondu, mais aucun équipement exploitable n'a été identifié dans le périmètre retenu.</p></div>';
+    root.innerHTML='<div class="asset-intro"><b>Aucun repère de proximité suffisamment pertinent</b><p>La source a répondu, mais aucun équipement exploitable n\'a été identifié dans le périmètre retenu.</p></div>';
     $("#proof").innerHTML='<div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div>';
     return;
   }
   root.innerHTML=
-    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>Les éléments ci-dessous proviennent des données retournées autour de l'adresse. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
+    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>Les éléments ci-dessous proviennent des données retournées autour de l\'adresse. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
     '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
       const c=cats[key]||{items:[],available:false};
@@ -713,6 +713,7 @@ async function run(){
  }catch(e){
   addDiag("Sécurité / risques / services",e.code||"JML-ENV-CLIENT",e.message||"Erreur");
   renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
+ }
  }catch(error){
   addDiag("Initialisation de la page",error?.code||"JML-INIT-CLIENT",error?.message||"Erreur inattendue.");
   $("#status").textContent="Erreur de chargement";
