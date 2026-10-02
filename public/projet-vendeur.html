@@ -721,6 +721,34 @@ document.getElementById('opt').onclick=function(){
   this.setAttribute('aria-expanded',o);
   e.setAttribute('aria-hidden',!o);
 };
+const editParams=new URLSearchParams(location.search);
+const editToken=editParams.get("editToken")||"";
+async function loadEditSellerSpace(){
+  if(!editToken)return;
+  try{
+    var rr=await fetch('/api/seller-space/'+encodeURIComponent(editToken),{cache:'no-store'});
+    var dd=await rr.json();
+    if(!rr.ok||!dd.ok)throw new Error(dd.error||'Espace vendeur introuvable.');
+    var d=dd.space||{};
+    document.getElementById('ville').value=d.city||document.getElementById('ville').value;
+    document.getElementById('type').value=d.propertyType||document.getElementById('type').value;
+    var horizonReverse={"0-3":"Dans les 3 mois","3-6":"Dans les 6 mois","6-12":"Dans l'année","unknown":"Je me renseigne"};
+    document.getElementById('delai').value=horizonReverse[d.horizon]||document.getElementById('delai').value;
+    document.getElementById('adresse').value=d.address||"";
+    document.getElementById('surface').value=d.surface||"";
+    document.getElementById('pieces').value=d.rooms||"";
+    document.getElementById('terrain').value=d.terrain||"";
+    document.getElementById('opt').click();
+    var button=document.querySelector('#form .btn'); if(button)button.textContent='Enregistrer mes modifications →';
+    var ok=document.getElementById('ok'); if(ok){ok.style.display='block';ok.textContent='Vos informations sont chargées. Vous pouvez les corriger puis les enregistrer.';}
+    var nom=document.getElementById('nom'); if(nom)nom.value="";
+    document.title='JML Immobilier — Modifier mon espace vendeur';
+  }catch(error){
+    var ok=document.getElementById('ok'); if(ok){ok.style.display='block';ok.textContent=error.message||'Impossible de charger votre espace vendeur.';}
+  }
+}
+loadEditSellerSpace();
+
 document.getElementById('form').onsubmit=async function(ev){
   ev.preventDefault();
   if(!this.checkValidity()){this.reportValidity();return;}
@@ -774,15 +802,31 @@ document.getElementById('form').onsubmit=async function(ev){
   if(btn){btn.disabled=true;btn.textContent='Enregistrement…';}
   ok.style.display='none';
   try{
-    var response=await fetch('/api/leads',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    });
-    var data=await response.json().catch(function(){return {};});
-    if(!response.ok) throw new Error(data.error || 'Impossible d’enregistrer votre demande.');
-    if(!data.spaceToken) throw new Error('L’espace vendeur n’a pas pu être créé.');
-    window.location.replace('/espace-vendeur/'+encodeURIComponent(data.spaceToken));
+    var response;
+    var data={};
+    if(editToken){
+      response=await fetch('/api/seller-space/'+encodeURIComponent(editToken),{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          city:payload.city,address:payload.address,propertyType:payload.propertyType,horizon:payload.horizon,
+          surface:payload.surface,rooms:payload.rooms,terrain:payload.terrain
+        })
+      });
+      data=await response.json().catch(function(){return {};});
+      if(!response.ok) throw new Error(data.error || 'Impossible d’enregistrer les modifications.');
+      window.location.replace('/espace-vendeur/'+encodeURIComponent(editToken));
+    }else{
+      response=await fetch('/api/leads',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      data=await response.json().catch(function(){return {};});
+      if(!response.ok) throw new Error(data.error || 'Impossible d’enregistrer votre demande.');
+      if(!data.spaceToken) throw new Error('L’espace vendeur n’a pas pu être créé.');
+      window.location.replace('/espace-vendeur/'+encodeURIComponent(data.spaceToken));
+    }
   }catch(error){
     if(btn){btn.disabled=false;btn.textContent='Échanger sur mon projet →';}
     ok.style.display='block';
