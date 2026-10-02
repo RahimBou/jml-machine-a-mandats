@@ -386,12 +386,12 @@ async function generateSellerAddressIntelligence(payload){
  "Retourne UNIQUEMENT ce JSON valide : {\"signature\":\"courte phrase\",\"arguments\":[{\"title\":\"titre court\",\"text\":\"2 phrases maximum\",\"proof\":\"preuve avec un nom exact\",\"evidence\":[{\"name\":\"nom exact\",\"distanceKm\":0.00}]}],\"warnings\":[]}",
  "Produis 2 à 5 arguments. Favorise les combinaisons pertinentes de 2 ou 3 faits."
  ].join("\n");
- const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(SELLER_AI_MODEL)+":generateContent?key="+encodeURIComponent(apiKey);
+ const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(SELLER_AI_MODEL)+":generateContent";
  try{
-  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:0.35,responseMimeType:"application/json"}}),signal:AbortSignal.timeout(12000)});
+  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:0.35,responseMimeType:"application/json"}}),signal:AbortSignal.timeout(12000)});
   const raw=await response.text();if(!response.ok)throw new Error("Gemini HTTP "+response.status+" · "+raw.slice(0,300));
   const parsed=JSON.parse(raw),text=parsed?.candidates?.[0]?.content?.parts?.map(p=>p?.text||"").join("").trim()||"";
-  const result=JSON.parse(text.replace(/^\\`\\`\\`json\\s*/i,"").replace(/\\s*\\`\\`\\`$/,""));
+  const result=JSON.parse(text);
   const validated=validateSellerAiResult(result,evidence);if(!validated.ok)return{ok:false,code:validated.code,message:"Réponse Gemini écartée par le contrôle JML."};
   sellerAiCache.set(key,{expiresAt:Date.now()+SELLER_AI_TTL_MS,data:validated.data});return validated.data;
  }catch(error){console.warn("JML Gemini vendeur:",error.message);return{ok:false,code:"JML-AI-ERROR",message:"Analyse Gemini indisponible temporairement."};}
