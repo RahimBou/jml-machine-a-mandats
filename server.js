@@ -1046,7 +1046,7 @@ async function buildComparableSales(market,property){
   let origin=await geocodeAddress(property?.address,city);
   let originSource="Adresse";
   let commune=null;
-  try{ commune=await resolveTerritoryCommune(city,address||""); }catch(_e){ commune=null; }
+  try{ commune=await resolveTerritoryCommune(city,property?.address||""); }catch(_e){ commune=null; }
   if(!origin){
     try{
       const commune=await resolveTerritoryCommune(city,"");
