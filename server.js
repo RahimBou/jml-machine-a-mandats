@@ -1893,7 +1893,17 @@ out center tags;`;
         continue;
       }
       if(["school","kindergarten","childcare","college","university"].includes(t.amenity))add("schools",name,d);
-      else if(t.shop)add("commerces",name,d);
+      else if(t.shop){
+        const shopType={
+          hypermarket:"Hypermarché",
+          supermarket:"Supermarché",
+          convenience:"Supérette",
+          grocery:"Épicerie",
+          deli:"Alimentation / épicerie fine",
+          bakery:"Boulangerie"
+        }[String(t.shop)]||String(t.shop);
+        add("commerces",name,d,shopType);
+      }
       else if(t.highway==="bus_stop"||["station","halt","tram_stop"].includes(t.railway)||t.amenity==="parking")add("transport",name,d);
       else if(["park","playground","sports_centre","pitch","garden"].includes(t.leisure)||t.tourism==="picnic_site")add("parks",name,d);
       else if(["pharmacy","doctors","clinic","hospital"].includes(t.amenity))add("health",name,d);
