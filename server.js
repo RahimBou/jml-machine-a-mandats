@@ -1038,7 +1038,7 @@ const ADEME_DPE_API="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-loge
 function dpeNorm(value){return normalizeAddress(String(value??"")).trim();}
 function dpeStreetName(value){
   return dpeNorm(value)
-    .replace(/^(rue|ru|avenue|av|boulevard|bd|chemin|ch|impasse|imp|place|pl|route|rte|allee|allée|quai|faubourg|fg|square|cours|passage|voie)\\s+/,"")
+    .replace(/^(rue|ru|avenue|av|boulevard|bd|chemin|ch|impasse|imp|place|pl|route|rte|allee|allée|quai|faubourg|fg|square|cours|passage|voie)\s+/,"")
     .trim();
 }
 function dpeNumber(value){const m=String(value??"").trim().match(/^(\d+[A-Za-z]?)/);return m?normalizeAddress(m[1]):"";}
