@@ -751,6 +751,77 @@ body{background:#f7f3ea!important}
 @media(max-width:900px){
  .fb-wrap{max-width:none!important}
 }
+</style><style id="fix-real-layout">
+/* Correction : vraie interface HTML visible, sans superposition sur une image aplatie. */
+@media(min-width:901px){
+ html,body{margin:0!important;background:#f6f2e9!important}
+ .fb-wrap{position:relative!important;width:100%!important;max-width:1536px!important;height:auto!important;min-height:100vh!important;margin:0 auto!important;padding:0 0 45px!important;background:#f6f2e9!important}
+ .fb-hero{
+   position:relative!important;inset:auto!important;width:100%!important;height:350px!important;min-height:350px!important;
+   display:block!important;opacity:1!important;pointer-events:auto!important;
+   margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;
+   background:
+    linear-gradient(90deg,rgba(5,40,31,.98) 0%,rgba(5,40,31,.84) 34%,rgba(5,40,31,.28) 61%,rgba(5,40,31,0) 100%),
+    url("/assets/seller-hero-ardenne.svg") center/cover no-repeat!important;
+ }
+ .fb-hero>*{display:block!important}
+ .fb-hero .eyebrow{padding:28px 8.5vw 0!important;margin:0!important;color:#e2c273!important;font-size:10px!important;letter-spacing:.22em!important}
+ .fb-hero h1{padding:0 8.5vw!important;margin:8px 0 0!important;max-width:760px!important;font:700 56px/1.02 Georgia,"Times New Roman",serif!important;color:#fff!important;letter-spacing:-.03em!important}
+ .fb-hero p{padding:0 8.5vw!important;margin:17px 0 0!important;max-width:680px!important;color:#fff!important;font-size:15px!important;line-height:1.5!important}
+ .hero-slogan{display:block!important;position:absolute!important;right:8.5vw!important;top:30px!important;color:#173b31!important;font:28px/1.02 "Brush Script MT","Segoe Script",cursive!important;text-align:center!important}
+ .hero-slogan:after{content:"";display:block;width:115px;height:2px;margin:12px auto 0;background:#caa452}
+ .hero-benefits{display:flex!important;gap:44px!important;margin:22px 0 0!important;padding:0 8.5vw!important;color:#fff!important}
+ .hero-benefits>div{display:flex!important;align-items:center!important;gap:10px!important;font-size:13px!important;line-height:1.2!important;font-weight:700!important}
+ .hero-icon{display:inline-grid!important;place-items:center!important;width:46px!important;height:46px!important;flex:0 0 46px!important;border:1px solid #d8b76f!important;border-radius:50%!important;color:#d8b76f!important}
+ .fb-card{
+   position:relative!important;inset:auto!important;width:auto!important;max-width:1295px!important;height:auto!important;
+   margin:-2px auto 0!important;padding:0!important;z-index:5!important;
+   background:rgba(255,254,250,.98)!important;border:1px solid #e0d9cd!important;border-radius:22px!important;
+   box-shadow:0 16px 45px rgba(23,51,44,.14)!important;overflow:visible!important
+ }
+ .fb-card>h2{display:block!important;margin:0!important;padding:30px 50px 3px!important;font:700 34px/1.1 Georgia,"Times New Roman",serif!important;color:#173b31!important}
+ .fb-card>p{display:block!important;margin:0!important;padding:0 50px 14px!important;color:#66706b!important;font-size:12px!important}
+ .fb-local-note{display:flex!important;position:absolute!important;right:50px!important;top:27px!important;width:390px!important;box-sizing:border-box!important;padding:15px 18px!important;gap:5px!important;flex-direction:column!important;border:1px solid #e6ddcc!important;border-radius:13px!important;background:#faf7ef!important}
+ .fb-local-note strong{font-size:13px!important;color:#173b31!important}.fb-local-note span{font-size:11px!important;line-height:1.4!important;color:#68716c!important}
+ #fbLeadForm{position:relative!important;inset:auto!important;width:auto!important;height:auto!important;padding:0 50px 24px!important;display:grid!important;grid-template-columns:1fr 1fr!important;column-gap:40px!important;row-gap:14px!important}
+ #fbLeadForm>div{position:static!important;width:auto!important;height:auto!important;margin:0!important;padding:0!important}
+ #fbLeadForm label{display:block!important;height:auto!important;visibility:visible!important;margin:0 0 5px!important;font-size:11px!important;font-weight:800!important;color:#202c28!important}
+ #fbLeadForm input:not([type=checkbox]),#fbLeadForm select{
+   display:block!important;width:100%!important;height:45px!important;box-sizing:border-box!important;
+   margin:0!important;padding:10px 13px!important;border:1px solid #d9d5cc!important;border-radius:8px!important;
+   background:#fff!important;color:#303632!important;font:14px Arial,sans-serif!important;box-shadow:none!important
+ }
+ #fbLeadForm input:not([type=checkbox])::placeholder{color:#929591!important}
+ #fbLeadForm>div:nth-child(7){grid-column:1/-1!important}
+ #fbLeadForm>div:nth-child(8){grid-column:1/-1!important}
+ #fbLeadForm>div:nth-child(9){grid-column:1/-1!important}
+ #fbLeadForm>div:nth-child(7) details{height:auto!important;border:1px solid #e0ddd6!important;border-radius:9px!important;background:#faf9f5!important;padding:0!important}
+ #fbLeadForm>div:nth-child(7) summary{padding:11px 14px!important;opacity:1!important;font-size:13px!important;font-weight:700!important;cursor:pointer!important}
+ #fbLeadForm>div:nth-child(8) label{font-size:11px!important;font-weight:500!important;display:flex!important;align-items:center!important;gap:8px!important}
+ #fbConsent{width:18px!important;height:18px!important;opacity:1!important;position:static!important;flex:0 0 18px!important}
+ #fbLeadForm>div:nth-child(9){display:flex!important;justify-content:flex-end!important;align-items:center!important;gap:20px!important}
+ .fb-small{display:block!important;flex:1!important;color:#8a8d88!important;font-size:9px!important;line-height:1.35!important}
+ .fb-actions .primary{width:290px!important;height:56px!important;border:0!important;border-radius:8px!important;background:#c59a3e!important;color:#fff!important;font-size:15px!important;font-weight:800!important;box-shadow:0 7px 16px rgba(139,101,36,.2)!important;cursor:pointer!important}
+ .fb-trust{
+   position:relative!important;inset:auto!important;width:auto!important;height:auto!important;display:grid!important;
+   grid-template-columns:repeat(4,1fr)!important;gap:0!important;margin:0!important;padding:26px 5.2vw!important;
+   background:#f8f4eb!important;border:0!important;border-radius:0!important;box-shadow:none!important
+ }
+ .fb-trust-item{display:flex!important;align-items:center!important;gap:12px!important;min-height:62px!important;padding:0 24px!important;border-right:1px solid #d8ccb5!important}
+ .fb-trust-item:first-child{padding-left:0!important}.fb-trust-item:last-child{border-right:0!important}
+ .fb-trust-icon{display:grid!important;place-items:center!important;width:46px!important;height:46px!important;flex:0 0 46px!important;border:1px solid #d8b76f!important;border-radius:50%!important;background:#f8edda!important;color:#a27b2d!important}
+ .fb-trust-item b{display:block!important;font-size:13px!important;color:#173b31!important}.fb-trust-item span{display:block!important;font-size:10.5px!important;line-height:1.4!important;color:#68716c!important}
+}
+@media(max-width:900px){
+ .fb-wrap{background:#f6f2e9!important;padding-bottom:30px!important}
+ .fb-hero{height:500px!important;min-height:500px!important;background:linear-gradient(90deg,rgba(5,40,31,.96),rgba(5,40,31,.2)),url("/assets/seller-hero-ardenne.svg") center/cover!important}
+ .fb-hero .eyebrow{padding:25px 22px 0!important}.fb-hero h1{padding:0 22px!important;font-size:40px!important}.fb-hero p{padding:0 22px!important;font-size:13px!important}
+ .hero-slogan{display:none!important}.hero-benefits{padding:0 22px!important;display:grid!important;gap:10px!important}.hero-benefits>div{font-size:11px!important}
+ .fb-card{margin:-75px 12px 0!important;border-radius:18px!important}.fb-card>h2{padding:26px 20px 4px!important;font-size:27px!important}.fb-card>p{padding:0 20px 15px!important}.fb-local-note{position:static!important;margin:0 20px 12px!important;width:auto!important}
+ #fbLeadForm{display:grid!important;grid-template-columns:1fr!important;padding:0 20px 22px!important;gap:12px!important}
+ #fbLeadForm>div{grid-column:1!important}.fb-trust{grid-template-columns:1fr!important;padding:20px!important}.fb-trust-item{border-right:0!important;border-bottom:1px solid #d8ccb5!important;padding:12px 0!important}.fb-trust-item:last-child{border-bottom:0!important}
+ .fb-actions .primary{width:100%!important}
+}
 </style></head>
 <body>
 <div class="fb-wrap">
