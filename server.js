@@ -1105,9 +1105,12 @@ async function getAdemeDpeByAddress(address,city=""){
     const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim();
     const queries=[...new Set([[raw,city].filter(Boolean).join(" "),[targetNumber,targetStreet,city].filter(Boolean).join(" "),[targetStreet,city].filter(Boolean).join(" "),targetStreet,city].filter(Boolean))];
     const filterQueries=[];
-    if(targetPostal&&targetNumber&&targetStreet){
-      filterQueries.push("ban_postcode_eq="+encodeURIComponent(targetPostal)+"&ban_housenumber_eq="+encodeURIComponent(targetNumber)+"&ban_street_eq="+encodeURIComponent(targetStreet));
-      filterQueries.push("code_postal_brut_eq="+encodeURIComponent(targetPostal)+"&adresse_numero_voie_eq="+encodeURIComponent(targetNumber));
+    if(targetNumber&&targetStreet){
+      filterQueries.push("ban_housenumber_eq="+encodeURIComponent(targetNumber)+"&ban_street_eq="+encodeURIComponent(targetStreet));
+      if(targetPostal){
+        filterQueries.unshift("ban_postcode_eq="+encodeURIComponent(targetPostal)+"&ban_housenumber_eq="+encodeURIComponent(targetNumber)+"&ban_street_eq="+encodeURIComponent(targetStreet));
+        filterQueries.push("code_postal_brut_eq="+encodeURIComponent(targetPostal)+"&adresse_numero_voie_eq="+encodeURIComponent(targetNumber));
+      }
     }
     for(const filter of filterQueries){
       const response=await fetch(endpoint+"?size=50&"+filter,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/1.2"},signal:AbortSignal.timeout(7000)}).catch(()=>null);
