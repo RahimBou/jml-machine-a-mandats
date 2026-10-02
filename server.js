@@ -1029,6 +1029,64 @@ function weightedMedian(rows){
   for(const x of valid){acc+=Math.max(1,Number(x.score)||0);if(acc>=total/2)return Number(x.pricePerM2);}
   return Number(valid[valid.length-1].pricePerM2);
 }
+
+const dpeCache=new Map();
+function normalizeDpeLabel(value){
+  const m=String(value??"").toUpperCase().match(/\b([A-G])\b/);
+  return m?m[1]:null;
+}
+function extractDpeFromAdemeRow(row){
+  if(!row||typeof row!=="object")return null;
+  const preferred=["Etiquette_DPE","Etiquette DPE","etiquette_dpe","classe_dpe","Classe_DPE","classe_energie","Etiquette énergétique"];
+  for(const key of preferred){
+    if(Object.prototype.hasOwnProperty.call(row,key)){
+      const v=normalizeDpeLabel(row[key]); if(v)return v;
+    }
+  }
+  for(const [key,value] of Object.entries(row)){
+    if(/dpe|étiquette.*énerg|etiquette.*energ|classe.*energ/i.test(key)){
+      const v=normalizeDpeLabel(value); if(v)return v;
+    }
+  }
+  return null;
+}
+function ademeRowAddress(row){
+  if(!row||typeof row!=="object")return "";
+  return Object.entries(row).filter(([k])=>/adresse|voie|rue|num[eé]ro.*voie|localisation/i.test(k))
+    .map(([,v])=>String(v??"")).filter(Boolean).join(" ");
+}
+async function getAdemeDpeByAddress(address,city=""){
+  const raw=String(address||"").trim(), normalized=normalizeAddress(raw);
+  if(!normalized)return null;
+  const cacheKey=normalized+"|"+normalizeAddress(city);
+  if(dpeCache.has(cacheKey))return dpeCache.get(cacheKey);
+  try{
+    const q=[raw,city].filter(Boolean).join(" ");
+    const url="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?size=20&q="+encodeURIComponent(q);
+    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/1.0"},signal:AbortSignal.timeout(5000)});
+    if(!response.ok){dpeCache.set(cacheKey,null);return null;}
+    const payload=await response.json().catch(()=>({}));
+    const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
+    const streetTarget=normalizeAddress(raw).replace(/\b\d+\b/g,"").trim();
+    let best=null,bestScore=-1;
+    for(const row of rows){
+      const dpe=extractDpeFromAdemeRow(row); if(!dpe)continue;
+      const ra=normalizeAddress(ademeRowAddress(row));
+      let score=0;
+      if(ra===normalized)score+=100;
+      if(streetTarget&&ra.includes(streetTarget))score+=30;
+      const targetNum=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1];
+      if(targetNum&&ra.includes(normalizeAddress(targetNum)))score+=20;
+      if(score>bestScore){bestScore=score;best={dpe,source:"ADEME DPE",address:ademeRowAddress(row),matchScore:score};}
+    }
+    dpeCache.set(cacheKey,best);
+    return best;
+  }catch(_e){
+    dpeCache.set(cacheKey,null);
+    return null;
+  }
+}
+
 async function buildComparableSales(market,property){
   const city=String(property?.city||market?.city||"").trim();
   const typeWanted=classifyDvfType(property?.propertyType,"");
@@ -1056,6 +1114,9 @@ async function buildComparableSales(market,property){
 
   const MAX_RADIUS_KM=3;
   const MAX_AGE_MONTHS=48;
+  let subjectDpe=normalizeDpeLabel(property?.dpe)||null;
+  let subjectDpeSource=subjectDpe?"Saisi dans le dossier":null;
+  if(!subjectDpe){ const autoDpe=await getAdemeDpeByAddress(property?.address,city); if(autoDpe?.dpe){subjectDpe=autoDpe.dpe;subjectDpeSource=autoDpe.source;} }
   let local=[];
   try{local=await getLocalDvfComparables(origin,MAX_RADIUS_KM,commune?.code||"");}catch(error){console.warn("JML comparables DVF local:",error.message);}
 
@@ -1151,6 +1212,26 @@ async function buildComparableSales(market,property){
 
   candidates.sort((a,b)=>b.weight-a.weight||b.score-a.score);
   const top40=candidates.slice(0,40);
+  // Enrichissement ADEME limité aux meilleurs comparables : le DPE est un signal
+  // secondaire et ne remplace jamais les critères DVF de prix, surface, pièces et distance.
+  const dpeRows=top40.slice(0,12);
+  for(let i=0;i<dpeRows.length;i+=4){
+    const batch=dpeRows.slice(i,i+4);
+    const enriched=await Promise.all(batch.map(async sale=>{
+      const found=await getAdemeDpeByAddress(sale.address,sale.city||city);
+      return {sale,found};
+    }));
+    for(const item of enriched){
+      if(item.found?.dpe){
+        item.sale.dpe=item.found.dpe;
+        item.sale.dpeSource=item.found.source;
+        if(subjectDpe){
+          const diff=Math.abs(subjectDpe.charCodeAt(0)-item.sale.dpe.charCodeAt(0));
+          item.sale.dpeMatch=diff===0?"Identique":diff===1?"Très proche":diff===2?"Proche":"Écarté";
+        }
+      }
+    }
+  }
   const topValues=top40.map(x=>x.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);
   const tq1=topValues[Math.floor((topValues.length-1)*0.25)],tq3=topValues[Math.floor((topValues.length-1)*0.75)];
   const tiqr=(tq3??0)-(tq1??0),tlo=(tq1??0)-1.5*tiqr,thi=(tq3??0)+1.5*tiqr;
@@ -1197,6 +1278,7 @@ async function buildComparableSales(market,property){
     source:"DVF local JML / PostgreSQL",
     method:isLand?"Transactions DVF de terrains comparables : toutes les ventes compatibles sont d'abord scorées, puis pondérées par proximité, surface, récence et cohérence statistique du prix.":"Transactions DVF du même type : toutes les ventes compatibles jusqu'à 3 km / 48 mois sont d'abord scorées. Les 40 meilleurs comparables sont ensuite contrôlés statistiquement ; les prix atypiques restent visibles mais influencent moins la valeur.",
     criteria:{type:typeWanted||null,surface:surface||null,landSurface:landSurface||null,rooms:rooms||null,maxRadiusKm:MAX_RADIUS_KM},
+    dpe:{label:subjectDpe,source:subjectDpeSource},
     engineVersion:"8.4.0-PG-DVF-VALUATION-COMPARE",
     diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0,externalRows,candidateCount:candidates.length,top40:top40.length,valuationCount:valuationSales.length,strictCount,outlierCount,originSource,tierCounts,confidence}
   };
