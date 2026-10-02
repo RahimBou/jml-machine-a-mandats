@@ -1800,6 +1800,7 @@ async function getNearbyAssets(lat,lon){
   const q=`[out:json][timeout:8];
 (
   nwr(around:1500,${la},${lo})[amenity~"^(school|kindergarten|childcare|college|university|pharmacy|doctors|clinic|hospital|post_office|bank|library|restaurant|cafe|parking)$"];
+  way(around:5000,${la},${lo})[highway~"^(motorway|trunk|primary|secondary)$"];
   nwr(around:1500,${la},${lo})[shop];
   nwr(around:1500,${la},${lo})[highway=bus_stop];
   nwr(around:1500,${la},${lo})[railway~"^(station|halt|tram_stop)$"];
@@ -1834,16 +1835,24 @@ out center tags;`;
         schools:{label:"Écoles & établissements",count:0,items:[]},
         commerces:{label:"Commerces de proximité",count:0,items:[]},
         transport:{label:"Transports & stationnement",count:0,items:[]},
+        roads:{label:"Grands axes routiers",count:0,items:[]},
         parks:{label:"Parcs, jeux & loisirs",count:0,items:[]},
         health:{label:"Santé",count:0,items:[]},
         services:{label:"Services du quotidien",count:0,items:[]}
       }
     };
-    const add=(cat,name,dist)=>{const x=out.categories[cat];if(!x)return;x.count++;if(x.items.length<5)x.items.push({name:name||"Équipement sans nom",distanceKm:Number(dist.toFixed(2))});};
+    const add=(cat,name,dist,type)=>{const x=out.categories[cat];if(!x)return;x.count++;if(x.items.length<5)x.items.push({name:name||"Équipement sans nom",type:type||null,distanceKm:Number(dist.toFixed(2))});};
     const distance=(e)=>{const p=e?.center||e,x=Number(p?.lon??e?.lon),y=Number(p?.lat??e?.lat);const d=haversineKm({lat:la,lon:lo},{lat:y,lon:x});return d==null?999:d;};
     for(const e of elements){
       const t=e?.tags||{},d=distance(e),name=String(t.name||t.operator||"").trim();
-      if(d>1.5)continue;
+      if(d>1.5 && !/^(motorway|trunk|primary|secondary)$/.test(String(t.highway||"")))continue;
+      if(/^(motorway|trunk|primary|secondary)$/.test(String(t.highway||""))){
+        const ref=String(t.ref||"").trim();
+        const roadName=ref&&name?ref+" — "+name:(ref||name||"Grand axe routier");
+        const roadType={motorway:"Autoroute",trunk:"Voie rapide",primary:"Route principale",secondary:"Axe départemental / secondaire"}[String(t.highway)]||"Grand axe routier";
+        add("roads",roadName,d,roadType);
+        continue;
+      }
       if(["school","kindergarten","childcare","college","university"].includes(t.amenity))add("schools",name,d);
       else if(t.shop)add("commerces",name,d);
       else if(t.highway==="bus_stop"||["station","halt","tram_stop"].includes(t.railway)||t.amenity==="parking")add("transport",name,d);
@@ -1891,8 +1900,17 @@ app.get("/api/territory-assets", async (req,res) => {
       const commune=await resolveTerritoryCommune(city,address);
       communeCode=String(commune?.code||"");
     }
-    const data=await getOfficialTerritoryAssets(lat,lon,communeCode);
-    return res.json({ok:true,lat,lon,communeCode,...data});
+    const [data,osm]=await Promise.all([
+      getOfficialTerritoryAssets(lat,lon,communeCode),
+      getNearbyAssets(lat,lon)
+    ]);
+    const roads=osm?.available?osm.categories?.roads:null;
+    return res.json({
+      ok:true,lat,lon,communeCode,...data,
+      categories:{...(data.categories||{}),roads:roads||{label:"Grands axes routiers",count:0,items:[],available:false,source:"OpenStreetMap / Overpass"}},
+      roadRadiusKm:5,
+      roadSource:"OpenStreetMap / Overpass"
+    });
   }catch(error){
     console.warn("JML territory-assets officielles:",error.message);
     return res.status(200).json({ok:false,available:false,code:"JML-ASSET-OFFICIAL",message:"Les sources officielles d'équipements sont temporairement indisponibles.",source:"Éducation nationale + INSEE BPE 2025"});
