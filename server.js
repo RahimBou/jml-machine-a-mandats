@@ -35,8 +35,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.7.0";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v10-dpe-local-08";
+const VERSION = "3.8.0";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v11-dpe-direct-address";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -1036,6 +1036,11 @@ const localDpeCache=new Map();
 let dpeImportRunning=false;
 const ADEME_DPE_API="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines";
 function dpeNorm(value){return normalizeAddress(String(value??"")).trim();}
+function dpeStreetName(value){
+  return dpeNorm(value)
+    .replace(/^(rue|ru|avenue|av|boulevard|bd|chemin|ch|impasse|imp|place|pl|route|rte|allee|allée|quai|faubourg|fg|square|cours|passage|voie)\\s+/,"")
+    .trim();
+}
 function dpeNumber(value){const m=String(value??"").trim().match(/^(\d+[A-Za-z]?)/);return m?normalizeAddress(m[1]):"";}
 function dpeImportPayload(row){
   const number=ademeText(row,["numero_voie_ban","numero_voie"]);
@@ -1050,7 +1055,7 @@ function dpeImportPayload(row){
   const dept=String(row?.code_departement_ban??"").trim();
   if(!row?.numero_dpe||!dpe)return null;
   const fullAddress=address||[number,street,postal,city].filter(Boolean).join(" ");
-  return {numeroDpe:String(row.numero_dpe).trim(),dpe,ges:ges||null,date:date||null,address:fullAddress,number:number||"",street:street||"",city:city||"",postal:postal||"",dept,cityCode:ademeText(row,["code_insee_ban","code_insee_commune"]),surface:Number.isFinite(surface)&&surface>0?surface:null,x:Number(row?.coordonnee_cartographique_x_ban)||null,y:Number(row?.coordonnee_cartographique_y_ban)||null,addressNorm:dpeNorm(fullAddress),streetNorm:dpeNorm(street),numberNorm:dpeNumber(number)};
+  return {numeroDpe:String(row.numero_dpe).trim(),dpe,ges:ges||null,date:date||null,address:fullAddress,number:number||"",street:street||"",city:city||"",postal:postal||"",dept,cityCode:ademeText(row,["code_insee_ban","code_insee_commune"]),surface:Number.isFinite(surface)&&surface>0?surface:null,x:Number(row?.coordonnee_cartographique_x_ban)||null,y:Number(row?.coordonnee_cartographique_y_ban)||null,addressNorm:dpeNorm(fullAddress),streetNorm:dpeStreetName(street),numberNorm:dpeNumber(number)};
 }
 async function getLocalDpeByAddress(address,city="",postal=""){
   if(!pool)return null;
@@ -1140,8 +1145,8 @@ function scoreAdemeAddress(row,address,city){
   const target=normalizeAddress(raw);
   const targetCity=normalizeAddress(city);
   const targetNumber=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1]||"";
-  const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim();
-  const rowStreet=normalizeAddress(parts.street);
+  const targetStreet=dpeStreetName(normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim());
+  const rowStreet=dpeStreetName(parts.street);
   const rowNumber=normalizeAddress(parts.number);
   const rowCity=normalizeAddress(parts.city);
   const rowPostal=normalizeAddress(parts.postal);
@@ -1158,30 +1163,40 @@ function scoreAdemeAddress(row,address,city){
 }
 
 async function getAdemeStreetRows(postal,street){
-  const key=normalizeAddress(postal)+"|"+normalizeAddress(street);
-  if(!street||dpeStreetRowsCache.has(key)) return dpeStreetRowsCache.get(key)||[];
+  const normalizedPostal=String(postal||"").trim();
+  const streetFull=dpeNorm(street);
+  const streetName=dpeStreetName(streetFull);
+  const key=normalizedPostal+"|"+streetName;
+  if(!streetName||dpeStreetRowsCache.has(key)) return dpeStreetRowsCache.get(key)||[];
   const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines";
-  const filters=[
-    "ban_postcode_eq="+encodeURIComponent(postal)+"&ban_street_eq="+encodeURIComponent(street),
-    "code_postal_brut_eq="+encodeURIComponent(postal)
+  const queries=[
+    "ban_postcode_eq="+encodeURIComponent(normalizedPostal)+"&ban_street_eq="+encodeURIComponent(streetName),
+    "ban_postcode_eq="+encodeURIComponent(normalizedPostal)+"&ban_street_eq="+encodeURIComponent(streetFull),
+    "ban_postcode_eq="+encodeURIComponent(normalizedPostal)+"&nom_rue_ban_eq="+encodeURIComponent(streetName),
+    "code_postal_brut_eq="+encodeURIComponent(normalizedPostal)+"&q="+encodeURIComponent(streetName)
   ];
-  for(const filter of filters){
-    const response=await fetch(endpoint+"?size=1000&"+filter,{
-      headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/1.3"},
-      signal:AbortSignal.timeout(9000)
-    }).catch(()=>null);
-    if(!response||!response.ok) continue;
-    const payload=await response.json().catch(()=>({}));
-    const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
-    if(rows.length){
-      dpeStreetRowsCache.set(key,rows);
-      return rows;
+  for(const filter of queries){
+    try{
+      const response=await fetch(endpoint+"?size=1000&"+filter,{
+        headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.8.0"},
+        signal:AbortSignal.timeout(9000)
+      });
+      if(!response.ok) continue;
+      const payload=await response.json().catch(()=>({}));
+      const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
+      if(rows.length){
+        console.log("JML DPE ADEME rue:",normalizedPostal,streetName,"=>",rows.length,"lignes");
+        dpeStreetRowsCache.set(key,rows);
+        return rows;
+      }
+    }catch(error){
+      console.warn("JML DPE ADEME requête rue:",error.message);
     }
   }
+  console.warn("JML DPE ADEME: aucune ligne pour",normalizedPostal,streetName);
   dpeStreetRowsCache.set(key,[]);
   return [];
 }
-
 async function getAdemeDpeByAddress(address,city="",postal=""){
   const local=await getLocalDpeByAddress(address,city,postal);
   if(local?.dpe)return local;
@@ -1193,7 +1208,7 @@ async function getAdemeDpeByAddress(address,city="",postal=""){
     const targetNumber=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1]||"";
     const targetPostal=(raw.match(/\b(\d{5})\b/)||[])[1]||"";
     const targetCity=normalizeAddress(city);
-    const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim();
+    const targetStreet=dpeStreetName(normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim());
     let best=null,bestScore=-1;
 
     // Recherche déterministe par rue + code postal : on récupère un lot
@@ -2922,7 +2937,12 @@ async function start(){
   try{
     await initDb();
     console.log(`JML Projet Vendeur v${VERSION} database ready`);
-    setTimeout(async()=>{try{console.log("JML DPE 08 import:",await importAdemeDpeDepartment("08"));}catch(error){console.warn("JML DPE 08 import différé:",error.message);}},5000);
+    setTimeout(async()=>{
+      try{
+        const status=pool?await db("SELECT COUNT(*)::int AS total FROM jml_dpe WHERE department_code='08'"):null;
+        console.log("JML DPE 08 local:",Number(status?.rows?.[0]?.total||0),"lignes. Enrichissement ADEME direct activé.");
+      }catch(error){console.warn("JML DPE 08 status différé:",error.message);}
+    },5000);
   }catch(err){
     console.error("DB init failed:",err);
     console.error("JML Projet Vendeur continue en mode dégradé tant que PostgreSQL n'est pas disponible.");
