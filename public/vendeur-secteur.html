@@ -629,7 +629,7 @@ function renderAssets(data){
   };
   const itemPriority={
     schools:[/école|collège|lycée|crèche|maternelle|primaire/i,1],
-    commerces:[/boulangerie|supermarché|supérette|épicerie|marché|commerce/i,1],
+    commerces:[/carrefour|intermarché|leclerc|e\.leclerc|auchan|super\s*u|hyper\s*u|u\s+express|casino|monoprix|lidl|aldi|netto|supermarché|hypermarché|supérette|épicerie/i,1],
     transport:[/gare|tram|bus|arrêt|station/i,1],
     roads:[/\bA\s?\d+\b|\bN\s?\d+\b|\bD\s?\d+\b|autoroute|voie rapide|route principale|axe départemental|rocade/i,1],
     health:[/pharmacie|médecin|dentiste|cabinet|santé|hôpital/i,1],
@@ -643,12 +643,14 @@ function renderAssets(data){
       const name=String(item.name||item.type||"").trim();
       const distanceKm=n(item.distanceKm);
       const generic=/taxi|taxis|vsl|transport de personnes|transport routier|ambulance|chauffeur|vtc/i.test(name);
-      const match=itemPriority[key]?.[0]?.test(name)?0:1;
+      const commerceFood=key==="commerces" && /carrefour|intermarché|leclerc|e\.leclerc|auchan|super\s*u|hyper\s*u|u\s+express|casino|monoprix|lidl|aldi|netto|supermarché|hypermarché|supérette|épicerie/i.test(name+" "+String(item.type||""));
+      const match=key==="commerces" ? (commerceFood?0:(/boulangerie|boucherie|marché|primeur|bio/i.test(name)?1:2)) : (itemPriority[key]?.[0]?.test(name)?0:1);
       all.push({
         key,label:title,name,
         distance:distanceKm!=null?distanceKm.toFixed(2).replace(".",",")+" km":(item.distanceLabel||"à proximité"),
         distanceKm:distanceKm??999,
         type:item.type||item.name||"Repère",
+        commercePriority:key==="commerces" ? (commerceFood?0:1) : 9,
         source:cat.source||data?.source||"Données publiques",
         categoryRank:categoryPriority[key]||99,
         itemRank:generic?3:match,
@@ -658,6 +660,7 @@ function renderAssets(data){
   });
   all.sort((a,b)=>
     a.categoryRank-b.categoryRank ||
+    (a.key==="commerces" ? a.commercePriority-b.commercePriority : 0) ||
     a.itemRank-b.itemRank ||
     a.distanceKm-b.distanceKm
   );
