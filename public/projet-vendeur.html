@@ -751,7 +751,7 @@ loadEditSellerSpace();
 
 document.getElementById('form').onsubmit=async function(ev){
   ev.preventDefault();
-  if(!this.checkValidity()){this.reportValidity();return;}
+  if(!editToken && !this.checkValidity()){this.reportValidity();return;}
   var form=this;
   var btn=form.querySelector('.btn');
   var ok=document.getElementById('ok');
@@ -784,17 +784,17 @@ document.getElementById('form').onsubmit=async function(ev){
     source:"Page projet vendeur",
     consent:!!consent.checked
   };
-  if(!payload.name){
+  if(!editToken && !payload.name){
     ok.style.display='block';
     ok.textContent='Merci d’indiquer votre nom.';
     return;
   }
-  if(!payload.phone && !payload.email){
+  if(!editToken && !payload.phone && !payload.email){
     ok.style.display='block';
     ok.textContent='Indiquez au moins un téléphone ou un email.';
     return;
   }
-  if(!payload.consent){
+  if(!editToken && !payload.consent){
     ok.style.display='block';
     ok.textContent='Votre autorisation est nécessaire pour être recontacté.';
     return;
