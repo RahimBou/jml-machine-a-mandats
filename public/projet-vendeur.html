@@ -684,6 +684,73 @@ body{background:#f7f3ea!important}
 @media(max-width:900px){
  .fb-wrap{max-width:none!important}
 }
+</style><style id="exact-maquette-background">
+/* MAQUETTE EXACTE : l'asset de référence est l'arrière-plan complet.
+   Les champs réels sont transparents et placés exactement sur leurs zones. */
+@media(min-width:901px){
+ html,body{margin:0!important;padding:0!important;background:#f7f3ea!important}
+ .fb-wrap{
+   position:relative!important;width:100%!important;max-width:1536px!important;
+   aspect-ratio:1536/1024!important;height:auto!important;min-height:0!important;
+   margin:0 auto!important;padding:0!important;
+   background:url("/assets/hero-ardennais-realiste.jpg") 0 0/100% 100% no-repeat!important;
+ }
+ .fb-hero,.fb-card,.fb-trust{
+   position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+   margin:0!important;padding:0!important;background:transparent!important;
+   border:0!important;box-shadow:none!important;border-radius:0!important;
+ }
+ .fb-hero>*{display:none!important}
+ .fb-card>h2,.fb-card>p,.fb-local-note,.fb-trust{display:none!important}
+ #fbLeadForm{
+   position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+   padding:0!important;margin:0!important;display:block!important
+ }
+ #fbLeadForm>div{position:absolute!important;margin:0!important;padding:0!important}
+ /* zones correspondant aux 6 champs de la maquette */
+ #fbLeadForm>div:nth-child(1){left:14.25%;top:50.95%;width:34.85%;height:4.4%}
+ #fbLeadForm>div:nth-child(2){left:55.0%;top:50.95%;width:34.65%;height:4.4%}
+ #fbLeadForm>div:nth-child(3){left:14.25%;top:59.55%;width:34.85%;height:4.4%}
+ #fbLeadForm>div:nth-child(4){left:55.0%;top:59.55%;width:34.65%;height:4.4%}
+ #fbLeadForm>div:nth-child(5){left:14.25%;top:68.15%;width:34.85%;height:4.4%}
+ #fbLeadForm>div:nth-child(6){left:55.0%;top:68.15%;width:34.65%;height:4.4%}
+ #fbLeadForm>div:nth-child(7){left:11.0%;top:74.35%;width:78%;height:4.8%}
+ #fbLeadForm>div:nth-child(8){left:10.95%;top:81.0%;width:55%;height:3.0%}
+ #fbLeadForm>div:nth-child(9){left:70.45%;top:77.65%;width:19.0%;height:5.8%}
+ #fbLeadForm label{display:none!important}
+ #fbLeadForm input:not([type=checkbox]),#fbLeadForm select{
+   display:block!important;width:100%!important;height:100%!important;margin:0!important;padding:0 13px!important;
+   box-sizing:border-box!important;border:0!important;outline:0!important;border-radius:8px!important;
+   background:transparent!important;box-shadow:none!important;color:#303632!important;
+   font-family:Arial,sans-serif!important;font-size:14px!important;font-weight:400!important
+ }
+ #fbLeadForm input:not([type=checkbox])::placeholder{color:#8a8c8a!important;opacity:1!important}
+ #fbLeadForm input:not([type=checkbox]):focus,#fbLeadForm select:focus{
+   background:rgba(255,255,255,.30)!important;box-shadow:0 0 0 1px rgba(197,154,62,.65)!important
+ }
+ #fbLeadForm select{appearance:none!important;-webkit-appearance:none!important;cursor:pointer!important}
+ #fbLeadForm>div:nth-child(7) details{height:100%!important;background:transparent!important;border:0!important;border-radius:0!important}
+ #fbLeadForm>div:nth-child(7) summary{height:100%!important;padding:0!important;opacity:0!important;cursor:pointer!important}
+ #fbLeadForm>div:nth-child(7) details[open]{position:absolute!important;left:0;top:0;width:100%;height:220px!important;background:#fff!important;border:1px solid #d9d5cc!important;border-radius:10px!important;padding:12px!important;z-index:50}
+ #fbLeadForm>div:nth-child(7) details[open] summary{opacity:1!important;height:25px!important}
+ #fbLeadForm>div:nth-child(8){display:block!important}
+ #fbLeadForm>div:nth-child(8) label{display:block!important;height:100%!important;font-size:0!important;cursor:pointer!important}
+ #fbConsent{position:absolute!important;left:0!important;top:0!important;width:19px!important;height:19px!important;display:block!important;opacity:0!important;cursor:pointer!important}
+ #fbLeadForm>div:nth-child(8) label:before{
+   content:"";display:block;width:18px;height:18px;border:1px solid #b88b32;border-radius:3px;background:#fff
+ }
+ #fbConsent:checked + *{}
+ #fbLeadForm>div:nth-child(9){display:flex!important;align-items:center!important;justify-content:center!important}
+ .fb-small{display:none!important}
+ .fb-actions .primary{
+   display:block!important;width:100%!important;height:100%!important;margin:0!important;padding:0!important;
+   border:0!important;border-radius:8px!important;background:transparent!important;color:transparent!important;
+   box-shadow:none!important;cursor:pointer!important;font-size:0!important
+ }
+}
+@media(max-width:900px){
+ .fb-wrap{max-width:none!important}
+}
 </style></head>
 <body>
 <div class="fb-wrap">
@@ -703,10 +770,10 @@ body{background:#f7f3ea!important}
 <p class="muted">Quelques informations suffisent pour préparer un premier échange. Vous gardez la main sur la suite, sans obligation de mettre votre bien en vente.</p>
 <div class="fb-local-note"><strong>⌂ &nbsp; Une approche locale et humaine</strong><span>Spécialiste du marché immobilier dans les Ardennes, je vous accompagne avec des conseils adaptés à votre situation.</span></div>
 <form id="fbLeadForm" class="fb-grid" novalidate>
-<div><label for="fbName">Nom / prénom *</label><input id="fbName" required maxlength="120"></div>
+<div><label for="fbName">Nom / prénom *</label><input id="fbName" required maxlength="120" placeholder="Nom / prénom"></div>
 <div><label for="fbCity">Commune</label><input id="fbCity" maxlength="100" placeholder="Charleville-Mézières"></div>
-<div><label for="fbPhone">Téléphone</label><input id="fbPhone" type="tel" maxlength="40"></div>
-<div><label for="fbEmail">Email</label><input id="fbEmail" type="email" maxlength="180"></div>
+<div><label for="fbPhone">Téléphone</label><input id="fbPhone" type="tel" maxlength="40" placeholder="Votre numéro de téléphone"></div>
+<div><label for="fbEmail">Email</label><input id="fbEmail" type="email" maxlength="180" placeholder="Votre adresse email"></div>
 <div><label for="fbType">Type de bien</label><select id="fbType"><option>Maison</option><option>Appartement</option><option>Immeuble</option><option>Terrain</option><option>Commerce</option><option>Autre</option></select></div>
 <div><label for="fbHorizon">Projet de vente</label><select id="fbHorizon"><option value="0-3">Dans les 3 mois</option><option value="3-6">Dans 3 à 6 mois</option><option value="6-12">Dans 6 à 12 mois</option><option value="unknown">Je ne sais pas encore</option></select></div>
 <div class="full"><details class="fb-extra-details"><summary>Ajouter quelques caractéristiques du bien <span>(facultatif)</span></summary><div class="fb-extra-grid">
