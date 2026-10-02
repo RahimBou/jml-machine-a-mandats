@@ -881,7 +881,7 @@ function normalizeAddress(value){
   return normalizeSearchCity(String(value||"").replace(/[0-9]+/g," ").replace(/\s+/g," "));
 }
 const geocodeCache=new Map();
-async function geocodeAddress(address,city){
+async async function geocodeAddress(address,city){
   const raw=String(address||"").trim(), commune=String(city||"").trim();
   if(!raw||!commune) return null;
   const key=normalizeSearchCity(raw+", "+commune);
