@@ -111,7 +111,29 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .method-separation span{display:block;font-size:8px;line-height:1.5;color:var(--muted)}
 @media(max-width:650px){.method-separation{grid-template-columns:1fr}}
 </style>
-<style id="ardenne-identity-final">.ardenne-visual{background-image:linear-gradient(90deg,rgba(23,59,50,.96) 0%,rgba(23,59,50,.82) 48%,rgba(23,59,50,.42) 100%),url('/assets/itineraire-jml.svg')!important;background-size:cover!important;background-position:center!important}</style><style id="major-roads-style">.road-strip{margin-top:10px;padding:12px 14px;background:#fffdf7;border:1px solid var(--line);border-radius:13px}.road-head{display:flex;justify-content:space-between;gap:8px;align-items:center}.road-head b{font-size:10px;color:var(--g)}.road-head span{font-size:7px;color:#8a6c2e;background:#f2ead8;border-radius:999px;padding:4px 7px;font-weight:800}.road-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.road-item{display:flex;justify-content:space-between;gap:7px;align-items:center;background:#faf6ee;border:1px solid #e8dfcf;border-radius:10px;padding:9px}.road-item strong{display:block;font-size:8.5px;color:#394740}.road-item small{display:block;font-size:7px;color:var(--muted);margin-top:3px}.road-item>span{font-size:8px;font-weight:900;color:#8a6c2e;white-space:nowrap}.road-source{display:block;margin-top:7px;font-size:7.5px;line-height:1.45;color:var(--muted)}@media(max-width:760px){.road-list{grid-template-columns:1fr}}</style></head>
+<style id="ardenne-identity-final">.ardenne-visual{background-image:linear-gradient(90deg,rgba(23,59,50,.96) 0%,rgba(23,59,50,.82) 48%,rgba(23,59,50,.42) 100%),url('/assets/itineraire-jml.svg')!important;background-size:cover!important;background-position:center!important}</style><style id="major-roads-style">.road-strip{margin-top:10px;padding:12px 14px;background:#fffdf7;border:1px solid var(--line);border-radius:13px}.road-head{display:flex;justify-content:space-between;gap:8px;align-items:center}.road-head b{font-size:10px;color:var(--g)}.road-head span{font-size:7px;color:#8a6c2e;background:#f2ead8;border-radius:999px;padding:4px 7px;font-weight:800}.road-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.road-item{display:flex;justify-content:space-between;gap:7px;align-items:center;background:#faf6ee;border:1px solid #e8dfcf;border-radius:10px;padding:9px}.road-item strong{display:block;font-size:8.5px;color:#394740}.road-item small{display:block;font-size:7px;color:var(--muted);margin-top:3px}.road-item>span{font-size:8px;font-weight:900;color:#8a6c2e;white-space:nowrap}.road-source{display:block;margin-top:7px;font-size:7.5px;line-height:1.45;color:var(--muted)}@media(max-width:760px){.road-list{grid-template-columns:1fr}}</style><style id="seller-microapp-v1">
+.seller-microapp{margin-top:14px;background:linear-gradient(135deg,#12362e,#285848);border-radius:20px;padding:18px;color:#fff;box-shadow:0 12px 28px rgba(23,59,50,.13);position:relative;overflow:hidden}
+.seller-microapp:after{content:"";position:absolute;right:-65px;top:-70px;width:210px;height:210px;border:1px solid rgba(201,168,91,.28);border-radius:50%}
+.micro-kicker{font-size:8px;font-weight:900;letter-spacing:.16em;color:#e7cf91;text-transform:uppercase}
+.seller-microapp h3{font-size:22px;margin:5px 0 6px}
+.micro-intro{font-size:9px;line-height:1.6;color:#dbe7e0;max-width:800px;margin:0}
+.micro-signature{margin-top:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.06);border-radius:14px}
+.micro-signature b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:14px;color:#f4dfaa}
+.micro-signature span{display:block;margin-top:5px;font-size:8px;line-height:1.5;color:#dbe7e0}
+.micro-stories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px}
+.micro-story{background:#fffdf8;color:var(--g);border-radius:14px;padding:12px;min-height:150px;border:1px solid #e5dccd;display:flex;flex-direction:column}
+.micro-story .story-icon{font-size:21px}.micro-story .story-kicker{font-size:6.5px;font-weight:900;letter-spacing:.08em;color:#8a6c2e;text-transform:uppercase;margin-top:7px}
+.micro-story strong{font-family:Georgia,"Times New Roman",serif;font-size:13px;line-height:1.2;margin-top:4px}.micro-story p{font-size:8.5px;line-height:1.55;color:#5e6963;margin:7px 0}.micro-proof{margin-top:auto;padding-top:7px;border-top:1px solid #eee6d9;font-size:7.5px;font-weight:800;color:#8a6c2e}
+.micro-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}.micro-actions button{border:0;border-radius:999px;padding:9px 12px;font-size:8px;font-weight:900;cursor:pointer}.micro-print{background:var(--gold);color:var(--g)}.micro-copy{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)!important}
+.seller-poster{display:none}
+@media(max-width:760px){.micro-stories{grid-template-columns:1fr 1fr}.seller-microapp{padding:15px}}
+@media(max-width:470px){.micro-stories{grid-template-columns:1fr}.micro-story{min-height:135px}}
+@media print{
+ body{background:#fff!important}.wrap{max-width:none!important;padding:0!important}.hero,.project,.section:not(#sellerMicroApp),.footer{display:none!important}
+ #sellerMicroApp{display:block!important;margin:0!important;padding:24mm 16mm!important;min-height:257mm;background:#173b32!important;box-shadow:none!important;border-radius:0!important}
+ #sellerMicroApp .micro-actions{display:none!important}.seller-microapp:after{display:none}
+}
+</style></head>
 <body>
 <main class="wrap">
 <section class="hero jml-architecture jml-architecture ardenne-visual">
@@ -144,6 +166,18 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
    <p>Ces informations décrivent le cadre de vie autour de l'adresse. Elles servent à préparer la présentation du bien et à expliquer son environnement ; <strong>elles ne sont pas converties automatiquement en €/m² et ne gonflent pas la valeur de référence.</strong></p>
   </div>
   <div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
+<section class="seller-microapp" id="sellerMicroApp">
+  <div class="micro-kicker">MICRO-APPLICATION VENDEUR · LECTURE PREMIUM</div>
+  <h3>✨ Comment raconter cette adresse</h3>
+  <p class="micro-intro">L’application croise uniquement les repères réellement identifiés autour du bien pour faire ressortir les arguments les plus faciles à mémoriser et à présenter à un acquéreur.</p>
+  <div class="micro-signature" id="microSignature"><b>Analyse de l’adresse en cours…</b><span>Les arguments seront construits après vérification des données de proximité.</span></div>
+  <div class="micro-stories" id="microStories"><article class="micro-story"><span class="story-icon">⏳</span><span class="story-kicker">Vérification</span><strong>Recherche des meilleurs arguments…</strong><p>Les données locales sont en cours de contrôle.</p></article></div>
+  <div class="micro-actions">
+    <button class="micro-print" id="printSellerPoster">🖨️ Créer l’affiche vendeur</button>
+    <button class="micro-copy" id="copySellerArguments">Copier l’argumentaire</button>
+  </div>
+  <div class="seller-poster" id="sellerPoster"></div>
+</section>
   <details class="diag" id="diagnostics"><summary>🔎 Diagnostic des sources</summary><div id="diagRows"><div class="diag-row"><span>Initialisation</span><b class="diag-code">JML-D000</b></div></div></details>
   <div class="benefit-grid">
    <div class="benefit benefit-main"><div class="benefit-kicker">💬 POUR LE RENDEZ-VOUS</div><h3>Comment présenter l'emplacement</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs, concrets et vérifiables.</p></div>
@@ -766,6 +800,80 @@ function renderAssets(data){
 
 function sellerAssetHighlights(){return highlights.slice(0,5);}
 
+function distanceLabel(x){
+ const d=n(x?.distanceKm);
+ if(d==null)return "";
+ return d<1?(Math.round(d*1000)+" m"):(d.toFixed(2).replace(".",",")+" km");
+}
+function firstItem(cat, predicate=()=>true){
+ const items=Array.isArray(cat?.items)?cat.items:[];
+ return items.find(predicate)||null;
+}
+function buildSellerStories(data){
+ const cats=normalizeAssetCategories(data);
+ const stories=[];
+ const food=(cats.commerces?.items||[]).find(x=>/carrefour|intermarch|leclerc|e\.leclerc|auchan|super u|hyper u|u express|casino|monoprix|lidl|aldi|netto|supermarch|hypermarch|supérette|epicerie|épicerie|alimentation/i.test((x.name||"")+" "+(x.type||"")));
+ const school=firstItem(cats.schools);
+ const park=firstItem(cats.parks);
+ const health=firstItem(cats.health);
+ const transport=firstItem(cats.transport);
+ const center=firstItem(cats.center)||firstItem(cats.publicLife);
+ const heritage=firstItem(cats.heritage);
+ const culture=firstItem(cats.culture)||firstItem(cats.attractiveness);
+ const road=firstItem(cats.roads);
+ if(food&&school){
+  stories.push({icon:"🛒",kicker:"LE QUOTIDIEN",title:"Une adresse facile à vivre",text:"Les repères du quotidien sont présents autour du bien, avec notamment "+(food.name||"un commerce alimentaire")+" et "+(school.name||"un établissement scolaire")+".",proof:[food.name,school.name].filter(Boolean).map((v,i)=>v+" · "+distanceLabel(i?school:food)).join("  •  "),rank:10});
+ }else if(food){
+  stories.push({icon:"🛒",kicker:"LE QUOTIDIEN",title:"Le quotidien à portée de main",text:"La proximité de "+(food.name||"un commerce alimentaire")+" donne un repère concret pour présenter la facilité de la vie quotidienne.",proof:(food.name||"Commerce")+" · "+distanceLabel(food),rank:8});
+ }
+ if(center&&(heritage||culture)){
+  const p=heritage||culture;
+  stories.push({icon:"🏛️",kicker:"IDENTITÉ DU SECTEUR",title:"Une adresse qui a du caractère",text:"Le bien profite de la proximité de repères qui donnent une identité au secteur, avec "+(p.name||"un lieu remarquable")+".",proof:[center.name,p.name].filter(Boolean).map((v,i)=>v+" · "+distanceLabel(i? p:center)).join("  •  "),rank:9});
+ }else if(heritage){
+  stories.push({icon:"🏛️",kicker:"PATRIMOINE",title:"Un environnement marqué par l’histoire",text:"La présence de "+(heritage.name||"un élément patrimonial")+" constitue un repère concret pour raconter l’environnement du bien.",proof:(heritage.name||"Patrimoine")+" · "+distanceLabel(heritage),rank:7});
+ }
+ if(transport&&road){
+  stories.push({icon:"🚗",kicker:"ACCESSIBILITÉ",title:"Une adresse facile à rejoindre",text:"La proximité de "+(road.name||road.ref||"un grand axe")+" et de "+(transport.name||"transports")+" permet de présenter concrètement les possibilités de déplacement.",proof:[road.name||road.ref,transport.name].filter(Boolean).map((v,i)=>v+" · "+distanceLabel(i?transport:road)).join("  •  "),rank:9});
+ }else if(road){
+  stories.push({icon:"🚗",kicker:"ACCESSIBILITÉ",title:"Un secteur bien connecté",text:"Un grand axe identifié à proximité constitue un repère concret pour parler des déplacements depuis l’adresse.",proof:(road.name||road.ref||"Grand axe")+" · "+distanceLabel(road),rank:7});
+ }
+ if(park&&(school||culture)){
+  const p=park;
+  stories.push({icon:"🌳",kicker:"CADRE DE VIE",title:"Un environnement où l’on peut profiter du secteur",text:"La proximité de "+(p.name||"un espace vert")+" ajoute un repère de vie extérieure, complémentaire des équipements déjà présents autour de l’adresse.",proof:(p.name||"Espace vert")+" · "+distanceLabel(p),rank:8});
+ }else if(park){
+  stories.push({icon:"🌳",kicker:"CADRE DE VIE",title:"Un peu de respiration autour de l’adresse",text:"La proximité de "+(park.name||"un espace vert")+" offre un repère concret pour parler du cadre de vie.",proof:(park.name||"Espace vert")+" · "+distanceLabel(park),rank:6});
+ }
+ if(health){
+  stories.push({icon:"💊",kicker:"SERVICES",title:"Des services utiles à proximité",text:"La présence de "+(health.name||"services de santé")+" apporte un repère supplémentaire pour décrire le quotidien autour du bien.",proof:(health.name||"Santé")+" · "+distanceLabel(health),rank:6});
+ }
+ return stories.sort((a,b)=>b.rank-a.rank).slice(0,5);
+}
+function renderSellerMicroApp(data){
+ const el=$("#sellerMicroApp"), sig=$("#microSignature"), grid=$("#microStories");
+ if(!el||!grid)return;
+ const stories=buildSellerStories(data);
+ window.jmlSellerStories=stories;
+ if(!stories.length){
+  sig.innerHTML="<b>Une adresse se raconte avec des faits vérifiés.</b><span>Aucun ensemble de repères suffisamment complet n’a été identifié pour construire un argumentaire automatique. Les données détaillées restent disponibles ci-dessus.</span>";
+  grid.innerHTML='<article class="micro-story"><span class="story-icon">📍</span><span class="story-kicker">DONNÉES CONTRÔLÉES</span><strong>Repères à vérifier manuellement</strong><p>Le système préfère ne pas inventer d’argument lorsque les données disponibles sont insuffisantes.</p></article>';
+  return;
+ }
+ const top=stories[0], second=stories[1], third=stories[2];
+ const names=[top,second,third].filter(Boolean).map(x=>x.title.toLowerCase());
+ const commune=pageData.space?.city||"ce secteur";
+ sig.innerHTML="<b>✨ "+esc(top.title)+"</b><span>"+esc("À "+commune+", l’adresse réunit "+names.join(", ")+" : des éléments concrets qui permettent de mieux se projeter dans le quotidien autour du bien.")+"</span>";
+ grid.innerHTML=stories.map(s=>'<article class="micro-story"><span class="story-icon">'+s.icon+'</span><span class="story-kicker">'+esc(s.kicker)+'</span><strong>'+esc(s.title)+'</strong><p>'+esc(s.text)+'</p><div class="micro-proof">'+esc(s.proof||"Repère vérifié à proximité")+'</div></article>').join("");
+ const poster=$("#sellerPoster");
+ if(poster)poster.textContent=buildSellerPosterText(stories);
+}
+function buildSellerPosterText(stories){
+ const commune=pageData.space?.city||"votre commune";
+ const address=pageData.space?.address||"votre adresse";
+ const lines=["JML IMMOBILIER","✨ LES ATOUTS DE VOTRE ADRESSE","",address+" · "+commune,""];
+ stories.slice(0,4).forEach(s=>{lines.push(s.icon+" "+s.title.toUpperCase());lines.push(s.text);lines.push(s.proof||"");lines.push("");});
+ lines.push("Une adresse se découvre aussi par son environnement.");
+ return lines.join("\n");
+}
 function renderSellerPost(){
   const el=$("#sellerPost");
   if(!el)return;
@@ -829,6 +937,7 @@ async function run(){
   if(d.city) assetParams.set("city",d.city);
   const assets=await getData("/api/territory-assets?"+assetParams.toString(),13500,"Équipements / géocodage");
   renderAssets(assets);
+  renderSellerMicroApp(assets);
   renderSellerPost();
  }catch(e){
   renderAssets({available:false,code:e.code||"JML-ASSET-CLIENT",message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+"."});
@@ -943,6 +1052,12 @@ if(copyPost)copyPost.addEventListener("click",async()=>{
   copyPost.textContent="Copie indisponible";
   setTimeout(()=>copyPost.textContent="Copier le texte",1800);
  }
+});
+document.getElementById("printSellerPoster")?.addEventListener("click",()=>window.print());
+document.getElementById("copySellerArguments")?.addEventListener("click",async()=>{
+ const stories=window.jmlSellerStories||[];
+ const txt=stories.map(s=>s.title+" — "+s.text+" "+(s.proof||"")).join("\n\n");
+ try{await navigator.clipboard.writeText(txt);const b=document.getElementById("copySellerArguments");b.textContent="✓ Argumentaire copié";setTimeout(()=>b.textContent="Copier l’argumentaire",1800);}catch(_e){}
 });
 run();
 })();
