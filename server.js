@@ -1139,10 +1139,13 @@ async function buildComparableSales(market,property){
     const surfaceRatio=targetSurface!==null&&comparableSurface!==null?Math.abs(comparableSurface-targetSurface)/targetSurface:null;
     if(surfaceRatio!==null&&surfaceRatio>0.30)return null;
 
+    // La surface de terrain est un signal secondaire : la surface DVF peut
+    // correspondre à la parcelle cadastrale entière alors que le dossier vendeur
+    // peut renseigner une cour, terrasse ou petite emprise. On ne rejette donc
+    // jamais une maison comparable uniquement à cause du terrain.
     let landRatio=null;
     if(!isLand&&landSurface!==null&&saleLand!==null){
       landRatio=Math.abs(saleLand-landSurface)/Math.max(landSurface,1);
-      if(landRatio>0.90)return null;
     }
     let roomDiff=null;
     if(!isLand&&rooms!==null&&saleRooms!==null){
@@ -1161,7 +1164,9 @@ async function buildComparableSales(market,property){
     const recencySim=Math.exp(-age/36);
     const surfaceSim=surfaceRatio===null?0.55:expSim(surfaceRatio,0.18);
     const roomsSim=isLand?0.65:(roomDiff===null?0.65:expSim(roomDiff,1.2));
-    const landSim=isLand?1:(landRatio===null?0.65:expSim(landRatio,0.55));
+    // Sous 100 m² renseignés, on neutralise le terrain dans le score :
+    // il est trop sensible à la façon dont la parcelle a été déclarée dans DVF.
+    const landSim=isLand?1:(landSurface!==null&&landSurface<100?0.65:(landRatio===null?0.65:expSim(landRatio,0.55)));
     const sameStreet=streetKey(sale.address)===streetKey(property?.address);
 
     const raw=20+24*distanceSim+20*surfaceSim+12*roomsSim+10*landSim+9*recencySim+(sameStreet?5:0);
@@ -1280,7 +1285,20 @@ async function buildComparableSales(market,property){
     criteria:{type:typeWanted||null,surface:surface||null,landSurface:landSurface||null,rooms:rooms||null,maxRadiusKm:MAX_RADIUS_KM},
     dpe:{label:subjectDpe,source:subjectDpeSource},
     engineVersion:"8.4.0-PG-DVF-VALUATION-COMPARE",
-    diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0,externalRows,candidateCount:candidates.length,top40:top40.length,valuationCount:valuationSales.length,strictCount,outlierCount,originSource,tierCounts,confidence}
+    diagnostics:{
+      postgresRows:local.length,
+      marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0,
+      externalRows,
+      candidateCount:candidates.length,
+      top40:top40.length,
+      valuationCount:valuationSales.length,
+      strictCount,
+      outlierCount,
+      landComparison:!isLand&&landSurface!==null&&landSurface<100?"neutralise-sous-100m2":"actif",
+      originSource,
+      tierCounts,
+      confidence
+    }
   };
 }app.get("/api/territory-comparables", async (req,res) => {
   const city=clean(req.query.city,100);
