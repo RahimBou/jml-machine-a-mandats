@@ -416,7 +416,7 @@ function renderComps(c){
  rows.map(s=>{
   const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
   return '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="pill">'+esc(proximity)+'</span></div>'+
-  '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+'</p>'+
+  '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+(s.dpe?' · DPE '+esc(s.dpe):'')+'</p>'+
   '<div class="comp-note">'+esc(s.sameStreet?"Même rue que l’adresse étudiée.":"Retenue pour sa proximité et ses caractéristiques comparables.")+'</div></article>';
  }).join("");
 }
@@ -654,6 +654,10 @@ async function run(){
  try{
   const territory=await getData("/api/territory-comparables?"+base.toString(),20000,"Comparables / territoire");
   const comps=territory.comparables||{};
+  if(!d.dpe && comps.dpe?.label){
+    d.dpe=comps.dpe.label;
+    pageData.space=d;
+  }
   renderComps(comps);
 
   // Le repère vendeur est recalculé après les comparables :
