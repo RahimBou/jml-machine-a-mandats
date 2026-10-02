@@ -594,6 +594,16 @@ function normalizeAssetCategories(data){
   return out;
 }
 
+function walkingTime(km){
+  const d=Number(km);
+  if(!Number.isFinite(d))return "";
+  const minutes=Math.max(1,Math.round(d*12));
+  return minutes<=15?"≈ "+minutes+" min à pied":"≈ "+minutes+" min";
+}
+function roadIcon(type){
+  const s=String(type||"").toLowerCase();
+  return /autoroute|voie rapide/.test(s)?"🛣️":"🚗";
+}
 function renderMajorRoads(cat,data){
   const items=Array.isArray(cat?.items)?cat.items.slice(0,3):[];
   if(!items.length)return "";
@@ -601,11 +611,11 @@ function renderMajorRoads(cat,data){
     const parts=[x.ref,x.name].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
     const title=parts.join(" · ")||"Axe routier";
     const distance=Number(x.distanceKm);
-    return '<div class="road-item"><div><strong>'+esc(title)+'</strong><small>'+esc(x.type||"Grand axe routier")+'</small></div><span>'+esc(Number.isFinite(distance)?distance.toFixed(2).replace(".",",")+" km":"à proximité")+'</span></div>';
+    const distanceText=Number.isFinite(distance)?distance.toFixed(2).replace(".",",")+" km":"à proximité";
+    return '<div class="road-item road-card"><div class="road-icon">'+roadIcon(x.type)+'</div><div class="road-copy"><strong>'+esc(title)+'</strong><small>'+esc(x.type||"Grand axe routier")+'</small></div><div class="road-distance">'+esc(distanceText)+'</div></div>';
   }).join("");
-  return '<div class="road-strip" id="road-proximity"><div class="road-head"><b>🚗 Grands axes routiers à proximité</b><span>Rayon 3 km</span></div><div class="road-list">'+body+'</div><small class="road-source">Source : '+esc(cat?.source||data?.roadSource||"OpenStreetMap / Overpass")+' · © OpenStreetMap contributors · Ces axes décrivent l’accessibilité routière et ne sont pas intégrés au calcul du prix.</small></div>';
+  return '<div class="road-strip" id="road-proximity"><div class="road-head"><div><span class="road-kicker">ACCESSIBILITÉ</span><b>🚗 Un secteur bien connecté</b></div><span>Rayon 3 km</span></div><p class="road-intro">Les principaux axes à proximité facilitent les déplacements vers les pôles voisins et renforcent la praticité de l’adresse au quotidien.</p><div class="road-list">'+body+'</div><small class="road-source">Source : '+esc(cat?.source||data?.roadSource||"OpenStreetMap / Overpass")+' · © OpenStreetMap contributors · Ces axes décrivent l’accessibilité routière et ne sont pas intégrés au calcul du prix.</small></div>';
 }
-
 function renderAssets(data){
   pageData.assets=data||null;
   cats=normalizeAssetCategories(data||{});
@@ -699,7 +709,14 @@ function renderAssets(data){
   }
   root.innerHTML=
     '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, santé et loisirs. Les grands axes routiers sont présentés séparément pour distinguer clairement l’accessibilité du cadre de vie. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
-    '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
+    '<div class="highlight-list">'+selected.map((x,i)=>{
+      const icons={schools:"🎓",commerces:"🛍️",transport:"🚆",health:"💊",parks:"⚽",services:"🏛️"};
+      const roles={schools:"Pour les familles",commerces:"Pour le quotidien",transport:"Pour se déplacer",health:"Pour les services",parks:"Pour profiter du secteur",services:"Pour les démarches"};
+      const icon=icons[x.key]||"📍";
+      const role=roles[x.key]||"Cadre de vie";
+      const walk=walkingTime(x.distanceKm);
+      return '<article class="highlight-item seller-asset-card"><div class="highlight-top"><span class="highlight-icon">'+icon+'</span><span class="highlight-role">'+esc(role)+'</span></div><div class="highlight-body"><b>'+esc(x.label)+'</b><strong>'+esc(x.name||"Repère à proximité")+'</strong><div class="highlight-distance"><span>'+esc(x.distance)+'</span>'+(walk?'<small>'+esc(walk)+'</small>':'')+'</div></div></article>';
+    }).join("")+'</div>'+
     renderMajorRoads(cats.roads,data)+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
       const cat=cats[key]||{items:[],available:false};
@@ -711,7 +728,8 @@ function renderAssets(data){
   $("#proof").innerHTML=proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("");
   const roadItems=Array.isArray(cats.roads?.items)?cats.roads.items.slice(0,2):[];
   const roadText=roadItems.length?" L’accessibilité routière est également à relever, avec "+roadItems.map(x=>[x.ref,x.name].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(" · ")+" à "+(Number.isFinite(Number(x.distanceKm))?Number(x.distanceKm).toFixed(2).replace(".",",")+" km":"proximité")).join(" et ")+".":"";
-  $("#sellingPitch").textContent="L'adresse bénéficie de plusieurs repères accessibles à proximité : "+selected.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+"."+roadText+" Ces éléments servent à décrire concrètement le cadre de vie et l’accessibilité, sans les présenter comme une majoration automatique du prix.";
+  const memoryPlaces=selected.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ");
+  $("#sellingPitch").textContent="Un environnement facile à se représenter : "+memoryPlaces+"."+roadText+" Pour un futur acquéreur, ce sont des repères concrets qui permettent d’imaginer plus facilement la vie autour du bien. Ils décrivent le cadre de vie et l’accessibilité, sans constituer une majoration automatique du prix.";
 }
 
 function sellerAssetHighlights(){return highlights.slice(0,5);}
@@ -920,5 +938,38 @@ run();
 .post-text{margin-top:7px!important;padding:10px!important}
 @media(max-width:760px){.wrap{padding-bottom:28px!important}.hero{padding:18px!important}.section{margin-top:12px!important}}
 </style>
-</body>
+<style id="seller-location-v3">
+/* V3 — cartes mémorisables : on transforme les données de proximité en arguments de cadre de vie. */
+.asset-intro{background:linear-gradient(135deg,#fffdf8,#f7f1e5)!important;border-left:4px solid var(--gold)!important;padding:14px 16px!important;}
+.asset-intro b{font-family:Georgia,"Times New Roman",serif!important;font-size:15px!important;}
+.asset-intro p{font-size:9.5px!important;line-height:1.6!important;margin-top:6px!important;}
+.highlight-list{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:10px!important;}
+.seller-asset-card{display:flex!important;flex-direction:column!important;min-height:156px!important;padding:13px!important;background:linear-gradient(180deg,#fffdf8 0%,#f7f2e8 100%)!important;border:1px solid #e2d8c5!important;box-shadow:0 6px 16px rgba(23,59,50,.06)!important;border-radius:16px!important;overflow:hidden;}
+.seller-asset-card:after{content:"";display:block;height:3px;width:34px;background:var(--gold);border-radius:99px;margin-top:auto;}
+.highlight-top{display:flex;justify-content:space-between;align-items:center;gap:6px;}
+.highlight-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#173b32;color:#fff;font-size:20px;box-shadow:0 4px 10px rgba(23,59,50,.12);}
+.seller-asset-card .highlight-role{margin:0!important;font-size:7px!important;background:#f0e5ca!important;color:#7a632e!important;padding:5px 6px!important;white-space:nowrap;}
+.highlight-body{margin-top:12px;}
+.highlight-body>b{display:block;font-size:8px!important;text-transform:uppercase;letter-spacing:.08em;color:#7a827d;}
+.highlight-body>strong{display:block;font-family:Georgia,"Times New Roman",serif;font-size:14px!important;line-height:1.2;margin-top:5px;color:var(--g);}
+.highlight-distance{display:flex;align-items:baseline;gap:7px;margin-top:10px;}
+.highlight-distance span{font-size:17px;font-weight:900;color:#8a6c2e;}
+.highlight-distance small{font-size:7.5px;color:var(--muted);}
+.road-strip{margin-top:12px!important;padding:15px 16px!important;background:linear-gradient(135deg,#173b32,#245346)!important;border:0!important;color:#fff!important;border-radius:16px!important;box-shadow:0 8px 20px rgba(23,59,50,.10)!important;}
+.road-head b{display:block!important;color:#fff!important;font-family:Georgia,"Times New Roman",serif;font-size:15px!important;margin-top:3px;}
+.road-head>span{background:#d7b45b!important;color:#173b32!important;}
+.road-kicker{display:block!important;color:#e7cf91!important;font-size:7px!important;font-weight:900!important;letter-spacing:.14em!important;}
+.road-intro{margin:7px 0 10px!important;color:#dbe7e0!important;font-size:9px!important;line-height:1.5!important;max-width:700px;}
+.road-list{gap:8px!important;}
+.road-card{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.14)!important;min-height:55px;}
+.road-icon{font-size:18px;flex:0 0 auto;}
+.road-copy{flex:1;min-width:0;}
+.road-copy strong{color:#fff!important;font-size:9px!important;}
+.road-copy small{color:#cddbd4!important;font-size:7px!important;}
+.road-distance{font-size:9px;font-weight:900;color:#f0d68e;white-space:nowrap;}
+.road-source{color:#bfd0c8!important;}
+@media(max-width:900px){.highlight-list{grid-template-columns:repeat(3,minmax(0,1fr))!important;}}
+@media(max-width:650px){.highlight-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;}.seller-asset-card{min-height:145px!important;}}
+@media(max-width:430px){.highlight-list{grid-template-columns:1fr 1fr!important;}.seller-asset-card{min-height:138px!important;padding:11px!important;}.highlight-body>strong{font-size:12px!important;}.highlight-distance span{font-size:15px!important;}}
+</style></body>
 </html>
