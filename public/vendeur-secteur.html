@@ -624,14 +624,10 @@ async function run(){
   renderMarket(market);
   renderSales(market.recentSales||[]);
   $("#status").textContent="Marché communal chargé";
-  const isHouse=/maison/i.test(d.propertyType||"");
-  const isApt=/appartement|studio|duplex|loft/i.test(d.propertyType||"");
-  const basePrice=isHouse?market.housePrice:isApt?market.apartmentPrice:market.communalPrice;
-  const surf=n(d.surface);
-  renderReference({basePriceM2:basePrice,surface:surf,referenceValue:n(basePrice)!=null&&surf?Math.round(Number(basePrice)*surf):null,
-   transactions:market.transactions,type:isHouse?"Maison":isApt?"Appartement":"Tous biens",
-   explanation:"Repère calculé à partir du prix médian communal disponible et de la surface renseignée. Il ne constitue pas une estimation certifiée."
-  });
+  // IMPORTANT : le marché communal est un contexte, pas le prix final.
+  // Ne rien afficher ici dans "Repère vendeur" : sinon le vendeur voit
+  // un premier prix puis un second lorsque les comparables DVF arrivent.
+  // Le repère vendeur n'est rendu qu'une seule fois, après le moteur DVF.
   renderSellerPost();
  }catch(e){
   addDiag("Marché communal",e.code||"JML-MARKET-CLIENT",e.message||"Erreur");
@@ -693,6 +689,26 @@ async function run(){
  }catch(e){
   addDiag("Comparables / territoire",e.code||"JML-COMP-CLIENT",e.message||"Erreur");
   $("#comps").innerHTML='<div class="error"><b>'+esc(e.code||"JML-COMP-CLIENT")+'</b> · La recherche autour de l’adresse a échoué ou dépassé son délai. Les données communales restent indépendantes.</div>';
+
+  // Secours uniquement après l'échec définitif du moteur de comparables.
+  // Jamais pendant le chargement : une seule valeur apparaît à l'écran.
+  const surf=n(d.surface);
+  const isHouse=/maison/i.test(d.propertyType||"");
+  const isApt=/appartement|studio|duplex|loft/i.test(d.propertyType||"");
+  const fallbackM2=isHouse?n(pageData.market?.housePrice):isApt?n(pageData.market?.apartmentPrice):n(pageData.market?.communalPrice);
+  renderReference({
+    basePriceM2:fallbackM2,
+    surface:surf,
+    referenceValue:fallbackM2!=null&&surf?Math.round(fallbackM2*surf):null,
+    rangeLow:null,
+    rangeHigh:null,
+    confidence:"Faible",
+    transactions:0,
+    type:d.propertyType||"Bien",
+    fromComparables:false,
+    explanation:"Le moteur de comparables n'a pas pu fournir de repère. Le prix communal est présenté uniquement comme contexte de secours."
+  });
+  renderSellerPost();
   $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
  }
 
