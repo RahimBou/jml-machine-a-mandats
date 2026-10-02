@@ -35,8 +35,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.9.1";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-ban-address-v13";
+const VERSION = "3.9.2";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -1172,34 +1172,51 @@ function scoreAdemeAddress(row,address,city){
   return {score,parts};
 }
 
-async function getAdemeStreetRows(postal,street,number=""){
+async function getAdemeStreetRows(postal,street,number="",streetQuery=""){
   const normalizedPostal=String(postal||"").trim();
   const streetName=dpeStreetName(street);
   const targetNumber=dpeNumber(number);
+  const rawStreetQuery=String(streetQuery||"").trim();
   const key=normalizedPostal+"|"+targetNumber+"|"+streetName;
   if(!streetName||dpeStreetRowsCache.has(key)) return dpeStreetRowsCache.get(key)||[];
   const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe03existant/lines";
-  const query=[targetNumber,streetName].filter(Boolean).join(" ").trim();
-  const url=new URL(endpoint);
-  url.searchParams.set("size","20");
-  url.searchParams.set("code_postal_ban_in",normalizedPostal);
-  url.searchParams.set("q",query);
-  url.searchParams.set("q_fields","adresse_ban");
-  url.searchParams.set("select","numero_dpe,etiquette_dpe,etiquette_ges,date_etablissement_dpe,surface_habitable_logement,adresse_ban,code_postal_ban,nom_commune_ban");
-  url.searchParams.set("sort","-_score,-date_etablissement_dpe");
+  const queries=[...new Set([
+    [targetNumber,rawStreetQuery].filter(Boolean).join(" ").trim(),
+    [targetNumber,streetName].filter(Boolean).join(" ").trim()
+  ])].filter(Boolean);
+
   try{
-    const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.9.0"},signal:AbortSignal.timeout(10000)});
-    if(response.ok){
+    let allRows=[];
+    for(const query of queries){
+      const url=new URL(endpoint);
+      url.searchParams.set("size","20");
+      url.searchParams.set("code_postal_ban_in",normalizedPostal);
+      url.searchParams.set("q",query);
+      url.searchParams.set("q_fields","adresse_ban");
+      url.searchParams.set("select","numero_dpe,etiquette_dpe,etiquette_ges,date_etablissement_dpe,date_fin_validite_dpe,surface_habitable_logement,adresse_brut,adresse_ban,code_postal_ban,nom_commune_ban");
+      url.searchParams.set("sort","-_score,-date_etablissement_dpe");
+      const response=await fetch(url,{
+        headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.9.2"},
+        signal:AbortSignal.timeout(10000)
+      });
+      if(!response.ok){
+        console.warn("JML DPE ADEME HTTP",response.status,normalizedPostal,query);
+        continue;
+      }
       const payload=await response.json().catch(()=>({}));
       const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
       console.log("JML DPE ADEME adresse:",normalizedPostal,query,"=>",rows.length,"résultats");
-      dpeStreetRowsCache.set(key,rows);
-      return rows;
+      allRows.push(...rows);
+      if(rows.length) break;
     }
-    console.warn("JML DPE ADEME HTTP",response.status,normalizedPostal,query);
-  }catch(error){console.warn("JML DPE ADEME requête adresse:",error.message);}
-  dpeStreetRowsCache.set(key,[]);
-  return [];
+    const rows=allRows;
+    dpeStreetRowsCache.set(key,rows);
+    return rows;
+  }catch(error){
+    console.warn("JML DPE ADEME requête adresse:",error.message);
+    dpeStreetRowsCache.set(key,[]);
+    return [];
+  }
 }
 async function getAdemeDpeByAddress(address,city="",postal=""){
   const local=await getLocalDpeByAddress(address,city,postal);
@@ -1218,7 +1235,8 @@ async function getAdemeDpeByAddress(address,city="",postal=""){
     // Recherche déterministe par rue + code postal : on récupère un lot
     // ADEME puis on compare localement numéro, voie, ville et label BAN.
     if(targetPostal&&targetStreet){
-      const rows=await getAdemeStreetRows(targetPostal,targetStreet,targetNumber);
+      const rawStreetQuery=dpeNorm(raw).replace(/^\s*\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim();
+      const rows=await getAdemeStreetRows(targetPostal,targetStreet,targetNumber,rawStreetQuery);
       for(const row of rows){
         const dpe=extractDpeFromAdemeRow(row); if(!dpe)continue;
         const match=scoreAdemeAddress(row,raw,city);
