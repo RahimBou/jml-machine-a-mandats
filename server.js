@@ -35,8 +35,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.6.0";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v9-seller";
+const VERSION = "3.7.0";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v10-dpe-local-08";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -1032,6 +1032,70 @@ function weightedMedian(rows){
 
 const dpeCache=new Map();
 const dpeStreetRowsCache=new Map();
+const localDpeCache=new Map();
+let dpeImportRunning=false;
+const ADEME_DPE_API="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines";
+function dpeNorm(value){return normalizeAddress(String(value??"")).trim();}
+function dpeNumber(value){const m=String(value??"").trim().match(/^(\d+[A-Za-z]?)/);return m?normalizeAddress(m[1]):"";}
+function dpeImportPayload(row){
+  const number=ademeText(row,["numero_voie_ban","numero_voie"]);
+  const street=ademeText(row,["nom_rue_ban","nom_rue"]);
+  const city=ademeText(row,["nom_commune_ban","nom_commune_brut","nom_commune"]);
+  const postal=ademeText(row,["code_postal_ban","code_postal_brut","code_postal"]);
+  const address=ademeText(row,["adresse_ban","adresse_complete_ban","adresse_brut","label_brut"]);
+  const dpe=normalizeDpeLabel(row?.etiquette_dpe||row?.classe_bilan_dpe||row?.classe_conso_energie);
+  const ges=normalizeDpeLabel(row?.etiquette_ges||row?.classe_estimation_ges);
+  const date=ademeText(row,["date_etablissement_dpe","date_visite_diagnostiqueur"]);
+  const surface=Number(row?.surface_habitable_logement||row?.surface_habitable);
+  const dept=String(row?.code_departement_ban??"").trim();
+  if(!row?.numero_dpe||!dpe)return null;
+  const fullAddress=address||[number,street,postal,city].filter(Boolean).join(" ");
+  return {numeroDpe:String(row.numero_dpe).trim(),dpe,ges:ges||null,date:date||null,address:fullAddress,number:number||"",street:street||"",city:city||"",postal:postal||"",dept,cityCode:ademeText(row,["code_insee_ban","code_insee_commune"]),surface:Number.isFinite(surface)&&surface>0?surface:null,x:Number(row?.coordonnee_cartographique_x_ban)||null,y:Number(row?.coordonnee_cartographique_y_ban)||null,addressNorm:dpeNorm(fullAddress),streetNorm:dpeNorm(street),numberNorm:dpeNumber(number)};
+}
+async function getLocalDpeByAddress(address,city="",postal=""){
+  if(!pool)return null;
+  const raw=String(address||"").trim(); if(!raw)return null;
+  const cacheKey=dpeNorm(raw)+"|"+dpeNorm(city)+"|"+String(postal||"").trim();
+  if(localDpeCache.has(cacheKey))return localDpeCache.get(cacheKey);
+  try{
+    const targetPostal=String(postal||"").trim()||((raw.match(/\b(\d{5})\b/)||[])[1]||"");
+    const targetNumber=dpeNumber(raw);
+    const targetStreet=dpeNorm(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(dpeNorm(city),"").trim();
+    const q=await db("SELECT numero_dpe,dpe,ges,dpe_date,address,number_text,street,city,postal_code,surface_habitable FROM jml_dpe WHERE ($1='' OR postal_code=$1) AND (($2<>'' AND number_norm=$2 AND street_norm=$3) OR ($3<>'' AND street_norm=$3) OR ($4<>'' AND address_norm=$4) OR ($5<>'' AND city_norm=$5)) ORDER BY CASE WHEN $2<>'' AND number_norm=$2 AND street_norm=$3 THEN 0 ELSE 1 END, CASE WHEN dpe_date IS NULL THEN 1 ELSE 0 END, dpe_date DESC LIMIT 20",[targetPostal,targetNumber,targetStreet,dpeNorm(raw),dpeNorm(city)]);
+    if(!q.rowCount){localDpeCache.set(cacheKey,null);return null;}
+    const exact=q.rows[0];
+    const exactMatch=targetNumber&&targetStreet&&exact.number_norm===targetNumber&&exact.street_norm===targetStreet;
+    const result={dpe:normalizeDpeLabel(exact.dpe),ges:normalizeDpeLabel(exact.ges),source:"ADEME DPE — base locale 08",address:exact.address||[exact.number_text,exact.street,exact.postal_code,exact.city].filter(Boolean).join(" "),matchScore:exactMatch?140:90,matchLevel:exactMatch?"Adresse exacte":"Voie + code postal",numeroDpe:exact.numero_dpe,date:exact.dpe_date,surface:exact.surface_habitable};
+    localDpeCache.set(cacheKey,result);return result;
+  }catch(error){console.warn("JML DPE local:",error.message);localDpeCache.set(cacheKey,null);return null;}
+}
+async function importAdemeDpeDepartment(department="08"){
+  if(!pool||dpeImportRunning)return {ok:false,reason:"disabled-or-running"};
+  const dep=String(department).replace(/\D/g,"").padStart(2,"0"); if(dep!=="08")return {ok:false,reason:"only-08-supported"};
+  const existing=await db("SELECT COUNT(*)::int AS count FROM jml_dpe WHERE department_code=$1",[dep]);
+  if(Number(existing.rows[0]?.count||0)>0)return {ok:true,alreadyImported:true,total:Number(existing.rows[0].count)};
+  dpeImportRunning=true; let imported=0,offset=0;
+  try{
+    while(true){
+      const url=new URL(ADEME_DPE_API); url.searchParams.set("size","1000"); url.searchParams.set("after",String(offset)); url.searchParams.set("code_departement_ban_eq",dep);
+      url.searchParams.set("select","numero_dpe,date_etablissement_dpe,etiquette_dpe,etiquette_ges,surface_habitable_logement,adresse_ban,numero_voie_ban,nom_rue_ban,nom_commune_ban,code_postal_ban,code_insee_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban");
+      const response=await fetch(url,{headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.7.0"},signal:AbortSignal.timeout(30000)});
+      if(!response.ok)throw new Error("ADEME import HTTP "+response.status);
+      const payload=await response.json(); const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
+      if(!rows.length)break;
+      const valid=rows.map(dpeImportPayload).filter(Boolean).filter(x=>x.dept==="8"||x.dept==="08"||String(x.postal).startsWith("08"));
+      if(offset===0&&rows.length&&valid.length===0)throw new Error("Le filtre ADEME département 08 n'a pas renvoyé de données 08.");
+      for(let i=0;i<valid.length;i+=200){
+        const batch=valid.slice(i,i+200),values=[],params=[];
+        batch.forEach((x,j)=>{const b=j*17;values.push("("+Array.from({length:17},(_,k)=>"$"+(b+k+1)).join(",")+")");params.push(x.numeroDpe,x.dpe,x.ges,x.date||null,x.address,x.number,x.street,x.city,x.postal,dep,x.cityCode||null,x.surface,x.x,x.y,x.addressNorm,x.streetNorm,x.numberNorm);});
+        await db("INSERT INTO jml_dpe (numero_dpe,dpe,ges,dpe_date,address,number_text,street,city,postal_code,department_code,city_code,surface_habitable,ban_x,ban_y,address_norm,street_norm,number_norm) VALUES "+values.join(",")+" ON CONFLICT(numero_dpe) DO UPDATE SET dpe=EXCLUDED.dpe,ges=EXCLUDED.ges,dpe_date=EXCLUDED.dpe_date,address=EXCLUDED.address,number_text=EXCLUDED.number_text,street=EXCLUDED.street,city=EXCLUDED.city,postal_code=EXCLUDED.postal_code,department_code=EXCLUDED.department_code,city_code=EXCLUDED.city_code,surface_habitable=EXCLUDED.surface_habitable,ban_x=EXCLUDED.ban_x,ban_y=EXCLUDED.ban_y,address_norm=EXCLUDED.address_norm,street_norm=EXCLUDED.street_norm,number_norm=EXCLUDED.number_norm",params);
+        imported+=batch.length;
+      }
+      offset+=rows.length; if(rows.length<1000)break;
+    }
+    localDpeCache.clear(); return {ok:true,alreadyImported:false,total:imported};
+  }finally{dpeImportRunning=false;}
+}
 
 function normalizeDpeLabel(value){
   const m=String(value??"").toUpperCase().match(/\b([A-G])\b/);
@@ -1118,7 +1182,9 @@ async function getAdemeStreetRows(postal,street){
   return [];
 }
 
-async function getAdemeDpeByAddress(address,city=""){
+async function getAdemeDpeByAddress(address,city="",postal=""){
+  const local=await getLocalDpeByAddress(address,city,postal);
+  if(local?.dpe)return local;
   const raw=String(address||"").trim(), normalized=normalizeAddress(raw);
   if(!normalized)return null;
   const cacheKey=normalized+"|"+normalizeAddress(city);
@@ -1320,7 +1386,7 @@ async function buildComparableSales(market,property){
     const batch=dpeRows.slice(i,i+4);
     const enriched=await Promise.all(batch.map(async sale=>{
       const dpeAddress=[sale.address,sale.postal].filter(Boolean).join(" ").trim();
-      const found=await getAdemeDpeByAddress(dpeAddress||sale.address,sale.city||city);
+      const found=await getAdemeDpeByAddress(dpeAddress||sale.address,sale.city||city,sale.postal||"");
       sale.dpeChecked=true;
       return {sale,found};
     }));
@@ -2040,6 +2106,27 @@ async function initDb() {
       imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE(mutation_id,property_type,price,surface,address,parcel_id)
     );
+
+    CREATE TABLE IF NOT EXISTS jml_dpe (
+      numero_dpe TEXT PRIMARY KEY,
+      dpe TEXT NOT NULL,
+      ges TEXT,
+      dpe_date DATE,
+      address TEXT,
+      number_text TEXT,
+      street TEXT,
+      city TEXT,
+      postal_code TEXT,
+      department_code TEXT NOT NULL,
+      city_code TEXT,
+      surface_habitable NUMERIC,
+      ban_x DOUBLE PRECISION,
+      ban_y DOUBLE PRECISION,
+      address_norm TEXT,
+      street_norm TEXT,
+      number_norm TEXT,
+      imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   const columns = {
@@ -2109,6 +2196,9 @@ async function initDb() {
   `);
 
   await db("CREATE INDEX IF NOT EXISTS idx_jml_dvf_commune_date ON jml_dvf_sales(commune_code,sale_date DESC)");
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_dpe_address ON jml_dpe(postal_code,street_norm,number_norm)");
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_dpe_city ON jml_dpe(department_code,city_code)");
+  await db("CREATE INDEX IF NOT EXISTS idx_jml_dpe_date ON jml_dpe(dpe_date DESC)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_dvf_geo_date ON jml_dvf_sales(latitude,longitude,sale_date DESC)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_dvf_type_surface ON jml_dvf_sales(property_type,surface)");
   await db("CREATE INDEX IF NOT EXISTS idx_jml_prospects_updated ON jml_prospects(updated_at DESC)");
@@ -2192,6 +2282,17 @@ function scoreProspect(p) {
   return {score,priority,reasons,nextAction};
 }
 
+app.get("/api/dpe/status", async (_req,res) => {
+  if(!pool)return res.json({ok:true,ready:false,total:0,department:"08",source:"ADEME DPE"});
+  try{
+    const q=await db("SELECT COUNT(*)::int AS total,COUNT(DISTINCT city_code)::int AS communes,MAX(imported_at) AS imported_at FROM jml_dpe WHERE department_code='08'");
+    return res.json({ok:true,ready:Number(q.rows[0]?.total||0)>0,total:Number(q.rows[0]?.total||0),communes:Number(q.rows[0]?.communes||0),importedAt:q.rows[0]?.imported_at||null,department:"08",source:"ADEME DPE — base locale"});
+  }catch(error){return res.status(200).json({ok:false,ready:false,total:0,error:String(error?.message||error)});}
+});
+app.get("/api/dpe/import", async (req,res) => {
+  if(String(req.query.department||"08")!=="08")return res.status(400).json({ok:false,error:"Seul le département 08 est activé."});
+  try{return res.json(await importAdemeDpeDepartment("08"));}catch(error){console.error("JML ADEME DPE import:",error);return res.status(502).json({ok:false,error:String(error?.message||error)});}
+});
 app.get("/api/health", async (_req,res) => {
   let database = "memory";
   let databaseError = null;
@@ -2821,6 +2922,7 @@ async function start(){
   try{
     await initDb();
     console.log(`JML Projet Vendeur v${VERSION} database ready`);
+    setTimeout(async()=>{try{console.log("JML DPE 08 import:",await importAdemeDpeDepartment("08"));}catch(error){console.warn("JML DPE 08 import différé:",error.message);}},5000);
   }catch(err){
     console.error("DB init failed:",err);
     console.error("JML Projet Vendeur continue en mode dégradé tant que PostgreSQL n'est pas disponible.");
