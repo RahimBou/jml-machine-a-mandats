@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const zlib = require("zlib");
 const readline = require("readline");
@@ -94,7 +95,10 @@ app.get("/vendeur-secteur", (req,res) => {
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma","no-cache");
   res.setHeader("Expires","0");
-  res.sendFile(path.join(__dirname, "public", "vendeur-secteur.html"));
+  const file=fs.readFileSync(path.join(__dirname, "public", "vendeur-secteur.html"),"utf8");
+  const style="<style id=\"seller-ai-v1\">.micro-ai-status{margin:8px 0 10px;padding:8px 11px;border-radius:10px;font-size:8px;font-weight:800;background:#f3efe6;color:#6f633f}.micro-ai-status.loading{background:#f7f2e5;color:#8a6c2e}.micro-ai-status.ok{background:#e9f2ed;color:#245346}.micro-ai-status.fallback{background:#f3f1ed;color:#6d746f}</style>";
+  const injectedHtml=file.replace("</head>",style+"<script>"+sellerAiClientScript+"</script></head>").replace("  renderSellerMicroApp(assets);","  renderSellerMicroApp(assets);\n  runSellerAi(assets);");
+  res.type("html").send(injectedHtml);
 });
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], etag: false, lastModified: false }));
 
@@ -336,6 +340,7 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
 }
 
 
+const sellerAiClientScript = "async function runSellerAi(data){\n const host=document.getElementById(\"sellerMicroApp\"); if(!host)return;\n let el=document.getElementById(\"microAiStatus\");\n if(!el){el=document.createElement(\"div\");el.id=\"microAiStatus\";el.className=\"micro-ai-status loading\";el.textContent=\"✦ Analyse intelligente de l’adresse…\";host.insertBefore(el,host.firstChild);}\n try{\n  const response=await fetch(\"/api/address-intelligence\",{method:\"POST\",headers:{\"Content-Type\":\"application/json\"},body:JSON.stringify({city:pageData.space?.city||\"\",address:pageData.space?.address||\"\",propertyType:pageData.space?.propertyType||\"\",surface:pageData.space?.surface||null,categories:data?.categories||{}})});\n  const result=await response.json(); if(!result?.ok||!Array.isArray(result.arguments))throw new Error(result?.code||\"JML-AI-FALLBACK\");\n  const aiStories=result.arguments.map(x=>({icon:\"✦\",kicker:\"ANALYSE JML · FAITS VÉRIFIÉS\",title:x.title,text:x.text,proof:x.proof,evidence:x.evidence}));\n  const validated=validateSellerStories(aiStories,data); if(validated.length<2)throw new Error(\"JML-AI-VALIDATION\");\n  window.jmlSellerStories=validated;\n  const sig=document.getElementById(\"microSignature\"),grid=document.getElementById(\"microStories\");\n  if(sig)sig.innerHTML=\"<b>✦ \"+esc(result.signature||validated[0].title)+\"</b><span>\"+esc(\"Une lecture personnalisée de l’adresse, construite uniquement à partir des repères vérifiés disponibles autour du bien.\")+\"</span>\";\n  if(grid)grid.innerHTML=validated.map(s=>'<article class=\"micro-story\"><span class=\"story-icon\">'+s.icon+'</span><span class=\"story-kicker\">'+esc(s.kicker)+'</span><strong>'+esc(s.title)+'</strong><p>'+esc(s.text)+'</p><div class=\"micro-proof\">'+esc(s.proof||\"Repère vérifié à proximité\")+\"</div></article>\").join(\"\");\n  const poster=document.getElementById(\"sellerPoster\"); if(poster)poster.textContent=buildSellerPosterText(validated);\n  el.textContent=\"✓ Analyse JML contrôlée · faits vérifiés uniquement\";el.className=\"micro-ai-status ok\";\n }catch(error){el.textContent=\"✓ Lecture automatique JML · secours automatique activé\";el.className=\"micro-ai-status fallback\";}\n}";
 const sellerAiCache = new Map();
 const SELLER_AI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const SELLER_AI_TTL_MS = 12 * 60 * 60 * 1000;
