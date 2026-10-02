@@ -1181,15 +1181,15 @@ app.get("/api/territory-summary", async (req,res) => {
     // On ne dépend plus de buildSellerReference() afin qu'une erreur interne
     // de cette fonction ne puisse plus faire tomber Mon secteur.
     const propertyTypeText=String(propertyType||"").toLowerCase();
-    const sellerIsApartment=/appartement|studio|duplex|loft/i.test(propertyTypeText);
-    const sellerIsHouse=/maison/i.test(propertyTypeText);
-    const sellerIsLand=/terrain/i.test(propertyTypeText);
-    const sellerType=sellerIsApartment?"Appartement":sellerIsHouse?"Maison":sellerIsLand?"Terrain":"Tous biens";
-    const sellerBase=sellerIsApartment
+    const isSellerApartment=/appartement|studio|duplex|loft/i.test(propertyTypeText);
+    const isSellerHouse=/maison/i.test(propertyTypeText);
+    const isSellerLand=/terrain/i.test(propertyTypeText);
+    const sellerType=isSellerApartment?"Appartement":isSellerHouse?"Maison":isSellerLand?"Terrain":"Tous biens";
+    const sellerBase=isSellerApartment
       ? Number(market?.apartmentPrice)
-      : sellerIsHouse
+      : isSellerHouse
         ? Number(market?.housePrice)
-        : sellerIsLand
+        : isSellerLand
           ? Number(market?.terrainPrice)
           : Number(market?.communalPrice);
     const sellerSurface=sellerIsLand ? Number(landSurface) : Number(surface);
