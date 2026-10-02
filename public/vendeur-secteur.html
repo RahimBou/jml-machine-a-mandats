@@ -236,21 +236,19 @@ function getSpace(){
  x.surface=x.surface||p.get("surface")||"";
  x.rooms=x.rooms||p.get("rooms")||"";
  x.dpe=x.dpe||p.get("dpe")||"";
+ x.terrain=x.terrain||p.get("terrain")||"";
  x.token=x.token||p.get("token")||"";
  return x;
 }
 async function loadServerSpace(){
  const p=new URLSearchParams(location.search);
- const token=p.get("token")||local.token||"";
  const local=getSpace();
+ const token=p.get("token")||local.token||"";
  const effectiveToken=token||local.token||"";
 
- // Si un espace serveur existe, il devient la source de vérité.
- // Le localStorage reste un secours hors connexion, mais ne doit pas
- // écraser une modification récente du dossier vendeur.
  if(effectiveToken){
    const ctl=new AbortController();
-   const timer=setTimeout(()=>ctl.abort(),4500);
+   const timer=setTimeout(()=>ctl.abort(),8000);
    try{
      const r=await fetch("/api/seller-space/"+encodeURIComponent(effectiveToken),{cache:"no-store",signal:ctl.signal});
      const j=await r.json().catch(()=>({}));
@@ -259,24 +257,13 @@ async function loadServerSpace(){
        try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(space));}catch(_e){}
        return space;
      }
-   }catch(_e){}
-   finally{clearTimeout(timer)}
+     addDiag("Espace vendeur","JML-SPACE-"+r.status,j.error||"Impossible de lire le dossier vendeur.");
+   }catch(error){
+     addDiag("Espace vendeur","JML-SPACE-CLIENT",error?.name==="AbortError"?"Le serveur a dépassé le délai de réponse.":(error?.message||"Erreur de lecture."));
+   }finally{
+     clearTimeout(timer);
+   }
  }
-
- return local;
-
- const ctl=new AbortController();
- const timer=setTimeout(()=>ctl.abort(),4500);
- try{
-  const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{cache:"no-store",signal:ctl.signal});
-  const j=await r.json().catch(()=>({}));
-  if(r.ok&&j.ok&&j.space){
-   const space={...j.space,token,submitted:true};
-   try{localStorage.setItem("jml-seller-space-v1",JSON.stringify(space));}catch(_e){}
-   return space;
-  }
- }catch(_e){}
- finally{clearTimeout(timer)}
  return local;
 }
 
