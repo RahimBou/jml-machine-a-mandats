@@ -1098,7 +1098,7 @@ async function getAdemeDpeByAddress(address,city=""){
   if(dpeCache.has(cacheKey))return dpeCache.get(cacheKey);
   try{
     const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines";
-    const queries=[[raw,city].filter(Boolean).join(" "),[raw.replace(/^\s*\d+[A-Za-z]?\s*/,""),city].filter(Boolean).join(" "),city];
+    const queries=[...new Set([[raw,city].filter(Boolean).join(" "),[targetNumber,targetStreet,city].filter(Boolean).join(" "),[targetStreet,city].filter(Boolean).join(" "),targetStreet,city].filter(Boolean))];
     let best=null,bestScore=-1;
     const targetNumber=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1]||"";
     const targetPostal=(raw.match(/\b(\d{5})\b/)||[])[1]||"";
