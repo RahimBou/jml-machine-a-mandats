@@ -402,17 +402,20 @@ function renderSellerReading(r){
 function renderComps(c){
  c=c||{};
  pageData.comparables=c;
+ const d=c.diagnostics||{};
  $("#compSummary").innerHTML=
- '<div class="ref-main"><h3>Repère des ventes proches</h3><div class="ref-value">'+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"—")+'</div><p>'+esc(c.message||c.method||"Recherche progressive autour de l'adresse.")+'</p></div>'+
+ '<div class="ref-main"><h3>Repère des ventes proches</h3><div class="ref-value">'+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"—")+'</div><p>'+esc(c.message||c.method||"Recherche des ventes compatibles autour de l'adresse.")+'</p></div>'+
  '<div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>'+esc(c.origin?.lat!=null?"Oui":"Non")+'</span></div>'+
  '<div class="ref-row"><b>Périmètre retenu</b><span>'+esc(c.searchScope||"—")+'</span></div>'+
- '<div class="ref-row"><b>Ventes retenues</b><span>'+esc(c.matchCount??"—")+'</span></div>'+
+ '<div class="ref-row"><b>Ventes compatibles analysées</b><span>'+esc(d.candidateCount??c.totalCandidates??"—")+'</span></div>'+
+ '<div class="ref-row"><b>Comparables affichés</b><span>'+esc(d.top40??c.matchCount??"—")+'</span></div>'+
+ '<div class="ref-row"><b>Ventes utilisées pour la valeur</b><span>'+esc(d.valuationCount??(Array.isArray(c.valuationSales)?c.valuationSales.length:"—"))+'</span></div>'+
  '<div class="ref-row"><b>Médiane des comparables</b><span>'+esc(c.median!=null?m2(c.median):"—")+'</span></div>'+
  '<div class="ref-row"><b>Dispersion des ventes</b><span>'+esc(c.q1!=null&&c.q3!=null?"Zone centrale : "+m2(c.q1)+" à "+m2(c.q3)+(c.spreadPct!=null?" · "+String(c.spreadPct).replace(".",",")+" % d’écart":""):"—")+'</span></div>'+
  '<div class="ref-row"><b>Très proches</b><span>'+esc(c.closeCount??"0")+'</span></div></div>';
  const rows=Array.isArray(c.sales)?c.sales:[];
  if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
- $("#comps").innerHTML='<div class="comps-note"><b>Lecture vendeur :</b> le repère de '+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"prix")+' s’appuie sur les ventes jugées les plus comparables. Les ventes plus éloignées ou moins proches des caractéristiques du bien ont un poids plus faible dans le calcul.</div>'+
+ $("#comps").innerHTML='<div class="comps-note"><b>Lecture vendeur :</b> '+esc(d.candidateCount??c.totalCandidates??0)+' ventes compatibles ont été analysées dans le périmètre. Les '+esc(d.top40??c.matchCount??0)+' comparables les plus pertinents sont contrôlés statistiquement, puis '+esc(d.valuationCount??(Array.isArray(c.valuationSales)?c.valuationSales.length:0))+' ventes servent au calcul final. La surface de terrain reste secondaire et ne peut pas exclure à elle seule une maison comparable.</div>'+
  rows.map(s=>{
   const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
   return '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="pill">'+esc(proximity)+'</span></div>'+
