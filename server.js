@@ -664,11 +664,23 @@ async function getCommuneMarketData(city,code){
   return {...result,cache:false};
 }
 
-async function getLocalDvfComparables(origin,maxKm=3){
+async function getLocalDvfComparables(origin,maxKm=3,communeCode=""){
   if(!pool||!origin)return [];
   const lat=Number(origin.lat),lon=Number(origin.lon); if(!Number.isFinite(lat)||!Number.isFinite(lon))return [];
   const dLat=maxKm/111,dLon=maxKm/(111*Math.max(0.2,Math.cos(lat*Math.PI/180)));
-  const result=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source FROM jml_dvf_sales WHERE sale_date>=CURRENT_DATE-INTERVAL '24 months' AND property_type IN ('Maison','Appartement','Terrain') AND latitude BETWEEN $1 AND $2 AND longitude BETWEEN $3 AND $4 ORDER BY sale_date DESC LIMIT 3000`,[lat-dLat,lat+dLat,lon-dLon,lon+dLon]);
+  // On récupère tout le stock DVF pertinent de la commune sur 48 mois,
+  // en plus de la fenêtre géographique. La distance exacte est ensuite
+  // recalculée dans le moteur : cela évite de perdre des ventes valides
+  // à cause d'un géocodage ou d'une limite SQL trop restrictive.
+  const result=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source
+    FROM jml_dvf_sales
+    WHERE sale_date>=CURRENT_DATE-INTERVAL '48 months'
+      AND property_type IN ('Maison','Appartement','Terrain')
+      AND (
+        (latitude BETWEEN $1 AND $2 AND longitude BETWEEN $3 AND $4)
+        OR ($5<>'' AND commune_code=$5)
+      )
+    ORDER BY sale_date DESC LIMIT 10000`,[lat-dLat,lat+dLat,lon-dLon,lon+dLon,String(communeCode||"")]);
   return result.rows;
 }
 
@@ -1033,6 +1045,8 @@ async function buildComparableSales(market,property){
 
   let origin=await geocodeAddress(property?.address,city);
   let originSource="Adresse";
+  let commune=null;
+  try{ commune=await resolveTerritoryCommune(city,address||""); }catch(_e){ commune=null; }
   if(!origin){
     try{
       const commune=await resolveTerritoryCommune(city,"");
@@ -1048,7 +1062,7 @@ async function buildComparableSales(market,property){
   const MAX_RADIUS_KM=3;
   const MAX_AGE_MONTHS=48;
   let local=[];
-  try{local=await getLocalDvfComparables(origin,MAX_RADIUS_KM);}catch(error){console.warn("JML comparables DVF local:",error.message);}
+  try{local=await getLocalDvfComparables(origin,MAX_RADIUS_KM,commune?.code||"");}catch(error){console.warn("JML comparables DVF local:",error.message);}
 
   const seen=new Set(),candidates=[];
   const now=Date.now();
