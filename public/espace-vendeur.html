@@ -433,6 +433,28 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 .partner-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.partner-card{padding:14px;border:1px solid var(--line);border-radius:13px;background:#faf7ef}.partner-card strong{display:block;color:#173b31;font-size:12px}.partner-card p{margin:4px 0 9px;color:var(--muted);font-size:10px;line-height:1.45}.partner-card a{font-size:10px;font-weight:900;color:#8a6b2e;text-decoration:none}
 @media(max-width:760px){.seller-v2-grid{grid-template-columns:1fr 1fr}.seller-v2-guide-grid{grid-template-columns:1fr}.sim-grid{grid-template-columns:1fr}}
 @media(max-width:430px){.seller-v2-grid{grid-template-columns:1fr}.seller-v2-card{min-height:125px}}
+
+/* V4.1 — cartes vendeurs plus visuelles */
+.seller-quick-grid{align-items:stretch}
+.seller-quick-card{display:flex!important;flex-direction:column!important;justify-content:flex-start!important;min-height:205px!important;padding:0!important;background:#fffdf8!important}
+.seller-quick-card .seller-quick-photo{position:relative!important;inset:auto!important;order:0;width:100%!important;height:92px!important;flex:0 0 92px!important;object-fit:cover!important;object-position:center!important;border-radius:18px 18px 0 0!important;opacity:1!important;display:block!important}
+.seller-quick-card .seller-quick-icon{position:absolute!important;top:72px;left:14px;z-index:3;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#fffdf8;box-shadow:0 4px 12px rgba(23,51,44,.12);font-size:17px}
+.seller-quick-card>span:not(.seller-quick-icon){position:relative;z-index:2;display:block!important;padding:19px 15px 7px!important;min-height:58px;box-sizing:border-box}
+.seller-quick-card>span strong{display:block;font-size:15px;margin-bottom:4px;color:#173b31}
+.seller-quick-card>span small{display:block;font-size:10.5px;line-height:1.35;color:#68716c}
+.seller-quick-card em{right:12px!important;bottom:11px!important;padding:5px 9px!important;background:#f1e4c4!important;color:#6f592b!important;z-index:4}
+@media(max-width:760px){
+ .seller-quick-card{min-height:195px!important}
+ .seller-quick-card .seller-quick-photo{height:82px!important;flex-basis:82px!important}
+ .seller-quick-card .seller-quick-icon{top:62px}
+}
+@media(max-width:430px){
+ .seller-quick-card{min-height:185px!important}
+ .seller-quick-card .seller-quick-photo{height:78px!important;flex-basis:78px!important}
+ .seller-quick-card .seller-quick-icon{top:58px;left:11px}
+ .seller-quick-card>span:not(.seller-quick-icon){padding:18px 12px 8px!important}
+ .seller-quick-card>span small{font-size:10px}
+}
 </style>
 <style>
 /* JML — cartes d'accès vendeur vers pages dédiées */
