@@ -735,63 +735,8 @@ form.addEventListener("submit",async function(e){
  const marketCards=document.getElementById("sellerMarketMetrics");
  const marketSource=document.getElementById("sellerMarketSource");
  const chartBars=[...document.querySelectorAll(".seller-bar")];
- async function loadSellerMarket(cityValue,typeValue){
-   if(!marketCards||!marketSource) return;
-   marketCards.innerHTML="<div class=\"seller-metric\"><span>Repère local</span><strong>Chargement…</strong><small>Recherche d’une source datée</small></div><div class=\"seller-metric\"><span>Type de bien</span><strong>"+String(typeValue||"Votre bien")+"</strong><small>Repère à préciser</small></div><div class=\"seller-metric\"><span>Transactions</span><strong>À vérifier</strong><small>Selon le secteur</small></div>";
-   if(!cityValue){marketSource.textContent="Indiquez votre commune pour rechercher un repère local. Aucun prix n’est inventé.";return;}
-   try{
-     const response=await fetch("/api/commune-market?city="+encodeURIComponent(cityValue),{cache:"no-store"});
-     const data=await response.json();
-     if(!response.ok) throw new Error(data.error||"Repère indisponible");
-     if(data.found && Number.isFinite(Number(data.communalPrice||data.price))){
-       const communal=Number(data.communalPrice||data.price);
-       const house=Number(data.housePrice||0);
-       const apartment=Number(data.apartmentPrice||0);
-       const transactions=Number(data.transactions||0);
-       const typePrice=typeValue==="Maison"?house:typeValue==="Appartement"?apartment:communal;
-       const typeLabel=typeValue==="Maison"||typeValue==="Appartement"?typeValue:"Bien";
-       const formatPrice=function(v){return Number.isFinite(v)&&v>0?v.toLocaleString("fr-FR")+" €/m²":"Non disponible";};
-       marketCards.innerHTML=[
-         ["Médiane communale",formatPrice(communal),data.period||"Données disponibles"],
-         [typeLabel,formatPrice(typePrice),"Repère du type de bien"],
-         ["Transactions",transactions?transactions.toLocaleString("fr-FR"):"Non disponible","12 derniers mois"]
-       ].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
-
-       const chartValues=[house||communal,apartment||communal,communal];
-       const max=Math.max.apply(null,chartValues.concat([1]));
-       chartBars.forEach(function(bar,i){
-         const v=chartValues[i];
-         const width=Math.min(96,Math.max(28,(v/max)*96));
-         const fill=bar.querySelector("i"),value=bar.querySelector("strong");
-         if(fill)fill.style.width=width+"%";
-         if(value)value.textContent=formatPrice(v);
-       });
-
-       const tabCommunal=document.getElementById("marketTabCommunal");
-       const tabHouse=document.getElementById("marketTabHouse");
-       const tabApartment=document.getElementById("marketTabApartment");
-       [tabCommunal,tabHouse,tabApartment].forEach(function(tab){if(tab)tab.classList.remove("active");});
-       const activeTab=typeValue==="Maison"?tabHouse:typeValue==="Appartement"?tabApartment:tabCommunal;
-       if(activeTab)activeTab.classList.add("active");
-
-       const sourceUrl=String(data.sourceUrl||"").replace(/&/g,"&amp;").replace(/[\"<>]/g,"");
-       marketSource.innerHTML="Source : <a href=\""+sourceUrl+"\" target=\"_blank\" rel=\"noopener\">Estimus / DVF</a>. Période : "+String(data.period||"non précisée").replace(/[<>]/g,"")+". "+String(data.message||"Ce repère ne constitue pas une estimation du bien.").replace(/[<>]/g,"");
-     }else{
-       const d=data.department||{};
-       const formatPrice=function(v){return Number.isFinite(Number(v))&&Number(v)>0?Number(v).toLocaleString("fr-FR")+" €/m²":"Non disponible";};
-       marketCards.innerHTML=[
-         ["Ardennes — médiane",formatPrice(d.median),d.period||"Données disponibles"],
-         ["Maison",formatPrice(d.house),"Repère départemental"],
-         ["Appartement",formatPrice(d.apartment),"Repère départemental"]
-       ].map(function(x){return "<div class=\"seller-metric\"><span>"+x[0]+"</span><strong>"+x[1]+"</strong><small>"+x[2]+"</small></div>";}).join("");
-       marketSource.textContent=(data.message||"Repère communal indisponible.")+" Aucun prix communal n’est affiché lorsqu’il n’a pas été identifié de façon suffisamment fiable.";
-     }
-   }catch(error){
-     console.warn("JML seller market:",error);
-     marketSource.textContent="Le repère local n’est pas disponible pour le moment. Les autres éléments de votre espace restent accessibles.";
-   }
- }
-loadSellerMarket(city,propertyType);
+ await loadSellerDashboardData(sellerDetails);
+ 
  const eventsGrid=document.getElementById("fbEventsGrid"),eventsIntro=document.getElementById("fbEventsIntro");
  try{
    const er=await fetch("/api/public-events?city="+encodeURIComponent(city)+"&propertyType="+encodeURIComponent(propertyType));
@@ -916,7 +861,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  function showProperty(){
    const d=getSellerSpace(),rows=[["Commune",d.city||"À préciser"],["Type",d.propertyType||"À préciser"],["Surface",d.surface||"À compléter"],["Pièces / chambres",d.rooms||"À compléter"],["DPE",d.dpe||"À compléter"],["Terrain",d.terrain||"À compléter"]];
    openSellerModal("Votre bien",'<div class="seller-detail-grid">'+rows.map(function(r){return '<div class="seller-detail"><span>'+esc(r[0])+'</span><strong>'+esc(r[1])+'</strong></div>'}).join("")+'</div><div class="seller-modal-note">Cet aperçu reprend uniquement les informations que vous avez choisies de renseigner. Les caractéristiques définitives seront vérifiées lors de l’échange avec JML.</div><div class="seller-map-actions"><button class="seller-modal-action primary" type="button" id="sellerEditDetails">Compléter mes caractéristiques</button></div>');
-   const edit=document.getElementById("sellerEditDetails");if(edit)edit.onclick=function(){closeSellerModal();document.getElementById("fbSuccess").style.display="none";form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});const details=document.querySelector(".fb-extra-details");if(details)details.open=true;restoreSellerDetails()};
+   const edit=document.getElementById("sellerEditDetails");if(edit)edit.onclick=function(){const d=getSellerSpace();if(d&&d.token)window.location.href="/projet-vendeur?editToken="+encodeURIComponent(d.token);else window.location.href="/projet-vendeur";};
  }
  function restoreSellerDetails(){const d=getSellerSpace();["Address","Surface","Rooms","Terrain"].forEach(function(k){const el=document.getElementById("fb"+k);if(el)el.value=d[k.toLowerCase()]||""});const dpe=document.getElementById("fbDpe");if(dpe)dpe.value=d.dpe||""}
  function showCalendar(){closeSellerModal();const appt=document.querySelector(".fb-appointment");if(appt)appt.scrollIntoView({behavior:"smooth",block:"start"});const date=document.getElementById("fbApptDate");if(date)date.focus({preventScroll:true})}
@@ -979,6 +924,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    if(typeof updateSellerProjectSummary==="function"){
      updateSellerProjectSummary({...d,submitted:true,token:pathToken||d.token||""});
    }
+   await loadSellerDashboardData({...d,submitted:true,token:pathToken||d.token||""});
    return true;
  }
 
@@ -989,7 +935,62 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    if(open)open.href=url;
    if(copy)copy.onclick=async function(){try{await navigator.clipboard.writeText(url);copy.textContent="Accès copié ✓";setTimeout(()=>copy.textContent="Copier mon accès",1800)}catch(_e){window.prompt("Copiez votre lien personnel :",url)}};
  }
- function updateSellerProjectSummary(d){
+ async function loadSellerDashboardData(d){
+  d=d||getSellerSpace()||{};
+  const city=String(d.city||"").trim();
+  if(!city)return;
+  const marketCards=document.getElementById("sellerMarketMetrics");
+  const marketSource=document.getElementById("sellerMarketSource");
+  const eventsList=document.getElementById("sellerEventMiniList");
+  const formatPrice=v=>Number.isFinite(Number(v))&&Number(v)>0?Number(v).toLocaleString("fr-FR")+" €/m²":"Données insuffisantes";
+  const escHtml=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  if(marketCards)marketCards.innerHTML='<div class="seller-metric"><span>Repère local</span><strong>Chargement…</strong><small>DVF · marché local</small></div><div class="seller-metric"><span>Type de bien</span><strong>'+escHtml(d.propertyType||"Votre bien")+'</strong><small>Repère à préciser</small></div><div class="seller-metric"><span>Transactions</span><strong>Chargement…</strong><small>Ventes DVF disponibles</small></div>';
+  if(marketSource)marketSource.textContent="Recherche des données DVF et des comparables de votre secteur…";
+  try{
+    const qs=new URLSearchParams({city:city,address:String(d.address||""),propertyType:String(d.propertyType||""),surface:String(d.surface||""),landSurface:String(d.terrain||""),rooms:String(d.rooms||"")});
+    const response=await fetch("/api/territory-summary?"+qs.toString(),{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok||!data.ok)throw new Error(data.error||"Données territoriales indisponibles");
+    const m=data.market||{};
+    const ref=data.sellerReference||{};
+    const type=String(d.propertyType||"").toLowerCase();
+    const typePrice=/appartement|studio|duplex|loft/i.test(type)?m.apartmentPrice:/maison/i.test(type)?m.housePrice:/terrain/i.test(type)?m.terrainPrice:m.communalPrice;
+    const transactions=Number(m.transactions||0);
+    const matches=Number(data.comparables?.matchCount||0);
+    const typeLabel=d.propertyType||"Bien";
+    if(marketCards){
+      marketCards.innerHTML=[
+        ["Médiane communale",formatPrice(m.communalPrice),m.period||"DVF disponibles"],
+        [typeLabel,formatPrice(typePrice),"Repère du type de bien"],
+        ["Transactions",transactions?transactions.toLocaleString("fr-FR"):"Données insuffisantes",matches?matches.toLocaleString("fr-FR")+" comparables":"Comparables à préciser"]
+      ].map(x=>"<div class=\"seller-metric\"><span>"+escHtml(x[0])+"</span><strong>"+escHtml(x[1])+"</strong><small>"+escHtml(x[2])+"</small></div>").join("");
+    }
+    const source=String(m.source||data.source||"Données DVF");
+    const period=String(m.period||"période disponible");
+    const refText=ref.referenceValue?(" · Repère surface : "+Number(ref.referenceValue).toLocaleString("fr-FR")+" €"):"";
+    if(marketSource)marketSource.textContent=source+" · "+period+". "+(matches?matches+" comparable(s) identifié(s).":"Les comparables précis seront affinés avec l’adresse.")+refText;
+  }catch(error){
+    console.warn("JML seller dashboard market:",error);
+    if(marketCards)marketCards.innerHTML='<div class="seller-metric"><span>Repère local</span><strong>Données indisponibles</strong><small>Le service DVF sera réessayé</small></div><div class="seller-metric"><span>Type de bien</span><strong>'+escHtml(d.propertyType||"Votre bien")+'</strong><small>Informations enregistrées</small></div><div class="seller-metric"><span>Transactions</span><strong>Données indisponibles</strong><small>Pas de valeur inventée</small></div>';
+    if(marketSource)marketSource.textContent="Les données DVF/comparables ne sont pas disponibles pour le moment. Aucune valeur n’est inventée.";
+  }
+  try{
+    const er=await fetch("/api/public-events?city="+encodeURIComponent(city)+"&propertyType="+encodeURIComponent(d.propertyType||""));
+    const ed=await er.json();
+    const events=Array.isArray(ed.events)?ed.events:[];
+    if(eventsList){
+      eventsList.innerHTML=events.length?events.slice(0,3).map(e=>{
+        const date=e.start?new Date(e.start).toLocaleDateString("fr-FR",{day:"2-digit",month:"short"}):"";
+        return '<div class="seller-event-mini"><strong>'+escHtml(date+(date?" · ":"")+String(e.title||"Événement local"))+'</strong><span>'+escHtml(String(e.city||city)+" · "+String(e.type||"Vie locale"))+'</span></div>';
+      }).join(""):'<div class="seller-event-mini"><strong>'+escHtml(city)+'</strong><span>Pas d’événement sélectionné pour le moment.</span></div>';
+    }
+  }catch(error){
+    console.warn("JML seller dashboard events:",error);
+    if(eventsList)eventsList.innerHTML='<div class="seller-event-mini"><strong>'+escHtml(city)+'</strong><span>Les informations locales seront actualisées prochainement.</span></div>';
+  }
+}
+
+function updateSellerProjectSummary(d){
    d=d||getSellerSpace()||{};
    const set=(id,v,empty)=>{const e=document.getElementById(id);if(e)e.textContent=v||empty||"Non renseigné";};
    set("summaryCity",d.city,"Non renseignée");set("summaryType",d.propertyType,"Non renseigné");set("summarySurface",d.surface,"Non renseignée");set("summaryDpe",d.dpe,"Non renseigné");
@@ -1029,7 +1030,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  restoreSellerSubmittedView().then(refreshSellerSpaceUI);
  window.addEventListener("pageshow",function(){restoreSellerSubmittedView().then(refreshSellerSpaceUI)});
 
- const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};document.documentElement.removeAttribute("data-jml-seller-space");try{history.replaceState({sellerSpace:false},"","/projet-vendeur")}catch(_e){};const success=document.getElementById("fbSuccess");if(success)success.style.display="none";form.reset();form.style.display="grid";form.scrollIntoView({behavior:"smooth",block:"start"});});
+ const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};window.location.href="/projet-vendeur";});
 })();
 </script>
 <div class="seller-modal" id="sellerModal" aria-hidden="true">
