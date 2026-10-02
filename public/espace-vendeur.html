@@ -523,7 +523,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offs
 
     <div class="seller-status">
       <div class="seller-status-copy"><strong>Votre projet est enregistré</strong><span>Vous gardez la main sur la suite. JML vous accompagne à chaque étape.</span></div>
-      <div class="seller-status-steps"><div class="done"><b>1</b><span>Demande<br><small>Enregistrée</small></span></div><div><b>2</b><span>Confirmation<br><small>Par e-mail</small></span></div><div><b>3</b><span>Prochaine étape<br><small>Échange avec JML</small></span></div></div>
+      <div class="seller-status-steps"><div class="done"><b>1</b><span>Demande<br><small>Enregistrée</small></span></div><div><b>2</b><span>Confirmation<br><small>Par e-mail</small></span></div><div><b>3</b><span>Prochaine étape<br><small>Échange avec JML</small></span></div></div><div class="seller-access-actions"><a class="secondary" id="sellerOpenLink" href="#" target="_self">Ouvrir mon espace</a><button type="button" class="secondary" id="sellerCopyLink">Copier mon accès</button></div>
     </div>
 
     <div class="seller-next-action" id="sellerNextAction">
@@ -758,7 +758,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
      renderAdviceItems(fallbackItems);
    }
  }
- loadSellerAdvice((sellerSpaceRead()||{}).city || document.getElementById("fbCity")?.value.trim() || "");
+ loadSellerAdvice((sellerSpaceRead()||{}).city || "");
  const sellerModal=document.getElementById("sellerModal"),sellerModalTitle=document.getElementById("sellerModalTitle"),sellerModalBody=document.getElementById("sellerModalBody");
  function esc(v){return String(v??"").replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
  function openSellerModal(title,body){if(!sellerModal)return;sellerModalTitle.textContent=title;sellerModalBody.innerHTML=body;sellerModal.classList.add("open");sellerModal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden"}
@@ -778,7 +778,6 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    openSellerModal("Votre bien",'<div class="seller-detail-grid">'+rows.map(function(r){return '<div class="seller-detail"><span>'+esc(r[0])+'</span><strong>'+esc(r[1])+'</strong></div>'}).join("")+'</div><div class="seller-modal-note">Cet aperçu reprend uniquement les informations que vous avez choisies de renseigner. Les caractéristiques définitives seront vérifiées lors de l’échange avec JML.</div><div class="seller-map-actions"><button class="seller-modal-action primary" type="button" id="sellerEditDetails">Compléter mes caractéristiques</button></div>');
    const edit=document.getElementById("sellerEditDetails");if(edit)edit.onclick=function(){const d=getSellerSpace();if(d&&d.token)window.location.href="/projet-vendeur?editToken="+encodeURIComponent(d.token);else window.location.href="/projet-vendeur";};
  }
- function restoreSellerDetails(){const d=getSellerSpace();["Address","Surface","Rooms","Terrain"].forEach(function(k){const el=document.getElementById("fb"+k);if(el)el.value=d[k.toLowerCase()]||""});const dpe=document.getElementById("fbDpe");if(dpe)dpe.value=d.dpe||""}
  function showCalendar(){closeSellerModal();const appt=document.querySelector(".fb-appointment");if(appt)appt.scrollIntoView({behavior:"smooth",block:"start"});const date=document.getElementById("fbApptDate");if(date)date.focus({preventScroll:true})}
  function showAdvice(){
    const sourceCard=document.getElementById("sellerAdviceCard");
@@ -786,8 +785,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    openSellerModal("Conseils vendeurs",'<div class="seller-advice-list-modal"><div class="seller-advice-item-modal"><b>💡 JML</b><strong>'+esc(title)+'</strong><p>Les conseils affichés dans votre espace sont issus de sources professionnelles et sont actualisés lorsque de nouvelles informations utiles sont disponibles.</p><a href="#sellerAdviceCard" id="sellerAdviceGo">Voir le conseil détaillé dans votre espace ↓</a></div><div class="seller-advice-item-modal"><b>📊 MARCHÉ</b><strong>Prix, transactions et contexte local</strong><p>Croisez toujours les données de marché avec le type de bien, sa surface, son état et sa localisation précise.</p></div><div class="seller-advice-item-modal"><b>⚡ DPE</b><strong>Préparez les informations énergétiques</strong><p>Gardez votre DPE et les diagnostics disponibles à portée de main avant le rendez-vous.</p></div><div class="seller-advice-item-modal"><b>🏦 FINANCEMENT</b><strong>Le financement des acquéreurs compte</strong><p>Les conditions de crédit influencent directement la capacité d’achat et donc le marché des vendeurs.</p></div></div>');
    const go=document.getElementById("sellerAdviceGo");if(go)go.onclick=function(e){e.preventDefault();closeSellerModal();sourceCard?.scrollIntoView({behavior:"smooth",block:"center"})}
  }
- /* Les quatre cartes sont maintenant de vraies pages dédiées : pas d'interception JS du clic. */
- restoreSellerDetails();
+ /* Les cartes du tableau de bord utilisent maintenant leurs pages dédiées. */
 
  async function restoreSellerSubmittedView(){
    const pathMatch=location.pathname.match(/^\/espace-vendeur\/([^/]+)/);
@@ -945,7 +943,7 @@ function updateSellerProjectSummary(d){
  restoreSellerSubmittedView().then(refreshSellerSpaceUI);
  window.addEventListener("pageshow",function(){restoreSellerSubmittedView().then(refreshSellerSpaceUI)});
 
- const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const q=new URLSearchParams({type:document.getElementById("fbType").value,horizon:document.getElementById("fbHorizon").value,city:document.getElementById("fbCity").value.trim()});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};window.location.href="/projet-vendeur";});
+ const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const d=getSellerSpace()||{};const q=new URLSearchParams({type:d.propertyType||"",horizon:d.horizon||"unknown",city:d.city||""});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};window.location.href="/projet-vendeur";});
 })();
 </script>
 <div class="seller-modal" id="sellerModal" aria-hidden="true">
