@@ -681,6 +681,7 @@ h1 span{color:var(--gold2);display:block}
     <div class="extra" id="extra" aria-hidden="true">
   <div class="extra-field full-extra"><label for="adresse">Adresse du bien</label><div class="in"><input id="adresse" type="text" autocomplete="street-address" placeholder="Numéro et rue"></div></div>
   <div class="extra-field"><label for="surface">Surface habitable (m²)</label><div class="in"><input id="surface" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Ex. 120"></div></div>
+  <div class="extra-field"><label for="terrain">Surface du terrain (m²)</label><div class="in"><input id="terrain" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. 600"></div></div>
   <div class="extra-field"><label for="pieces">Nombre de pièces</label><div class="in"><input id="pieces" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. 5"></div></div>
 </div>
     <div class="bottom"><label class="chk"><input type="checkbox" required>J'accepte que JML Immobilier utilise ces informations pour me recontacter au sujet de mon projet immobilier.</label><button class="btn" type="submit">Échanger sur mon projet →</button></div>
@@ -729,6 +730,7 @@ document.getElementById('form').onsubmit=async function(ev){
     address:document.getElementById('adresse').value.trim(),
     surface:document.getElementById('surface').value.trim(),
     rooms:document.getElementById('pieces').value.trim(),
+    terrain:document.getElementById('terrain').value.trim(),
     source:"Page projet vendeur",
     consent:!!consent.checked
   };
