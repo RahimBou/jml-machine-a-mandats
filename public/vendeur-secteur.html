@@ -397,7 +397,6 @@ function renderSellerReading(r){
  const strict=Number(c.strictCount||0);
  const radius=Number(c.radiusKm||0);
  const bullets=[];
- const dpeValue=String(d.dpe||"").trim().toUpperCase();
  if(dpeValue) bullets.push("Le DPE du bien est "+dpeValue+". Cette donnée décrit la performance énergétique du logement ; elle est présentée séparément des critères utilisés pour calculer le repère de prix.");
  if(comparable){
    bullets.push("Le "+baseText+" n'est pas une moyenne générale : il est calculé à partir des ventes retenues comme comparables à votre "+type+" selon le type de bien, la surface, le nombre de pièces, la distance et la récence.");
