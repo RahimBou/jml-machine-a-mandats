@@ -236,13 +236,76 @@ function sellerDistanceLabel(km){
   return "à moins de 1,5 km";
 }
 
+async function getSellerAttractiveness(lat,lon){
+  const la=Number(lat),lo=Number(lon);
+  if(!Number.isFinite(la)||!Number.isFinite(lo)) return {available:false,categories:{}};
+  const q=`[out:json][timeout:10];
+(
+  nwr(around:5000,${la},${lo})[place~"^(city_centre|town_centre)$"];
+  nwr(around:5000,${la},${lo})[historic~"^(monument|memorial|castle|fort|archaeological_site)$"];
+  nwr(around:5000,${la},${lo})[tourism~"^(attraction|museum|gallery|viewpoint)$"];
+  nwr(around:5000,${la},${lo})[amenity~"^(theatre|arts_centre|cinema|marketplace|townhall)$"];
+  nwr(around:5000,${la},${lo})[leisure~"^(park|garden|nature_reserve)$"];
+  nwr(around:5000,${la},${lo})[highway=pedestrian];
+);
+out center tags;`;
+  try{
+    const endpoints=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+    let payload=null,usedEndpoint=null;
+    for(const endpoint of endpoints){
+      try{
+        const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded","User-Agent":"JML-Projet-Vendeur/3.9.2 (attractiveness)"},body:"data="+encodeURIComponent(q),signal:AbortSignal.timeout(10000)});
+        if(!response.ok) continue;
+        payload=await response.json(); usedEndpoint=endpoint; break;
+      }catch(_){}
+    }
+    if(!payload) throw new Error("Aucune instance Overpass disponible");
+    const categories={center:{label:"Centre-ville",items:[]},heritage:{label:"Patrimoine & monuments",items:[]},culture:{label:"Culture & lieux emblématiques",items:[]},leisure:{label:"Parcs & espaces de respiration",items:[]},publicLife:{label:"Vie locale",items:[]}};
+    const seen=new Set();
+    const distance=(e)=>{
+      const p=e?.center||e,x=Number(p?.lon??e?.lon),y=Number(p?.lat??e?.lat);
+      const d=haversineKm({lat:la,lon:lo},{lat:y,lon:x});
+      return d==null?999:d;
+    };
+    const add=(cat,e,type)=>{
+      const t=e?.tags||{},d=distance(e);
+      if(d>5)return;
+      const name=String(t.name||"").trim();
+      if(!name)return;
+      const sig=cat+"|"+name.toLowerCase();
+      if(seen.has(sig))return;
+      seen.add(sig);
+      categories[cat].items.push({name,type,distanceKm:Number(d.toFixed(2))});
+    };
+    for(const e of (Array.isArray(payload?.elements)?payload.elements:[])){
+      const t=e?.tags||{};
+      if(/^(city_centre|town_centre)$/.test(String(t.place||""))) add("center",e,"Centre-ville");
+      else if(/^(monument|memorial|castle|fort|archaeological_site)$/.test(String(t.historic||""))) add("heritage",e,
+        t.historic==="castle"?"Château":t.historic==="fort"?"Fort":t.historic==="memorial"?"Mémorial":"Monument");
+      else if(/^(attraction|museum|gallery|viewpoint)$/.test(String(t.tourism||""))) add("culture",e,
+        t.tourism==="museum"?"Musée":t.tourism==="gallery"?"Galerie":t.tourism==="viewpoint"?"Point de vue":"Lieu emblématique");
+      else if(/^(theatre|arts_centre|cinema)$/.test(String(t.amenity||""))) add("culture",e,
+        t.amenity==="theatre"?"Théâtre":t.amenity==="cinema"?"Cinéma":"Centre culturel");
+      else if(t.leisure==="park"||t.leisure==="garden"||t.leisure==="nature_reserve") add("leisure",e,"Parc / espace vert");
+      else if(t.amenity==="marketplace"||t.amenity==="townhall"||t.highway==="pedestrian") add("publicLife",e,
+        t.amenity==="marketplace"?"Marché":t.amenity==="townhall"?"Mairie":"Zone piétonne");
+    }
+    Object.values(categories).forEach(c=>c.items.sort((a,b)=>a.distanceKm-b.distanceKm).splice(6));
+    return {available:true,source:"OpenStreetMap / Overpass",endpoint:usedEndpoint,categories};
+  }catch(error){
+    console.warn("JML attractivité locale:",error.message);
+    return {available:false,source:"OpenStreetMap / Overpass",categories:{}};
+  }
+}
+
 async function getOfficialTerritoryAssets(lat,lon,communeCode){
-  const [education,bpe,roads]=await Promise.allSettled([getEducationAssets(lat,lon,communeCode),getBpeAssets(lat,lon,communeCode),getNearbyMajorRoads(lat,lon)]);
+  const [education,bpe,roads,attractiveness]=await Promise.allSettled([getEducationAssets(lat,lon,communeCode),getBpeAssets(lat,lon,communeCode),getNearbyMajorRoads(lat,lon),getSellerAttractiveness(lat,lon)]);
   const schools=education.status==="fulfilled"?education.value:[];
   const bpeData=bpe.status==="fulfilled"?bpe.value:{rows:[],ready:false,importedAt:null};
   const bpeRows=bpeData.rows||[];
   const bpeReady=Boolean(bpeData.ready);
   const roadData=roads.status==="fulfilled"?roads.value:{available:false,items:[]};
+  const attractData=attractiveness.status==="fulfilled"?attractiveness.value:{available:false,categories:{}};
   const bpeGroup=(group)=>bpeRows.filter(x=>x.sellerGroup===group && x.distanceKm<=0.8);
   const nearest=(rows,limit=5)=>rows.slice().sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,limit);
   const family=nearest(schools.map(x=>({...x,group:"family",distanceLabel:sellerDistanceLabel(x.distanceKm)})).concat(
@@ -254,15 +317,20 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
     health:{label:"Santé de proximité",count:bpeGroup("health").length,available:bpeReady,items:nearest(bpeGroup("health").map(x=>({...x,group:"health",distanceLabel:sellerDistanceLabel(x.distanceKm)})),6),source:"INSEE BPE 2025"},
     mobility:{label:"Mobilité",count:bpeRows.filter(x=>["E107","E108","E109"].includes(x.typeCode)&&x.distanceKm<=0.8).length,available:bpeReady,items:nearest(bpeRows.filter(x=>["E107","E108","E109"].includes(x.typeCode)&&x.distanceKm<=1.5).map(x=>({...x,group:"mobility",name:x.name?("Gare de "+x.name):"Gare de voyageurs",type:x.type||"Gare de voyageurs",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"},
     leisure:{label:"Loisirs & vie locale",count:bpeGroup("leisure").length,available:bpeReady,items:nearest(bpeGroup("leisure").map(x=>({...x,group:"leisure",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"},
-    roads:{label:"Grands axes routiers",count:roadData.items?.length||0,available:roadData.available===true,items:roadData.items||[],source:"OpenStreetMap / Overpass"}
+    roads:{label:"Grands axes routiers",count:roadData.items?.length||0,available:roadData.available===true,items:roadData.items||[],source:"OpenStreetMap / Overpass"},
+    center:attractData.categories?.center||{label:"Centre-ville",items:[],available:false},
+    heritage:attractData.categories?.heritage||{label:"Patrimoine & monuments",items:[],available:false},
+    culture:attractData.categories?.culture||{label:"Culture & lieux emblématiques",items:[],available:false},
+    publicLife:attractData.categories?.publicLife||{label:"Vie locale",items:[],available:false},
+    attractiveness:attractData.categories?.leisure||{label:"Parcs & espaces de respiration",items:[],available:false}
   };
   return {
     available:education.status==="fulfilled"||bpeReady,
     provider:"Données publiques officielles",
     source:"Éducation nationale + INSEE BPE 2025",
     sourceUrl:"https://www.insee.fr/fr/statistiques/8217525",
-    radiusKm:1.5,sellerRadiusKm:0.8,importedAt:bpeData.importedAt,categories,roadSource:roadData.source||"OpenStreetMap / Overpass",roadRadiusKm:3,
-    diagnostics:{education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible"),roads:roads.status==="fulfilled"?(roadData.available?"OK":"indisponible"):String(roads.reason?.message||"indisponible")}
+    radiusKm:1.5,sellerRadiusKm:0.8,importedAt:bpeData.importedAt,categories,roadSource:roadData.source||"OpenStreetMap / Overpass",roadRadiusKm:3,attractivenessSource:attractData.source||"OpenStreetMap / Overpass",
+    diagnostics:{education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible"),roads:roads.status==="fulfilled"?(roadData.available?"OK":"indisponible"):String(roads.reason?.message||"indisponible"),attractiveness:attractiveness.status==="fulfilled"?(attractData.available?"OK":"indisponible"):String(attractiveness.reason?.message||"indisponible")}
   };
 }
 
