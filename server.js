@@ -119,6 +119,7 @@ function stripHtml(value){
 registerPublicEventsRoute(app, clean);
 
 const territoryAssetCache = new Map();
+const majorRoadCache = new Map();
 
 async function getEducationAssets(lat,lon,communeCode){
   if(!Number.isFinite(lat)||!Number.isFinite(lon)) return [];
@@ -193,6 +194,42 @@ async function getBpeAssets(lat,lon,communeCode){
   return data;
 }
 
+async function getNearbyMajorRoads(lat,lon){
+  const la=Number(lat),lo=Number(lon);
+  if(!Number.isFinite(la)||!Number.isFinite(lo)) return {available:false,items:[],source:"OpenStreetMap / Overpass"};
+  const key=la.toFixed(5)+","+lo.toFixed(5);
+  const cached=majorRoadCache.get(key);
+  if(cached&&cached.expiresAt>Date.now()) return cached.data;
+  const q=`[out:json][timeout:10];
+(way(around:3000,${la},${lo})[highway~"^(motorway|trunk|primary|secondary)$"];);
+out center tags;`;
+  try{
+    const endpoints=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+    let payload=null,usedEndpoint=null;
+    for(const endpoint of endpoints){
+      try{
+        const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded","User-Agent":"JML-Projet-Vendeur/3.9.2"},body:"data="+encodeURIComponent(q),signal:AbortSignal.timeout(10000)});
+        if(!response.ok) throw new Error("Overpass HTTP "+response.status);
+        payload=await response.json(); usedEndpoint=endpoint; break;
+      }catch(_error){}
+    }
+    if(!payload) throw new Error("Aucune instance Overpass disponible");
+    const rank={motorway:1,trunk:2,primary:3,secondary:4},rows=[];
+    for(const e of (Array.isArray(payload?.elements)?payload.elements:[])){
+      const t=e?.tags||{},p=e?.center||e,x=Number(p?.lon),y=Number(p?.lat);
+      const distanceKm=haversineKm({lat:la,lon:lo},{lat:y,lon:x});
+      const ref=String(t.ref||t.old_ref||"").trim(),name=String(t.name||"").trim(),roadClass=String(t.highway||"");
+      if(distanceKm==null||distanceKm>3||(!ref&&!name)) continue;
+      rows.push({name:name||ref,ref:ref||null,roadClass,type:roadClass==="motorway"?"Autoroute":roadClass==="trunk"?"Voie rapide":roadClass==="primary"?"Route principale":"Route départementale / secondaire",distanceKm:Number(distanceKm.toFixed(2))});
+    }
+    rows.sort((a,b)=>a.distanceKm-b.distanceKm || (rank[a.roadClass]||9)-(rank[b.roadClass]||9));
+    const seen=new Set(),items=[];
+    for(const row of rows){const sig=(row.ref||"")+"|"+(row.name||"");if(seen.has(sig))continue;seen.add(sig);items.push(row);if(items.length>=5)break;}
+    const data={available:true,items,source:"OpenStreetMap / Overpass",radiusKm:3,endpoint:usedEndpoint};
+    majorRoadCache.set(key,{expiresAt:Date.now()+12*60*60*1000,data}); return data;
+  }catch(error){console.warn("JML grands axes routiers:",error.message);return {available:false,items:[],source:"OpenStreetMap / Overpass",radiusKm:3};}
+}
+
 function sellerDistanceLabel(km){
   if(km<0.3) return "moins de 300 m";
   if(km<0.8) return "moins de 800 m";
@@ -200,11 +237,12 @@ function sellerDistanceLabel(km){
 }
 
 async function getOfficialTerritoryAssets(lat,lon,communeCode){
-  const [education,bpe]=await Promise.allSettled([getEducationAssets(lat,lon,communeCode),getBpeAssets(lat,lon,communeCode)]);
+  const [education,bpe,roads]=await Promise.allSettled([getEducationAssets(lat,lon,communeCode),getBpeAssets(lat,lon,communeCode),getNearbyMajorRoads(lat,lon)]);
   const schools=education.status==="fulfilled"?education.value:[];
   const bpeData=bpe.status==="fulfilled"?bpe.value:{rows:[],ready:false,importedAt:null};
   const bpeRows=bpeData.rows||[];
   const bpeReady=Boolean(bpeData.ready);
+  const roadData=roads.status==="fulfilled"?roads.value:{available:false,items:[]};
   const bpeGroup=(group)=>bpeRows.filter(x=>x.sellerGroup===group && x.distanceKm<=0.8);
   const nearest=(rows,limit=5)=>rows.slice().sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,limit);
   const family=nearest(schools.map(x=>({...x,group:"family",distanceLabel:sellerDistanceLabel(x.distanceKm)})).concat(
@@ -215,15 +253,16 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
     family:{label:"Écoles & famille",count:family.length,available:education.status==="fulfilled"||bpeReady,items:family,source:"Éducation nationale + INSEE BPE 2025"},
     health:{label:"Santé de proximité",count:bpeGroup("health").length,available:bpeReady,items:nearest(bpeGroup("health").map(x=>({...x,group:"health",distanceLabel:sellerDistanceLabel(x.distanceKm)})),6),source:"INSEE BPE 2025"},
     mobility:{label:"Mobilité",count:bpeRows.filter(x=>["E107","E108","E109"].includes(x.typeCode)&&x.distanceKm<=0.8).length,available:bpeReady,items:nearest(bpeRows.filter(x=>["E107","E108","E109"].includes(x.typeCode)&&x.distanceKm<=1.5).map(x=>({...x,group:"mobility",name:x.name?("Gare de "+x.name):"Gare de voyageurs",type:x.type||"Gare de voyageurs",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"},
-    leisure:{label:"Loisirs & vie locale",count:bpeGroup("leisure").length,available:bpeReady,items:nearest(bpeGroup("leisure").map(x=>({...x,group:"leisure",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"}
+    leisure:{label:"Loisirs & vie locale",count:bpeGroup("leisure").length,available:bpeReady,items:nearest(bpeGroup("leisure").map(x=>({...x,group:"leisure",distanceLabel:sellerDistanceLabel(x.distanceKm)})),5),source:"INSEE BPE 2025"},
+    roads:{label:"Grands axes routiers",count:roadData.items?.length||0,available:roadData.available===true,items:roadData.items||[],source:"OpenStreetMap / Overpass"}
   };
   return {
     available:education.status==="fulfilled"||bpeReady,
     provider:"Données publiques officielles",
     source:"Éducation nationale + INSEE BPE 2025",
     sourceUrl:"https://www.insee.fr/fr/statistiques/8217525",
-    radiusKm:1.5,sellerRadiusKm:0.8,importedAt:bpeData.importedAt,categories,
-    diagnostics:{education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible")}
+    radiusKm:1.5,sellerRadiusKm:0.8,importedAt:bpeData.importedAt,categories,roadSource:roadData.source||"OpenStreetMap / Overpass",roadRadiusKm:3,
+    diagnostics:{education:education.status==="fulfilled"?"OK":String(education.reason?.message||"indisponible"),bpe:bpe.status==="fulfilled"?(bpeReady?"OK":"BPE Ardennes non importé"):String(bpe.reason?.message||"indisponible"),roads:roads.status==="fulfilled"?(roadData.available?"OK":"indisponible"):String(roads.reason?.message||"indisponible")}
   };
 }
 
