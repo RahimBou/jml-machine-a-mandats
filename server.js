@@ -1098,11 +1098,12 @@ async function getAdemeDpeByAddress(address,city=""){
   if(dpeCache.has(cacheKey))return dpeCache.get(cacheKey);
   try{
     const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines";
-    const queries=[...new Set([[raw,city].filter(Boolean).join(" "),[targetNumber,targetStreet,city].filter(Boolean).join(" "),[targetStreet,city].filter(Boolean).join(" "),targetStreet,city].filter(Boolean))];
     let best=null,bestScore=-1;
     const targetNumber=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1]||"";
     const targetPostal=(raw.match(/\b(\d{5})\b/)||[])[1]||"";
-    const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").trim();
+    const targetCity=normalizeAddress(city);
+    const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim();
+    const queries=[...new Set([[raw,city].filter(Boolean).join(" "),[targetNumber,targetStreet,city].filter(Boolean).join(" "),[targetStreet,city].filter(Boolean).join(" "),targetStreet,city].filter(Boolean))];
     const filterQueries=[];
     if(targetPostal&&targetNumber&&targetStreet){
       filterQueries.push("ban_postcode_eq="+encodeURIComponent(targetPostal)+"&ban_housenumber_eq="+encodeURIComponent(targetNumber)+"&ban_street_eq="+encodeURIComponent(targetStreet));
