@@ -583,7 +583,12 @@ function normalizeAssetCategories(data){
     roads:["roads","road","grands_axes","grands-axes","axes_routiers"],
     parks:["parks","loisirs","leisure","sport"],
     services:["services","service"],
-    roads:["roads","majorRoads","grandsAxes"]
+    roads:["roads","majorRoads","grandsAxes"],
+    center:["center","centre","cityCenter","city_centre"],
+    heritage:["heritage","patrimoine","monuments"],
+    culture:["culture","attractions","landmarks"],
+    publicLife:["publicLife","vieLocale","vie_locale"],
+    attractiveness:["attractiveness","leisure","parks"]
   };
   const out={};
   Object.entries(aliases).forEach(([key,keys])=>{
@@ -616,6 +621,29 @@ function renderMajorRoads(cat,data){
   }).join("");
   return '<div class="road-strip" id="road-proximity"><div class="road-head"><div><span class="road-kicker">ACCESSIBILITÉ</span><b>🚗 Un secteur bien connecté</b></div><span>Rayon 3 km</span></div><p class="road-intro">Les principaux axes à proximité facilitent les déplacements vers les pôles voisins et renforcent la praticité de l’adresse au quotidien.</p><div class="road-list">'+body+'</div><small class="road-source">Source : '+esc(cat?.source||data?.roadSource||"OpenStreetMap / Overpass")+' · © OpenStreetMap contributors · Ces axes décrivent l’accessibilité routière et ne sont pas intégrés au calcul du prix.</small></div>';
 }
+function renderSellerAttractiveness(data){
+  const c=cats||{};
+  const groups=[
+    ["center","📍","CENTRE-VILLE","Repère structurant"],
+    ["heritage","🏛️","PATRIMOINE","Monuments & identité locale"],
+    ["culture","🎭","CULTURE & LIEUX EMBLÉMATIQUES","Sorties & attractivité"],
+    ["publicLife","🚶","VIE LOCALE","Places, marchés & zones piétonnes"],
+    ["attractiveness","🌳","ESPACES VERTS","Cadre de vie"]
+  ];
+  const items=[];
+  groups.forEach(([key,icon,label,role])=>{
+    const cat=c[key];
+    (Array.isArray(cat?.items)?cat.items.slice(0,2):[]).forEach(x=>items.push({key,icon,label,role,name:x.name,type:x.type,distanceKm:Number(x.distanceKm)}));
+  });
+  if(!items.length)return "";
+  items.sort((a,b)=>a.distanceKm-b.distanceKm);
+  const cards=items.slice(0,7).map(x=>{
+    const d=Number.isFinite(x.distanceKm)?x.distanceKm.toFixed(2).replace(".",",")+" km":"à proximité";
+    return '<article class="attract-card"><div class="attract-top"><span class="attract-icon">'+x.icon+'</span><span class="attract-role">'+esc(x.role)+'</span></div><div class="attract-label">'+esc(x.label)+'</div><strong>'+esc(x.name||x.type||"Repère local")+'</strong><div class="attract-distance">'+esc(d)+'</div></article>';
+  }).join("");
+  return '<section class="attract-section"><div class="attract-head"><span class="road-kicker">ATTRACTIVITÉ DU SECTEUR</span><h3>✨ Des repères qui donnent du caractère au quartier</h3><p>Centre-ville, patrimoine, culture, espaces verts et vie locale : des éléments concrets à faire découvrir à un futur acquéreur. Ils décrivent l’environnement du bien et ne constituent pas, à eux seuls, une majoration automatique de sa valeur.</p></div><div class="attract-grid">'+cards+'</div><small class="road-source">Source : '+esc(data?.attractivenessSource||"OpenStreetMap / Overpass")+'</small></section>';
+}
+
 function renderAssets(data){
   pageData.assets=data||null;
   cats=normalizeAssetCategories(data||{});
@@ -721,6 +749,7 @@ function renderAssets(data){
       return '<article class="highlight-item seller-asset-card"><div class="highlight-top"><span class="highlight-icon">'+icon+'</span><span class="highlight-role">'+esc(role)+'</span></div><div class="highlight-body"><b>'+esc(x.label)+'</b><strong>'+esc(x.name||"Repère à proximité")+'</strong><div class="highlight-distance"><span>'+esc(x.distance)+'</span>'+(walk?'<small>'+esc(walk)+'</small>':'')+'</div></div></article>';
     }).join("")+'</div>'+
     renderMajorRoads(cats.roads,data)+
+    renderSellerAttractiveness(data)+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
       const cat=cats[key]||{items:[],available:false};
       const items=(Array.isArray(cat.items)?cat.items:[]).slice(0,3);
@@ -974,5 +1003,14 @@ run();
 @media(max-width:900px){.highlight-list{grid-template-columns:repeat(3,minmax(0,1fr))!important;}}
 @media(max-width:650px){.highlight-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;}.seller-asset-card{min-height:145px!important;}}
 @media(max-width:430px){.highlight-list{grid-template-columns:1fr 1fr!important;}.seller-asset-card{min-height:138px!important;padding:11px!important;}.highlight-body>strong{font-size:12px!important;}.highlight-distance span{font-size:15px!important;}}
+.attract-section{margin-top:14px;padding:16px;border-radius:18px;background:linear-gradient(135deg,#fffdf8,#f3ecdf);border:1px solid #e1d4bd;box-shadow:0 8px 22px rgba(23,59,50,.07)}
+.attract-head h3{margin:3px 0 5px;font-family:Georgia,"Times New Roman",serif;font-size:17px;color:var(--g)}
+.attract-head p{margin:0 0 12px;font-size:9px;line-height:1.55;color:#66716c;max-width:820px}
+.attract-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.attract-card{min-height:125px;padding:11px;border-radius:14px;background:#fff;border:1px solid #e5dccd;box-shadow:0 4px 12px rgba(23,59,50,.05);display:flex;flex-direction:column}
+.attract-top{display:flex;align-items:center;justify-content:space-between;gap:5px}.attract-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#173b32;color:#fff;font-size:18px}.attract-role{font-size:6.5px;color:#7a632e;background:#f0e5ca;padding:4px 5px;border-radius:8px;text-align:right}
+.attract-label{margin-top:9px;font-size:7px;font-weight:800;letter-spacing:.08em;color:#7a827d}.attract-card strong{margin-top:4px;font-family:Georgia,"Times New Roman",serif;font-size:12px;line-height:1.2;color:var(--g)}.attract-distance{margin-top:auto;padding-top:8px;font-size:12px;font-weight:900;color:#8a6c2e}
+@media(max-width:900px){.attract-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:430px){.attract-grid{grid-template-columns:1fr 1fr}.attract-card{min-height:115px}.attract-card strong{font-size:11px}}
 </style></body>
 </html>
