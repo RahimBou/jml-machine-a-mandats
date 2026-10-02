@@ -11,4 +11,23 @@ body{background:#f7f2e7;color:#173b31}.page{max-width:1040px;margin:auto;padding
  const level={"0-3":2,"3-6":1,"6-12":1,"unknown":1}[h]||1;
  document.querySelectorAll("[data-step]").forEach(el=>{const v=Number(el.dataset.step);el.classList.toggle("active",v<=level)});
 })();
-</script></body></html>
+</script><style id="jml-page-compact-v1">
+/* Version compacte : conserve tout le contenu, réduit uniquement les espaces */
+.page{padding:16px 18px 38px!important}
+.top{padding:20px!important;margin-bottom:10px!important;border-radius:20px!important}
+.top h1{font-size:32px!important;margin:6px 0!important}
+.nav{margin-top:11px!important}
+.nav a{padding:8px 12px!important}
+.card{padding:15px!important;margin-top:10px!important;border-radius:16px!important}
+.horizon{padding:13px!important}
+.horizon strong{font-size:22px!important}
+.timeline{gap:7px!important;margin-top:11px!important}
+.step{padding:11px 10px!important;min-height:100px!important}
+.step p{margin-top:6px!important}
+.list{gap:8px!important}
+.row{padding:11px!important}
+.cta{margin-top:10px!important;padding:9px 13px!important}
+.muted{line-height:1.4!important}
+@media(max-width:700px){.page{padding-bottom:28px!important}.top{padding:18px!important}.card{padding:13px!important}.timeline{margin-top:9px!important}}
+</style>
+</body></html>
