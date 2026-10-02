@@ -683,8 +683,6 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offs
 
 </section>
 </div>
-<form id="fbLeadForm" style="display:none" aria-hidden="true"></form>
-<div id="fbMessage" style="display:none"></div>
 <script>
 (function(){
 const sellerSpaceKey="jml-seller-space-v1";
@@ -695,89 +693,6 @@ const sellerSubmissionRead=()=>{try{return JSON.parse(sessionStorage.getItem(sel
 const sellerSubmissionWrite=(data)=>{try{sessionStorage.setItem(sellerSubmissionKey,JSON.stringify(data))}catch(_e){}};
 const sellerSubmissionClear=()=>{try{sessionStorage.removeItem(sellerSubmissionKey)}catch(_e){}};
 
-const params=new URLSearchParams(location.search);
-const rawCampaign=params.get("campaign")||params.get("utm_campaign")||"organique";
-const rawContent=params.get("utm_content")||"";
-const campaign=rawCampaign.trim().slice(0,50);
-const content=rawContent.trim().slice(0,50);
-const sourceLabel=content?("Facebook · "+campaign+" · "+content):("Facebook · "+campaign);
-const form=document.getElementById("fbLeadForm"),msg=document.getElementById("fbMessage");
-form.addEventListener("submit",async function(e){
- e.preventDefault();
- const name=document.getElementById("fbName").value.trim();
- const email=document.getElementById("fbEmail").value.trim();
- const phone=document.getElementById("fbPhone").value.trim();
- if(!name){msg.style.display="block";msg.textContent="Merci d’indiquer votre nom.";return}
- if(!email&&!phone){msg.style.display="block";msg.textContent="Indiquez au moins un téléphone ou un email.";return}
- if(!document.getElementById("fbConsent").checked){msg.style.display="block";msg.textContent="Votre autorisation est nécessaire pour être recontacté.";return}
- const city=document.getElementById("fbCity").value.trim();
- const propertyType=document.getElementById("fbType").value;
- const horizon=document.getElementById("fbHorizon").value;
- const sellerDetails={
-   city:city,address:document.getElementById("fbAddress")?.value.trim()||"",
-   propertyType:propertyType,horizon:horizon,
-   surface:document.getElementById("fbSurface")?.value.trim()||"",
-   rooms:document.getElementById("fbRooms")?.value.trim()||"",
-   dpe:document.getElementById("fbDpe")?.value||"",
-   terrain:document.getElementById("fbTerrain")?.value.trim()||""
- };
- sellerSpaceWrite(sellerDetails);
- const horizonLabel={"0-3":"dans les 3 mois","3-6":"dans 3 à 6 mois","6-12":"dans 6 à 12 mois","unknown":"sans calendrier défini pour le moment"}[horizon]||horizon;
- const propertyAdvice={"Maison":"Pour une maison, les surfaces, les extérieurs, les travaux récents et les équipements seront particulièrement utiles à préparer.","Appartement":"Pour un appartement, préparez notamment la surface, l’étage, les charges, le DPE et les informations disponibles sur la copropriété.","Immeuble":"Pour un immeuble, les surfaces, la composition des lots, les loyers éventuels et les informations techniques seront utiles.","Terrain":"Pour un terrain, préparez notamment la surface, la localisation et les informations d’urbanisme dont vous disposez.","Commerce":"Pour un commerce, préparez notamment la surface, la destination du local et les informations disponibles sur le bail.","Autre":"Nous adapterons les premiers échanges aux caractéristiques particulières de votre bien."};
- const personalIntro=document.getElementById("fbPersonalIntro"),sectorText=document.getElementById("fbSectorText"),propertyText=document.getElementById("fbPropertyText"),horizonText=document.getElementById("fbHorizonText");
- const safeCity=city.replace(/</g,"&lt;").replace(/>/g,"&gt;");
- const cityPill=document.getElementById("fbCityPill"),typePill=document.getElementById("fbTypePill"),horizonPill=document.getElementById("fbHorizonPill");
- if(personalIntro)personalIntro.textContent="Votre projet"+(city?" à "+city:"")+" · "+propertyType+" · projet "+horizonLabel+".";
- if(cityPill)cityPill.textContent=city||"Votre secteur"; if(typePill)typePill.textContent=propertyType; if(horizonPill)horizonPill.textContent=horizonLabel; if(sectorText)sectorText.textContent=city?"Nous préparerons les informations locales disponibles pour "+city+".":"Votre commune sera utilisée pour préparer les informations locales disponibles.";
- if(propertyText)propertyText.textContent=propertyAdvice[propertyType]||propertyAdvice["Autre"];
- if(horizonText)horizonText.textContent="Vous envisagez votre projet "+horizonLabel+". Nous garderons ce calendrier comme repère pour la suite.";
-
- const marketCards=document.getElementById("sellerMarketMetrics");
- const marketSource=document.getElementById("sellerMarketSource");
- const chartBars=[...document.querySelectorAll(".seller-bar")];
- await loadSellerDashboardData(sellerDetails);
- 
- const eventsGrid=document.getElementById("fbEventsGrid"),eventsIntro=document.getElementById("fbEventsIntro");
- try{
-   const er=await fetch("/api/public-events?city="+encodeURIComponent(city)+"&propertyType="+encodeURIComponent(propertyType));
-   const ed=await er.json();
-   const selectedEvents=ed.events||[];
-   if(eventsGrid){eventsGrid.innerHTML=selectedEvents.map(function(e){const d=new Date(e.start).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"});return '<article class="fb-event"><div class="fb-event-date">'+d+'</div><h4>'+e.title+'</h4><p>'+e.city+' · '+e.type+'</p><a href="'+e.url+'" target="_blank" rel="noopener">Voir l’événement →</a></article>';}).join("");}
-   if(eventsIntro)eventsIntro.textContent="Quelques rendez-vous à venir dans votre secteur.";
-   const miniList=document.getElementById("sellerEventMiniList");
-   if(miniList){
-     if(selectedEvents.length){
-       miniList.innerHTML=selectedEvents.slice(0,3).map(function(e){
-         const d=new Date(e.start).toLocaleDateString("fr-FR",{day:"2-digit",month:"short"});
-         return '<div class="seller-event-mini"><strong>'+d+" · "+e.title+'</strong><span>'+e.city+" · "+e.type+'</span></div>';
-       }).join("");
-     }else{
-       miniList.innerHTML='<div class="seller-event-mini"><strong>Votre secteur</strong><span>Pas d’événement sélectionné pour le moment.</span></div>';
-     }
-   }
- }catch(_e){
-   if(eventsGrid)eventsGrid.innerHTML="<div class=\"fb-market-note\">Les événements locaux seront actualisés prochainement.</div>";
-   const miniList=document.getElementById("sellerEventMiniList");
-   if(miniList)miniList.innerHTML='<div class="seller-event-mini"><strong>Votre secteur</strong><span>Les informations locales seront actualisées prochainement.</span></div>';
- }
- const payload={
-  name,city,phone,email,
-  propertyType,
-  horizon,
-  address:sellerDetails.address,
-  surface:sellerDetails.surface,
-  rooms:sellerDetails.rooms,
-  dpe:sellerDetails.dpe,
-  terrain:sellerDetails.terrain,
-  source:sourceLabel,consent:true
- };
- try{
-  const r=await fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  const d=await r.json();
-  if(!r.ok)throw new Error(d.error||"Impossible d’enregistrer votre demande.");
-  publicLead={name,city,phone,email};window.jmlProspectId=d.prospectId||"";sellerSpaceWrite({...sellerDetails,submitted:true,token:d.spaceToken||"",checklist:[]});sellerSubmissionWrite({submitted:true,lead:publicLead,prospectId:window.jmlProspectId,spaceToken:d.spaceToken||"",savedAt:Date.now()});try{if(d.spaceToken){history.replaceState({sellerSpace:true},"","/espace-vendeur/"+encodeURIComponent(d.spaceToken))}}catch(_e){};form.reset();msg.style.display="none";form.style.display="none";const success=document.getElementById("fbSuccess");if(success){success.style.display="block";success.scrollIntoView({behavior:"smooth",block:"start"});}
- }catch(err){msg.style.display="block";msg.textContent=err.message}
-});
 const appointmentForm=document.getElementById("fbAppointmentForm");
 let publicLead={name:"",email:"",phone:"",city:""};
 let appointmentSlots=[];
