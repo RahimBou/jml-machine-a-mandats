@@ -111,4 +111,25 @@ document.getElementById("saveSeller").onclick=async function(){
  if(!token){msg.textContent="Dossier enregistré sur cet appareil.";return;}
  try{const r=await fetch("/api/seller-space/"+encodeURIComponent(token),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const j=await r.json();if(!r.ok||!j.ok)throw new Error("save");localStorage.setItem("jml-seller-space-v1",JSON.stringify({...current,...j.space,token}));msg.textContent="Dossier enregistré."; }catch(e){msg.textContent="Enregistré sur cet appareil. Synchronisation serveur indisponible.";}
 };
-})()</script></body></html>
+})()</script><style id="jml-page-compact-v1">
+/* Version compacte : conserve tout le contenu, réduit uniquement les espaces */
+.page{padding:16px 18px 38px!important}
+.top{padding:20px!important;margin-bottom:10px!important;border-radius:20px!important}
+.top h1{font-size:32px!important;margin:6px 0!important}
+.nav{margin-top:11px!important}
+.nav a{padding:8px 12px!important}
+.card{padding:15px!important;margin-top:10px!important;border-radius:16px!important}
+.grid,.list,.owner-grid,.project-grid{gap:8px!important}
+.property-card .grid{margin-top:8px!important}
+.fact,.row,.check{padding:10px 11px!important}
+.data-status{margin-top:10px!important;padding:10px 12px!important}
+.checklist{gap:7px!important}
+.owner-grid,.project-grid{margin-top:9px!important}
+.owner-item{margin-top:9px!important;padding:11px!important}
+.small-btn{margin-top:9px!important;padding:9px 12px!important}
+.save-row{margin-top:10px!important}
+.note{margin-top:10px!important;padding:10px 12px!important}
+.privacy{margin-top:9px!important}
+@media(max-width:650px){.page{padding-bottom:28px!important}.top{padding:18px!important}.card{padding:13px!important}}
+</style>
+</body></html>
