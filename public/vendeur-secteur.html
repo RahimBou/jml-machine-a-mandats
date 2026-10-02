@@ -133,7 +133,21 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
  #sellerMicroApp{display:block!important;margin:0!important;padding:24mm 16mm!important;min-height:257mm;background:#173b32!important;box-shadow:none!important;border-radius:0!important}
  #sellerMicroApp .micro-actions{display:none!important}.seller-microapp:after{display:none}
 }
-.micro-control{margin-top:8px;font-size:7px;line-height:1.4;color:#cbd8d2;opacity:.9}\n</style></head>
+.micro-control{margin-top:8px;font-size:7px;line-height:1.4;color:#cbd8d2;opacity:.9}\n</style><style id="seller-priority-layout">
+.seller-priority-layout{margin-top:10px}
+.seller-proof-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:18px 2px 6px;padding-top:4px}
+.seller-proof-heading span{font-size:7px;font-weight:900;letter-spacing:.14em;color:#8a6c2e;text-transform:uppercase}
+.seller-proof-heading b{font-family:Georgia,"Times New Roman",serif;font-size:15px;color:var(--g)}
+#sellerMicroApp{margin-top:10px}
+#sellerMicroApp .micro-kicker{font-size:8px}
+#sellerMicroApp .micro-signature{padding:14px 15px}
+#sellerMicroApp .micro-signature b{font-size:16px}
+#sellerMicroApp .micro-stories{grid-template-columns:repeat(3,minmax(0,1fr))}
+#sellerMicroApp .micro-story{min-height:165px;padding:14px}
+#sellerMicroApp .micro-story strong{font-size:14px}
+@media(max-width:760px){.seller-proof-heading{display:block}.seller-proof-heading b{display:block;margin-top:3px}.seller-microapp .micro-stories{grid-template-columns:1fr 1fr}}
+@media(max-width:470px){.seller-microapp .micro-stories{grid-template-columns:1fr}}
+</style></head>
 <body>
 <main class="wrap">
 <section class="hero jml-architecture jml-architecture ardenne-visual">
@@ -158,15 +172,14 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">01 · LES ATOUTS DE L'ADRESSE</div><h2>Pourquoi ce bien peut séduire</h2></div><div class="source">Données publiques officielles · rayon 1,5 km</div></div>
+ <div class="head"><div><div class="eyebrow">01 · LES ATOUTS DE L'ADRESSE</div><h2>Ce qui compte autour de votre adresse</h2></div><div class="source">Données publiques officielles · rayon 1,5 km</div></div>
  <div class="card">
   <div class="value-intro location-reading">
    <div class="location-kicker">LECTURE DE L'EMPLACEMENT</div>
    <h2>Les atouts concrets autour du bien</h2>
    <p>Ces informations décrivent le cadre de vie autour de l'adresse. Elles servent à préparer la présentation du bien et à expliquer son environnement ; <strong>elles ne sont pas converties automatiquement en €/m² et ne gonflent pas la valeur de référence.</strong></p>
   </div>
-  <div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
-<section class="seller-microapp" id="sellerMicroApp">
+  <section class="seller-microapp" id="sellerMicroApp">
   <div class="micro-kicker">MICRO-APPLICATION VENDEUR · LECTURE PREMIUM</div>
   <h3>✨ Comment raconter cette adresse</h3>
   <p class="micro-intro">L’application croise uniquement les repères réellement identifiés autour du bien pour faire ressortir les arguments les plus faciles à mémoriser et à présenter à un acquéreur.</p>
@@ -178,6 +191,9 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   </div>
   <div class="seller-poster" id="sellerPoster"></div>
 </section>
+<div class="seller-proof-heading"><span>LES PREUVES DERRIÈRE CES ARGUMENTS</span><b>Repères vérifiés autour de l’adresse</b></div>
+<div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
+
   <details class="diag" id="diagnostics"><summary>🔎 Diagnostic des sources</summary><div id="diagRows"><div class="diag-row"><span>Initialisation</span><b class="diag-code">JML-D000</b></div></div></details>
   <div class="benefit-grid">
    <div class="benefit benefit-main"><div class="benefit-kicker">💬 POUR LE RENDEZ-VOUS</div><h3>Comment présenter l'emplacement</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs, concrets et vérifiables.</p></div>
