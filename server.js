@@ -91,7 +91,7 @@ app.use((req,res,next) => {
   }
   next();
 });
-app.get("/vendeur-secteur", (req,res) => {
+app.get(["/vendeur-secteur","/vendeur-secteur.html"], (req,res) => {
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma","no-cache");
   res.setHeader("Expires","0");
