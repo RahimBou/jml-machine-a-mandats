@@ -453,7 +453,43 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 .seller-quick-card em:after{content:"→";font-size:20px!important;margin-left:auto}
 @media(max-width:850px){.seller-quick-grid{grid-template-columns:repeat(2,1fr)!important}}
 @media(max-width:560px){.seller-quick-grid{grid-template-columns:1fr!important}.seller-quick-card{min-height:265px!important}}
-</style><style id="ardenne-identity-final">.ardenne-visual{background-image:linear-gradient(90deg,rgba(23,59,50,.96) 0%,rgba(23,59,50,.82) 48%,rgba(23,59,50,.42) 100%),url('/assets/itineraire-jml.svg')!important;background-size:cover!important;background-position:center!important}</style></head>
+</style><style id="ardenne-identity-final">.ardenne-visual{background-image:linear-gradient(90deg,rgba(23,59,50,.96) 0%,rgba(23,59,50,.82) 48%,rgba(23,59,50,.42) 100%),url('/assets/itineraire-jml.svg')!important;background-size:cover!important;background-position:center!important}</style><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style id="jml-restyle">
+:root{--gold:#c79a3b;--gold2:#e9c677;--cream:#faf7f2;--card:#fffdf9;--line:#e6e0d3;--green:#0f2b22;--goldgrad:linear-gradient(135deg,#d6aa4c,#9c7120)}
+body{background:var(--cream)!important;font-family:Inter,system-ui,sans-serif!important;color:#14231d}
+.fb-wrap{max-width:1100px!important;padding:20px 16px 50px!important}
+.fb-card{background:transparent!important;border:0!important;padding:0!important}
+.fb-success{background:transparent!important;border:0!important;padding:0!important;margin:0!important}
+h1,h2,h3,.seller-dashboard-overlay h3,.fb-success-head h2{font-family:'Playfair Display',Georgia,serif!important}
+/* bandeau d'accueil */
+.fb-success-head{background:linear-gradient(135deg,#0f2b22,#1d4a3b)!important;border-radius:18px!important;padding:24px 28px!important}
+.fb-success-head .eyebrow,.seller-dashboard-kicker,.seller-next-action-kicker{color:var(--gold2)!important;letter-spacing:.2em!important;font-weight:600!important}
+.fb-success-head h2{font-size:clamp(24px,4vw,34px)!important;color:#fff}
+.seller-dashboard-hero{position:relative!important;min-height:400px!important;border-radius:18px!important;overflow:hidden!important;box-shadow:0 18px 50px rgba(15,43,34,.22)!important}
+.seller-dashboard-photo{object-position:72% center!important}
+.seller-dashboard-overlay{padding:36px!important;justify-content:center!important;background:linear-gradient(90deg,rgba(15,43,34,.96) 0%,rgba(15,43,34,.82) 42%,rgba(15,43,34,.1) 100%)!important}
+.seller-dashboard-overlay h3{font-size:clamp(34px,6vw,54px)!important;line-height:1.05!important;color:var(--gold2)!important;margin:12px 0!important}
+.seller-dashboard-overlay p{max-width:520px;font-size:15px}
+.seller-dashboard-pills span{border:1.5px solid var(--gold)!important;background:rgba(15,43,34,.55)!important;color:#fff!important;border-radius:999px!important;padding:8px 14px!important}
+/* cartes */
+.seller-status,.seller-panel,.seller-quick-card,.seller-v2-card,.seller-check,.seller-guide-grid>*,.seller-event-feature,.seller-event-mini,.fb-appointment{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:18px!important;box-shadow:0 10px 30px rgba(15,43,34,.07)!important}
+.seller-status{margin-top:16px!important}
+.seller-status-steps .done b,.seller-check-mark{background:var(--goldgrad)!important;color:#fff!important;border-color:transparent!important}
+.seller-next-action{background:linear-gradient(135deg,#0f2b22,#1d4a3b)!important;border:0!important;border-radius:18px!important;margin-top:16px!important}
+.seller-next-action-icon{background:var(--goldgrad)!important;color:#fff!important}
+.seller-panel-kicker,.seller-v2-kicker,.seller-kicker{color:var(--gold)!important;letter-spacing:.18em!important;font-weight:600!important}
+.seller-source-badge,.seller-project-summary-badge,.seller-space-badge{background:#f4ecdd!important;color:#7b5e22!important;border-radius:999px!important}
+.seller-quick-card:hover{border-color:var(--gold)!important}
+.seller-quick-card em{background:#f4ecdd!important;color:#7b5e22!important}
+.seller-quick-icon,.ico{background:#fbf3e1!important;border:1.5px solid var(--gold)!important;color:#a97d22!important}
+/* boutons */
+.primary,.seller-next-btn,.fb-appointment .primary,.seller-appointment-preview .primary{background:var(--goldgrad)!important;color:#fff!important;border:0!important;border-radius:10px!important;font-weight:600!important;box-shadow:0 6px 16px rgba(156,113,32,.3)!important}
+.primary:hover,.seller-next-btn:hover{filter:brightness(1.08)}
+input,select,textarea{border:1px solid var(--line)!important;border-radius:8px!important;background:#fff!important}
+input:focus,select:focus,textarea:focus{outline:0!important;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(199,154,59,.22)!important}
+a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+@media(max-width:600px){.seller-dashboard-hero{min-height:420px!important}.seller-dashboard-overlay{padding:22px!important;background:linear-gradient(180deg,rgba(15,43,34,.9),rgba(15,43,34,.55))!important}}
+</style></head>
 <body>
 <div class="fb-wrap">
 <section class="fb-card">
@@ -472,7 +508,7 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
 
   <div class="seller-space">
     <div class="seller-dashboard-hero jml-architecture">
-      <img class="seller-dashboard-photo" src="/assets/charleville-hero.svg?v=3.5.0" alt="Paysage des Ardennes" loading="eager" decoding="async">
+      <img class="seller-dashboard-photo" src="/assets/ardenne-hero.jpg?v=3.6.0" alt="Paysage des Ardennes" loading="eager" decoding="async">
       <div class="seller-dashboard-overlay">
         <div class="seller-dashboard-kicker">JML IMMOBILIER · ARDENNES</div>
         <h3>Votre espace vendeur</h3>
@@ -961,8 +997,7 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
  function updateSellerNextAction(list){
    const done=Array.isArray(list)?list.map(Number):[];
    const total=6,n=done.length;
-   const title=document.getElementById("sellerNextTitle"),copy=document.getElementById("sellerNextText"),icon=document.getElementById("sellerNextIcon"),progress=document.getElementById("sellerNextProgress"),btn=document.getElementById("sellerNextBtn");
-   if(!title||!copy)return;
+   const title=document.getElementById("sellerNextTitle"),copy=document.getElementById("sellerNextText"),icon=document.getElementById("sellerNextIcon"),progress=document.getElementById("sellerNextProgress"),btn=document.getElementById("sellerNextBtn");   if(!title||!copy)return;
    const steps=[
      ["🏠","Commencez par préparer les informations sur votre bien.","Surface, pièces, équipements et éléments importants à connaître.","#sellerChecklistGrid"],
      ["📄","Préparez vos documents utiles.","Titre de propriété, diagnostics et documents disponibles.","#sellerChecklistGrid"],
