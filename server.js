@@ -1149,7 +1149,7 @@ function ademeRowAddressParts(row){
   }
   return {label,street:parsedStreet,number:parsedNumber,city,postal,cityCode};
 }
-function scoreAdemeAddress(row,address,city){
+function scoreAdemeAddress(row,address,city,postal=""){
   const parts=ademeRowAddressParts(row);
   const raw=String(address||"").trim();
   const target=normalizeAddress(raw);
@@ -1239,7 +1239,7 @@ async function getAdemeDpeByAddress(address,city="",postal=""){
       const rows=await getAdemeStreetRows(targetPostal,targetStreet,targetNumber,rawStreetQuery);
       for(const row of rows){
         const dpe=extractDpeFromAdemeRow(row); if(!dpe)continue;
-        const match=scoreAdemeAddress(row,raw,city);
+        const match=scoreAdemeAddress(row,raw,city,targetPostal);
         if(match.score>bestScore){
           bestScore=match.score;
           best={dpe,source:"ADEME DPE",address:match.parts.label||[match.parts.number,match.parts.street,match.parts.postal,match.parts.city].filter(Boolean).join(" "),matchScore:match.score,matchLevel:match.score>=120?"Adresse exacte":match.score>=90?"Numéro + voie":match.score>=55?"Voie correspondante":"Commune seulement"};
@@ -1266,7 +1266,7 @@ async function getAdemeDpeByAddress(address,city="",postal=""){
         const rows=Array.isArray(payload?.results)?payload.results:Array.isArray(payload?.data)?payload.data:[];
         for(const row of rows){
           const dpe=extractDpeFromAdemeRow(row); if(!dpe)continue;
-          const match=scoreAdemeAddress(row,raw,city);
+          const match=scoreAdemeAddress(row,raw,city,targetPostal);
           if(match.score>bestScore){
             bestScore=match.score;
             best={dpe,source:"ADEME DPE",address:match.parts.label||[match.parts.number,match.parts.street,match.parts.postal,match.parts.city].filter(Boolean).join(" "),matchScore:match.score,matchLevel:match.score>=120?"Adresse exacte":match.score>=90?"Numéro + voie":match.score>=55?"Voie correspondante":"Commune seulement"};
