@@ -595,7 +595,7 @@ async function getCommuneMarketData(city,code){
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Appartement') AS apartment_price,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY (price / NULLIF(land_surface,0))) FILTER (WHERE property_type='Terrain' AND land_surface>0) AS terrain_price
         FROM jml_dvf_sales
-        WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months'`,[communeCode]);
+        WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '48 months'`,[communeCode]);
       const s=summary.rows[0]||{};
       if(Number(s.transactions||0)>0){
         const recent=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,
@@ -1316,18 +1316,21 @@ app.get("/api/territory-summary", async (req,res) => {
         : isSellerLand
           ? Number(market?.terrainPrice)
           : Number(market?.communalPrice);
-    const sellerSurface=sellerIsLand ? Number(landSurface) : Number(surface);
+    const sellerSurface=isSellerLand ? Number(landSurface) : Number(surface);
     const sellerHasBase=Number.isFinite(sellerBase)&&sellerBase>0;
     const sellerHasSurface=Number.isFinite(sellerSurface)&&sellerSurface>0;
     const comparableBase=Number(comparable?.weightedPriceM2);
-    const sellerValue=sellerHasBase&&sellerHasSurface
-      ? Math.round(sellerBase*sellerSurface)
-      : (sellerIsLand&&Number.isFinite(comparableBase)&&comparableBase>0&&sellerHasSurface
-        ? Math.round(comparableBase*sellerSurface) : null);
+    const comparableCount=Number(comparable?.valuationSales?.length || comparable?.matchCount || 0);
+    const useComparableReference=Number.isFinite(comparableBase)&&comparableBase>0&&comparableCount>=5;
+    const referenceBase=useComparableReference?comparableBase:sellerBase;
+    const referenceSource=useComparableReference?"Ventes DVF comparables":"Référence communale";
+    const sellerValue=sellerHasSurface&&Number.isFinite(referenceBase)&&referenceBase>0
+      ? Math.round(referenceBase*sellerSurface)
+      : null;
     const sellerReference={
-      available:sellerHasBase,
+      available:Number.isFinite(referenceBase)&&referenceBase>0,
       type:sellerType,
-      basePriceM2:sellerHasBase?sellerBase:null,
+      basePriceM2:Number.isFinite(referenceBase)&&referenceBase>0?referenceBase:null,
       surface:sellerHasSurface?sellerSurface:null,
       landSurface: sellerIsLand && sellerHasSurface ? sellerSurface : (Number.isFinite(Number(landSurface))&&Number(landSurface)>0?Number(landSurface):null),
       referenceValue:sellerValue,
@@ -1336,12 +1339,18 @@ app.get("/api/territory-summary", async (req,res) => {
         high:sellerValue!==null?Math.round(sellerValue*1.15):null,
         marginPct:15
       },
-      transactions:Number.isFinite(Number(market?.transactions))?Number(market.transactions):null,
+      transactions:useComparableReference?comparableCount:(Number.isFinite(Number(market?.transactions))?Number(market.transactions):null),
+      communalTransactions:Number.isFinite(Number(market?.transactions))?Number(market.transactions):null,
+      communalBasePriceM2:sellerBase,
+      comparableBasePriceM2:Number.isFinite(comparableBase)&&comparableBase>0?comparableBase:null,
+      referenceSource,
       history:Array.isArray(market?.history)?market.history:[],
       comparables:comparable,
-      explanation:sellerHasBase&&sellerHasSurface
-        ?"Repère construit à partir des transactions DVF disponibles pour le type de bien et de la surface renseignée. Pour un terrain, la surface foncière est utilisée comme base ; il ne constitue pas une estimation certifiée."
-        :"Le repère personnalisé sera calculé dès que le type de bien et les données de marché seront disponibles."
+      explanation:sellerHasSurface&&Number.isFinite(referenceBase)&&referenceBase>0
+        ?(useComparableReference
+          ?"Repère construit à partir des ventes DVF comparables retenues pour le type de bien, la surface, les pièces, la proximité et la récence. Le repère communal reste affiché séparément comme benchmark."
+          :"Repère communal utilisé provisoirement car le moteur ne dispose pas encore d'un nombre suffisant de ventes comparables. Ce repère n'est pas une estimation certifiée.")
+        :"Le repère personnalisé sera calculé dès que le type de bien, la surface et les données de marché seront disponibles."
     };
 
     return res.json({
