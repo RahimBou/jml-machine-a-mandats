@@ -594,6 +594,18 @@ function normalizeAssetCategories(data){
   return out;
 }
 
+function renderMajorRoads(cat,data){
+  const items=Array.isArray(cat?.items)?cat.items.slice(0,3):[];
+  if(!items.length)return "";
+  const body=items.map(x=>{
+    const parts=[x.ref,x.name].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
+    const title=parts.join(" · ")||"Axe routier";
+    const distance=Number(x.distanceKm);
+    return '<div class="road-item"><div><strong>'+esc(title)+'</strong><small>'+esc(x.type||"Grand axe routier")+'</small></div><span>'+esc(Number.isFinite(distance)?distance.toFixed(2).replace(".",",")+" km":"à proximité")+'</span></div>';
+  }).join("");
+  return '<div class="road-strip" id="road-proximity"><div class="road-head"><b>🚗 Grands axes routiers à proximité</b><span>Rayon 3 km</span></div><div class="road-list">'+body+'</div><small class="road-source">Source : '+esc(cat?.source||data?.roadSource||"OpenStreetMap / Overpass")+' · © OpenStreetMap contributors · Ces axes décrivent l’accessibilité routière et ne sont pas intégrés au calcul du prix.</small></div>';
+}
+
 function renderAssets(data){
   pageData.assets=data||null;
   cats=normalizeAssetCategories(data||{});
@@ -687,7 +699,7 @@ function renderAssets(data){
   root.innerHTML=
     '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, grands axes routiers, santé, loisirs puis services. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
     '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
-    (Array.isArray(cats.roads?.items)&&cats.roads.items.length?'<div class="road-strip" id="road-proximity"><div class="road-head"><b>🚗 Grands axes routiers à proximité</b><span>Rayon 3 km</span></div><div class="road-list">'+cats.roads.items.slice(0,3).map(x=>{const title=[x.ref,x.name].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(" · ");return '<div class="road-item"><div><strong>'+esc(title||"Axe routier")+'</strong><small>'+esc(x.type||"Grand axe routier")+'</small></div><span>'+esc(Number(x.distanceKm).toFixed(2).replace(".",",")+" km")+"</span></div>";}).join("")+"</div><small class="road-source">Source : "+esc(cats.roads.source||data?.roadSource||"OpenStreetMap / Overpass")+" · Ces axes décrivent l’accessibilité routière et ne sont pas intégrés au calcul du prix.</small></div>':"")+
+    renderMajorRoads(cats.roads,data)+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
       const cat=cats[key]||{items:[],available:false};
       const items=(Array.isArray(cat.items)?cat.items:[]).slice(0,3);
