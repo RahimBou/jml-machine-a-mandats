@@ -233,7 +233,7 @@ function normalizeExternalDvfRow(row, fallbackCity=""){
 
 async function getExternalDvfByCommune(communeCode, city=""){
   const code=String(communeCode||"").trim();
-  if(!/^\\d{5}$/.test(code)) return [];
+  if(!/^\d{5}$/.test(code)) return [];
   const key=code;
   const cached=communeExternalDvfCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return cached.rows;
@@ -547,7 +547,7 @@ async function getCommuneMarketData(city,code){
   };
 
   // 1. PostgreSQL reste la source principale lorsque les données DVF ont été importées.
-  if(pool&&/^\\d{5}$/.test(communeCode)){
+  if(pool&&/^\d{5}$/.test(communeCode)){
     try{
       const summary=await db(`SELECT COUNT(*)::int AS transactions,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS communal_price,
