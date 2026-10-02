@@ -446,6 +446,71 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
     .fb-trust{grid-template-columns:1fr;padding:16px}
     .fb-actions{align-items:stretch!important}
   }
+</style><style id="style-reference-v5">
+/* V6 — direction visuelle demandée : grand visuel Ardennes + formulaire premium */
+.fb-wrap{max-width:1280px;padding:18px 18px 70px}
+.fb-hero{
+ position:relative;overflow:hidden;min-height:540px;padding:0!important;
+ border-radius:0 0 0 0!important;border:0!important;
+ background:
+ linear-gradient(90deg,rgba(6,39,31,.96) 0%,rgba(6,39,31,.82) 34%,rgba(6,39,31,.32) 61%,rgba(6,39,31,.02) 100%),
+ url("/assets/charleville-hero.svg") center/cover!important;
+ box-shadow:none!important;
+}
+.fb-hero:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),transparent 45%,rgba(0,0,0,.18))}
+.fb-hero:after{height:3px;background:#d8b76f}
+.fb-hero .eyebrow{padding:38px 54px 0!important;margin:0 0 13px!important;font-size:11px!important;letter-spacing:.22em!important}
+.fb-hero h1{padding:0 54px!important;margin:0!important;max-width:790px!important;font-size:58px!important;line-height:1.02!important}
+.fb-hero h1::first-line{color:#fff}
+.fb-hero>p{padding:0 54px!important;margin:18px 0 0!important;max-width:680px!important;font-size:16px!important}
+.fb-hero>div:last-child{margin:24px 54px 42px!important;gap:12px!important}
+.fb-hero>div:last-child>div{
+ border:0!important;border-radius:0!important;background:transparent!important;padding:8px 18px 8px 0!important;
+ font-size:12px!important;color:#fff!important
+}
+.fb-hero>div:last-child>div:before{content:"✓";display:inline-grid;place-items:center;width:32px;height:32px;margin-right:9px;border:1px solid #d8b76f;border-radius:50%;color:#d8b76f;font-weight:900;vertical-align:middle}
+.fb-card{
+ position:relative;z-index:5;margin:-145px 70px 0!important;padding:0!important;border-radius:24px!important;
+ background:rgba(255,253,248,.98)!important;border:1px solid rgba(220,210,190,.8)!important;
+ box-shadow:0 22px 60px rgba(23,51,44,.18)!important;
+}
+.fb-card>h2{padding:38px 48px 6px!important;font-family:Georgia,"Times New Roman",serif!important;font-size:34px!important;color:#173b31}
+.fb-card>p{padding:0 48px 24px!important;max-width:760px}
+#fbLeadForm{padding:0 48px 30px!important}
+#fbLeadForm>div:not(.full){padding:6px 0}
+#fbLeadForm label{font-size:11px;font-weight:800}
+#fbLeadForm input:not([type=checkbox]),#fbLeadForm select{height:46px;box-sizing:border-box;border-radius:9px;padding:12px 14px;background:#fff;border:1px solid #d9d5cc}
+#fbLeadForm .full:nth-last-child(2){margin-top:5px}
+.fb-actions{padding-top:18px;border-top:1px solid #e8e2d7;align-items:center}
+.fb-actions .primary{background:#b88a32!important;border:0!important;border-radius:8px!important;padding:14px 25px!important;font-size:13px;box-shadow:0 7px 16px rgba(139,101,36,.2)}
+.fb-trust{
+ margin:28px 70px 0!important;padding:22px 8px!important;background:transparent!important;color:#173b31!important;
+ display:grid;grid-template-columns:repeat(4,1fr)!important;gap:0!important
+}
+.fb-trust-item{padding:0 22px;min-height:74px;border-right:1px solid #d8ccb4}
+.fb-trust-item:last-child{border-right:0}
+.fb-trust-item b{color:#173b31!important;font-size:13px}
+.fb-trust-item span{color:#68716c!important;font-size:11px}
+.fb-trust-icon{width:42px;height:42px;background:#f5e9ca;color:#9d7735;border:1px solid #d8b76f;margin-bottom:8px}
+@media(max-width:760px){
+ .fb-wrap{padding:10px 10px 48px}
+ .fb-hero{min-height:500px}
+ .fb-hero .eyebrow{padding:28px 22px 0!important}
+ .fb-hero h1{padding:0 22px!important;font-size:39px!important}
+ .fb-hero>p{padding:0 22px!important;font-size:13px!important}
+ .fb-hero>div:last-child{margin:18px 22px 30px!important;display:grid!important;grid-template-columns:1fr!important}
+ .fb-card{margin:-85px 12px 0!important;border-radius:20px!important}
+ .fb-card>h2{padding:28px 20px 6px!important;font-size:27px!important}
+ .fb-card>p{padding:0 20px 20px!important}
+ #fbLeadForm{padding:0 20px 22px!important}
+ .fb-trust{margin:18px 12px 0!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
+ .fb-trust-item{padding:10px;border-right:0}
+}
+@media(max-width:430px){
+ .fb-trust{grid-template-columns:1fr!important}
+ .fb-trust-item{border-bottom:1px solid #d8ccb4}
+ .fb-trust-item:last-child{border-bottom:0}
+}
 </style></head>
 <body>
 <div class="fb-wrap">
