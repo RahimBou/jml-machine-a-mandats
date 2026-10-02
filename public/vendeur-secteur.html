@@ -615,7 +615,7 @@ function renderAssets(data){
   // les équipements d'une même catégorie. Les taxis et repères génériques
   // restent accessibles dans le détail mais ne monopolisent plus les 5 premiers.
   const categoryPriority={
-    schools:1, commerces:2, transport:3, roads:4, health:5, parks:6, services:7
+    schools:1, commerces:2, transport:3, health:4, parks:5, services:6
   };
   const itemPriority={
     schools:[/école|collège|lycée|crèche|maternelle|primaire/i,1],
@@ -662,11 +662,12 @@ function renderAssets(data){
     const categorySig=String(item.label||item.key).toLowerCase();
     if(usedNames.has(sig))continue;
     if(item.generic)continue;
+    if(item.key==="roads")continue;
     if(usedCategories.has(categorySig))continue;
     usedNames.add(sig);
     usedCategories.add(categorySig);
     selected.push(item);
-    if(selected.length>=6)break;
+    if(selected.length>=5)break;
   }
   // Si certaines catégories n'ont aucun résultat pertinent, on complète
   // avec les meilleurs repères restants.
@@ -678,7 +679,7 @@ function renderAssets(data){
       usedNames.add(sig);
       usedCategories.add(categorySig);
       selected.push(item);
-      if(selected.length>=6)break;
+      if(selected.length>=5)break;
     }
   }
 
@@ -697,7 +698,7 @@ function renderAssets(data){
     return;
   }
   root.innerHTML=
-    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, grands axes routiers, santé, loisirs puis services. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
+    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, santé et loisirs. Les grands axes routiers sont présentés séparément pour distinguer clairement l’accessibilité du cadre de vie. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
     '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
     renderMajorRoads(cats.roads,data)+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
@@ -708,7 +709,9 @@ function renderAssets(data){
     }).join("")+'</div></details>';
   const proof=selected.slice(0,4);
   $("#proof").innerHTML=proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("");
-  $("#sellingPitch").textContent="L'adresse bénéficie de plusieurs repères accessibles à proximité : "+selected.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+" . Ces éléments peuvent être utilisés pour décrire concrètement le quotidien d'un acquéreur, sans les présenter comme une majoration automatique du prix.";
+  const roadItems=Array.isArray(cats.roads?.items)?cats.roads.items.slice(0,2):[];
+  const roadText=roadItems.length?" L’accessibilité routière est également à relever, avec "+roadItems.map(x=>[x.ref,x.name].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(" · ")+" à "+(Number.isFinite(Number(x.distanceKm))?Number(x.distanceKm).toFixed(2).replace(".",",")+" km":"proximité")).join(" et ")+".":"";
+  $("#sellingPitch").textContent="L'adresse bénéficie de plusieurs repères accessibles à proximité : "+selected.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+"."+roadText+" Ces éléments servent à décrire concrètement le cadre de vie et l’accessibilité, sans les présenter comme une majoration automatique du prix.";
 }
 
 function sellerAssetHighlights(){return highlights.slice(0,5);}
