@@ -8,6 +8,32 @@ const { Pool } = require("pg");
 const registerPublicEventsRoute = require("./events");
 
 const app = express();
+
+// Réseau externe : certaines API publiques peuvent fermer brutalement leur flux
+// (ECONNRESET / AbortError / "terminated"). On journalise ces erreurs réseau
+// transitoires sans faire tomber tout le serveur Render.
+process.on("uncaughtException",(error)=>{
+  const code=String(error?.code||error?.cause?.code||"");
+  const message=String(error?.message||error||"");
+  const transient=code==="ECONNRESET" || code==="UND_ERR_SOCKET" || /terminated|aborted due to timeout/i.test(message);
+  if(transient){
+    console.warn("JML réseau externe transitoire — processus conservé:",message,code);
+    return;
+  }
+  console.error("JML uncaughtException:",error);
+  process.exit(1);
+});
+process.on("unhandledRejection",(reason)=>{
+  const code=String(reason?.code||reason?.cause?.code||"");
+  const message=String(reason?.message||reason||"");
+  const transient=code==="ECONNRESET" || code==="UND_ERR_SOCKET" || /terminated|aborted due to timeout/i.test(message);
+  if(transient){
+    console.warn("JML rejet réseau externe transitoire — processus conservé:",message,code);
+    return;
+  }
+  console.error("JML unhandledRejection:",reason);
+});
+
 const PORT = Number(process.env.PORT || 10000);
 const VERSION = "3.6.0";
 const BUILD_MARKER = "dvf-postgres-comparables-robust-v9-seller";
@@ -81,6 +107,20 @@ const pool = hasDatabase ? new Pool({
 
 const memory = { prospects: new Map(), leads: new Map(), sellerSpaces: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
+function stripHtml(value){
+  return String(value||"")
+    .replace(/<script[\\s\\S]*?<\\/script>/gi," ")
+    .replace(/<style[\\s\\S]*?<\\/style>/gi," ")
+    .replace(/<[^>]+>/g," ")
+    .replace(/&nbsp;/gi," ")
+    .replace(/&amp;/gi,"&")
+    .replace(/&quot;/gi,'\"')
+    .replace(/&#39;|&apos;/gi,"'")
+    .replace(/&eacute;/gi,"é").replace(/&egrave;/gi,"è").replace(/&ecirc;/gi,"ê")
+    .replace(/&agrave;/gi,"à").replace(/&acirc;/gi,"â").replace(/&ocirc;/gi,"ô")
+    .replace(/&ugrave;/gi,"ù").replace(/&ucirc;/gi,"û").replace(/&ccedil;/gi,"ç")
+    .replace(/\\s+/g," ").trim();
+}
 registerPublicEventsRoute(app, clean);
 
 const territoryAssetCache = new Map();
