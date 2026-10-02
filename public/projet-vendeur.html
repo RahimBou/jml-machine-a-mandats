@@ -8,7 +8,7 @@
 <meta property="og:title" content="JML Immobilier — Votre espace vendeur">
 <meta property="og:description" content="Préparez simplement votre projet de vente avec JML Immobilier dans les Ardennes.">
 <title>JML Immobilier — Votre espace vendeur</title>
-<link rel="stylesheet" href="/styles.css?v=1.8.0">
+<!-- Styles intégrés dans cette page pour éviter une dépendance CSS externe manquante. -->
 <style>
 :root{--green:#0f2b22;--gold:#c79a3b;--gold2:#e9c677;--cream:#faf7f2;--ink:#14231d;--muted:#6b6f6a;--line:#e6e0d3}
 *,*::before,*::after{box-sizing:border-box}
@@ -627,6 +627,22 @@ h1 span{color:var(--gold2);display:block}
 @media(max-width:1140px){.card,.hero-in{max-width:calc(100% - 40px)}.trust{max-width:calc(100% - 40px)}}
 @media(max-width:799px){.script{display:none}.hero{padding:28px 20px 80px}.hero-in{max-width:none}.hero p{font-size:14px}.badges{gap:14px}.badge{font-size:12px}.card{max-width:none;margin:-48px 12px 0;padding:20px;border-radius:16px}.top{display:block}.top h2{font-size:29px}.local{width:100%;margin-top:14px}#fbLeadForm{grid-template-columns:1fr;gap:13px}.extra,.consent,.submit-row,.message{grid-column:1}.extra-grid{grid-template-columns:1fr 1fr}.trust{max-width:none;margin:0 12px;grid-template-columns:1fr 1fr}.trust-item{padding:12px;border-right:0;border-bottom:1px solid #d6c9ad}.trust-item:nth-child(odd){border-right:1px solid #d6c9ad}.trust-item:nth-last-child(-n+2){border-bottom:0}}
 @media(max-width:520px){h1{font-size:35px}.hero{padding-bottom:78px}.badges{display:grid;gap:9px}.card{margin-top:-42px;padding:18px}.top h2{font-size:27px}.extra-grid{grid-template-columns:1fr}.submit-row{display:flex;flex-direction:column;align-items:stretch}.privacy{max-width:none;margin:0}.submit{width:100%}.trust{grid-template-columns:1fr;margin:0}.trust-item,.trust-item:nth-child(odd){border-right:0;border-bottom:1px solid #d6c9ad}.trust-item:last-child{border-bottom:0}}
+</style>
+<style id="jml-corrections-2026-10">
+/* Corrections finales — formulaire vendeur */
+.extra{display:none!important;grid-column:1/-1;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:#faf9f6;border:1px solid #dedbd4;border-radius:9px}
+.extra.on{display:grid!important}
+.extra-field label{display:block;font-size:11px;font-weight:700;margin:0 0 5px;color:#34463f}
+.extra-field .in{height:42px}
+.bottom{grid-column:1/-1}
+.chk{align-items:flex-start}
+.chk input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:20px!important;height:20px!important;min-width:20px;flex:0 0 20px;margin:1px 0 0!important;border:1px solid #c9c1b2;border-radius:4px;background:#fff;cursor:pointer}
+.chk input[type="checkbox"]:checked{background:#c79a3b;border-color:#c79a3b;box-shadow:inset 0 0 0 4px #fff}
+.ok{margin-top:0}
+@media(max-width:799px){
+  .extra{grid-template-columns:1fr}
+  .chk{font-size:11px}
+}
 </style></head>
 <body>
 <header class="hero">
@@ -662,7 +678,10 @@ h1 span{color:var(--gold2);display:block}
     <div class="f"><span class="n">05</span><div><label for="type">Type de bien</label><div class="in"><select id="type"><option>Maison</option><option>Appartement</option><option>Terrain</option><option>Immeuble</option><option>Autre</option></select></div></div></div>
     <div class="f"><span class="n">06</span><div><label for="delai">Quand envisagez-vous votre projet ?</label><div class="in"><select id="delai"><option>Dans les 3 mois</option><option>Dans les 6 mois</option><option>Dans l'année</option><option>Je me renseigne</option></select></div></div></div>
     <button type="button" class="opt" id="opt" aria-expanded="false"><b>+</b>Ajouter quelques caractéristiques du bien <em>(facultatif)</em></button>
-    <div class="extra" id="extra"><div class="in"><input placeholder="Surface (m²)"></div><div class="in"><input placeholder="Nombre de pièces"></div></div>
+    <div class="extra" id="extra" aria-hidden="true">
+  <div class="extra-field"><label for="surface">Surface (m²)</label><div class="in"><input id="surface" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Ex. 120"></div></div>
+  <div class="extra-field"><label for="pieces">Nombre de pièces</label><div class="in"><input id="pieces" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. 5"></div></div>
+</div>
     <div class="bottom"><label class="chk"><input type="checkbox" required>J'accepte que JML Immobilier utilise ces informations pour me recontacter au sujet de mon projet immobilier.</label><button class="btn" type="submit">Échanger sur mon projet →</button></div>
     <div class="ok" id="ok">Merci ! Je vous recontacte très prochainement.</div>
   </form>
@@ -674,8 +693,19 @@ h1 span{color:var(--gold2);display:block}
   <div class="ft"><div class="ico">♙</div><div><strong>Vous gardez la main</strong><small>Le premier échange sert à comprendre votre projet, pas à vous engager.</small></div></div>
 </section>
 <script>
-document.getElementById('opt').onclick=function(){var e=document.getElementById('extra'),o=e.classList.toggle('on');this.setAttribute('aria-expanded',o)};
-document.getElementById('form').onsubmit=function(ev){ev.preventDefault();document.getElementById('ok').style.display='block'};
+document.getElementById('opt').onclick=function(){
+  var e=document.getElementById('extra'),o=e.classList.toggle('on');
+  this.setAttribute('aria-expanded',o);
+  e.setAttribute('aria-hidden',!o);
+};
+document.getElementById('form').onsubmit=function(ev){
+  ev.preventDefault();
+  if(!this.checkValidity()){this.reportValidity();return;}
+  var ok=document.getElementById('ok');
+  ok.style.display='block';
+  ok.textContent='Merci ! Votre demande a bien été prise en compte. Je vous recontacte très prochainement.';
+  ok.scrollIntoView({behavior:'smooth',block:'nearest'});
+};
 </script>
 </body>
 </html>
