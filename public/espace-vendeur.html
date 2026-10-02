@@ -455,6 +455,15 @@ body{background:linear-gradient(180deg,#f7f2e8 0%,#fbf9f4 38%,#f3eee4 100%);colo
  .seller-quick-card>span:not(.seller-quick-icon){padding:18px 12px 8px!important}
  .seller-quick-card>span small{font-size:10px}
 }
+
+/* V4.2 — finition texte et densite des cartes */
+.seller-quick-card{min-height:190px!important}
+.seller-quick-card>span:not(.seller-quick-icon){padding:16px 15px 5px!important}
+.seller-quick-card>span strong{font-size:15px!important;line-height:1.2!important;letter-spacing:-.01em}
+.seller-quick-card>span small{font-size:10.5px!important;line-height:1.4!important;max-width:95%!important}
+.seller-quick-card em{font-style:normal!important;font-size:12px!important;font-weight:700!important}
+@media(max-width:760px){.seller-quick-card{min-height:185px!important}}
+@media(max-width:430px){.seller-quick-card{min-height:178px!important}.seller-quick-card>span:not(.seller-quick-icon){padding:15px 12px 5px!important}}
 </style>
 <style>
 /* JML — cartes d'accès vendeur vers pages dédiées */
@@ -571,19 +580,19 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offs
     <div class="seller-quick-grid">
       <a class="seller-quick-card" id="sellerQuickSector" href="/vendeur-secteur.html">
         <img class="seller-quick-photo" src="/assets/guide-hero.svg?v=3.4.9" alt="Ardennes — votre secteur" loading="eager" decoding="async">
-        <span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Analyse du marché local de votre secteur.</small></span><em>→</em>
+        <span class="seller-quick-icon">📍</span><span><strong>Votre secteur</strong><small id="fbSectorText">Découvrez les prix et les ventes autour de votre bien.</small></span><em>→</em>
       </a>
       <a class="seller-quick-card" id="sellerQuickProperty" href="/vendeur-bien.html">
         <img class="seller-quick-photo" src="/assets/guide-project-photo.svg?v=3.4.9" alt="Préparation de votre bien" loading="lazy" decoding="async">
-        <span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, terrain, état, travaux et équipements…</small></span><em>→</em>
+        <span class="seller-quick-icon">🏠</span><span><strong>Votre bien</strong><small id="fbPropertyText">Surface, état, travaux et caractéristiques de votre bien.</small></span><em>→</em>
       </a>
       <a class="seller-quick-card" id="sellerQuickCalendar" href="/vendeur-calendrier.html">
         <img class="seller-quick-photo" src="/assets/guide-calendar-photo.svg?v=3.4.9" alt="Calendrier de votre projet" loading="lazy" decoding="async">
-        <span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre horizon, les prochaines étapes et le rendez-vous.</small></span><em>→</em>
+        <span class="seller-quick-icon">🗓</span><span><strong>Votre calendrier</strong><small id="fbHorizonText">Votre calendrier et les prochaines étapes de votre projet.</small></span><em>→</em>
       </a>
       <a class="seller-quick-card" id="sellerQuickAdvice" href="/vendeur-conseils.html">
         <img class="seller-quick-photo" src="/assets/guide-summary-photo.svg?v=3.4.9" alt="Conseils vendeurs" loading="lazy" decoding="async">
-        <span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils simples et concrets pour votre projet.</small></span><em>→</em>
+        <span class="seller-quick-icon">💡</span><span><strong>Conseils vendeurs</strong><small>Des conseils concrets pour préparer votre vente.</small></span><em>→</em>
       </a>
     </div>
 
