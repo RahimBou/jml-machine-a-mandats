@@ -1290,7 +1290,8 @@ async function buildComparableSales(market,property){
   for(let i=0;i<dpeRows.length;i+=4){
     const batch=dpeRows.slice(i,i+4);
     const enriched=await Promise.all(batch.map(async sale=>{
-      const found=await getAdemeDpeByAddress(sale.address,sale.city||city);
+      const dpeAddress=[sale.address,sale.postal].filter(Boolean).join(" ").trim();
+      const found=await getAdemeDpeByAddress(dpeAddress||sale.address,sale.city||city);
       sale.dpeChecked=true;
       return {sale,found};
     }));
