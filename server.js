@@ -36,6 +36,7 @@ process.on("unhandledRejection",(reason)=>{
 
 const PORT = Number(process.env.PORT || 10000);
 const VERSION = "3.6.0";
+// DPE BAN lookup hardening pending
 const BUILD_MARKER = "dvf-postgres-comparables-robust-v9-seller";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
