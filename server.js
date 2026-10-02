@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.4.8";
-const BUILD_MARKER = "dvf-postgres-monthly-09-seller-assets";
+const VERSION = "3.5.0";
+const BUILD_MARKER = "dvf-postgres-terrain-surface-10-seller";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -472,14 +472,16 @@ async function getCommuneMarketData(city,code){
   const key="pg1|"+normalizeSearchCity(cleanCity)+"|"+communeCode;
   const cached=communeMarketCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return {...cached.data,cache:true};
-  const empty={city:cleanCity,found:false,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:"Aucune donnée DVF importée n'est encore disponible pour cette commune.",recentSales:[],recentSalesSource:"PostgreSQL DVF local",nearby:[],history:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null};
+  const empty={city:cleanCity,found:false,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:"Aucune donnée DVF importée n'est encore disponible pour cette commune.",recentSales:[],recentSalesSource:"PostgreSQL DVF local",nearby:[],history:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null,terrainPrice:null};
   if(!pool||!/^\d{5}$/.test(communeCode)) return empty;
   try{
-    const summary=await db(`SELECT COUNT(*)::int AS transactions,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS communal_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Maison') AS house_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Appartement') AS apartment_price FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months'`,[communeCode]);
+    const summary=await db(`SELECT COUNT(*)::int AS transactions,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS communal_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Maison') AS house_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Appartement') AS apartment_price,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY (price / NULLIF(land_surface,0))) FILTER (WHERE property_type='Terrain' AND land_surface>0) AS terrain_price
+      FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months'`,[communeCode]);
     const recent=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months' ORDER BY sale_date DESC LIMIT 12`,[communeCode]);
     const history=await db(`SELECT EXTRACT(YEAR FROM sale_date)::int AS year,COUNT(*)::int AS transactions,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS value FROM jml_dvf_sales WHERE commune_code=$1 GROUP BY EXTRACT(YEAR FROM sale_date) ORDER BY year`,[communeCode]);
     const s=summary.rows[0]||{};
-    const data={city:cleanCity,found:Number(s.transactions||0)>0,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:Number(s.transactions||0)>0?"Repère communal calculé directement à partir des transactions DVF importées dans PostgreSQL.":"Aucune transaction DVF importée n'est disponible pour cette commune.",recentSales:recent.rows,recentSalesSource:"DVF local JML / PostgreSQL",nearby:[],history:history.rows.map(x=>({year:x.year,value:x.value!=null?Math.round(Number(x.value)):null,transactions:x.transactions})),transactions:Number(s.transactions||0)||null,communalPrice:s.communal_price!=null?Math.round(Number(s.communal_price)):null,housePrice:s.house_price!=null?Math.round(Number(s.house_price)):null,apartmentPrice:s.apartment_price!=null?Math.round(Number(s.apartment_price)):null,period:"DVF importé / 24 derniers mois"};
+    const data={city:cleanCity,found:Number(s.transactions||0)>0,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:Number(s.transactions||0)>0?"Repère communal calculé directement à partir des transactions DVF importées dans PostgreSQL.":"Aucune transaction DVF importée n'est disponible pour cette commune.",recentSales:recent.rows,recentSalesSource:"DVF local JML / PostgreSQL",nearby:[],history:history.rows.map(x=>({year:x.year,value:x.value!=null?Math.round(Number(x.value)):null,transactions:x.transactions})),transactions:Number(s.transactions||0)||null,communalPrice:s.communal_price!=null?Math.round(Number(s.communal_price)):null,housePrice:s.house_price!=null?Math.round(Number(s.house_price)):null,apartmentPrice:s.apartment_price!=null?Math.round(Number(s.apartment_price)):null,terrainPrice:s.terrain_price!=null?Math.round(Number(s.terrain_price)):null,period:"DVF importé / 24 derniers mois"};
     communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data}); return {...data,cache:false};
   }catch(error){console.warn("JML PostgreSQL DVF market:",error.message);return {...empty,message:"La base DVF PostgreSQL est temporairement indisponible."};}
 }
@@ -487,7 +489,7 @@ async function getLocalDvfComparables(origin,maxKm=3){
   if(!pool||!origin)return [];
   const lat=Number(origin.lat),lon=Number(origin.lon); if(!Number.isFinite(lat)||!Number.isFinite(lon))return [];
   const dLat=maxKm/111,dLon=maxKm/(111*Math.max(0.2,Math.cos(lat*Math.PI/180)));
-  const result=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source FROM jml_dvf_sales WHERE sale_date>=CURRENT_DATE-INTERVAL '24 months' AND property_type IN ('Maison','Appartement') AND latitude BETWEEN $1 AND $2 AND longitude BETWEEN $3 AND $4 ORDER BY sale_date DESC LIMIT 3000`,[lat-dLat,lat+dLat,lon-dLon,lon+dLon]);
+  const result=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source FROM jml_dvf_sales WHERE sale_date>=CURRENT_DATE-INTERVAL '24 months' AND property_type IN ('Maison','Appartement','Terrain') AND latitude BETWEEN $1 AND $2 AND longitude BETWEEN $3 AND $4 ORDER BY sale_date DESC LIMIT 3000`,[lat-dLat,lat+dLat,lon-dLon,lon+dLon]);
   return result.rows;
 }
 
@@ -771,7 +773,8 @@ function haversineKm(a,b){
 }
 function classifyDvfType(value,code){
   const v=String(value||"").toLowerCase(), c=String(code||"").toLowerCase();
-  if(/appartement|apartment/.test(v)||c==="2") return "Appartement";
+  if(/terrain|land|parcelle/.test(v)||c==="3") return "Terrain";
+  if(/appartement|apartment|studio|duplex|loft/.test(v)||c==="2") return "Appartement";
   if(/maison|house/.test(v)||c==="1") return "Maison";
   return null;
 }
@@ -791,7 +794,14 @@ function parseSaleDate(v){
 async function buildComparableSales(market,property){
   const city=String(property?.city||market?.city||"").trim();
   const typeWanted=classifyDvfType(property?.propertyType,"");
-  const surface=Number(property?.surface), rooms=Number(property?.rooms);
+  const surface=Number(property?.surface);
+  const landSurface=Number(property?.landSurface ?? property?.terrain);
+  const rooms=Number(property?.rooms);
+  const isLand=typeWanted==="Terrain";
+  const targetSurface=isLand
+    ? landSurface
+    : (Number.isFinite(surface)&&surface>0 ? surface : null);
+
   let origin=await geocodeAddress(property?.address,city);
   let originSource="Adresse";
   if(!origin){
@@ -806,20 +816,15 @@ async function buildComparableSales(market,property){
   }
   if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Localisation indisponible",origin:null,message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."};
 
-  // On privilégie les biens réellement comparables : même type, surface proche,
-  // nombre de pièces proche, puis proximité et récence. On élargit uniquement
-  // si le nombre de ventes strictes est insuffisant.
   const tiers=[
-    {radius:500,months:24,surfaceGap:.20,roomsGap:2,label:"500 m / 24 mois · comparables proches"},
-    {radius:1000,months:24,surfaceGap:.25,roomsGap:2,label:"1 km / 24 mois · élargissement maximum"}
+    {radius:500,months:24,surfaceGap:isLand?.35:.20,landGap:isLand?.35:.50,roomsGap:2,label:isLand?"500 m / 24 mois · terrains comparables":"500 m / 24 mois · comparables proches"},
+    {radius:1000,months:24,surfaceGap:isLand?.50:.25,landGap:isLand?.50:.70,roomsGap:2,label:isLand?"1 km / 24 mois · élargissement terrains":"1 km / 24 mois · élargissement maximum"}
   ];
+
   let local=[];
-  try{
-    local=await getLocalDvfComparables(origin,3);
-  }catch(error){
-    console.warn("JML comparables DVF local isolés:",error.message);
-    local=[];
-  }
+  try{ local=await getLocalDvfComparables(origin,3); }
+  catch(error){ console.warn("JML comparables DVF local isolés:",error.message); local=[]; }
+
   const seen=new Set(), candidates=[];
   const now=Date.now();
   const streetKey=v=>normalizeAddress(v).replace(/\b\d+\b/g,"").trim();
@@ -831,28 +836,43 @@ async function buildComparableSales(market,property){
     if(!Number.isFinite(dist)||dist>tier.radius/1000)return null;
 
     const saleSurface=Number(sale.surface);
-    const gap=Number.isFinite(surface)&&surface>0&&saleSurface>0?Math.abs(saleSurface-surface)/surface:null;
+    const saleLand=Number(sale.land);
+    const saleComparableSurface=isLand ? saleLand : saleSurface;
+    const gap=Number.isFinite(targetSurface)&&targetSurface>0&&saleComparableSurface>0
+      ? Math.abs(saleComparableSurface-targetSurface)/targetSurface : null;
+
     if(gap!==null&&gap>tier.surfaceGap)return null;
 
+    const landGap=(!isLand && Number.isFinite(landSurface)&&landSurface>0&&saleLand>0)
+      ? Math.abs(saleLand-landSurface)/landSurface : null;
+    if(landGap!==null&&landGap>tier.landGap)return null;
+
     const saleRooms=Number(sale.rooms);
-    const roomDiff=Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0?Math.abs(saleRooms-rooms):null;
+    const roomDiff=!isLand&&Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0
+      ? Math.abs(saleRooms-rooms) : null;
     if(roomDiff!==null&&roomDiff>tier.roomsGap)return null;
 
     const age=ageMonths(sale.date);
     if(age>tier.months)return null;
 
+    const effectivePriceM2=isLand
+      ? ((Number.isFinite(Number(sale.price))&&saleLand>0) ? Number(sale.price)/saleLand : Number(sale.pricePerM2))
+      : Number(sale.pricePerM2);
+
     const distanceScore=Math.max(0,1-dist/(tier.radius/1000))*30;
     const recencyScore=Math.max(0,1-age/tier.months)*20;
     const surfaceScore=gap===null?10:Math.max(0,1-gap/tier.surfaceGap)*25;
+    const landScore=isLand?0:(landGap===null?4:Math.max(0,1-landGap/tier.landGap)*8);
     const roomsScore=roomDiff===null?5:Math.max(0,1-roomDiff/Math.max(1,tier.roomsGap))*10;
-    const sameStreet=streetKey(sale.address)===streetKey(property?.address);
-    const scoreRaw=distanceScore+recencyScore+surfaceScore+roomsScore+(sameStreet?5:0)+(Number.isFinite(Number(sale.pricePerM2))?10:0);
+    const scoreRaw=distanceScore+recencyScore+surfaceScore+landScore+roomsScore+(streetKey(sale.address)===streetKey(property?.address)?5:0)+(Number.isFinite(effectivePriceM2)?10:0);
 
     return {
       ...sale,
-      score:Number(Math.min(100,scoreRaw/100*100).toFixed(1)),
-      sameStreet,
+      pricePerM2:Number.isFinite(effectivePriceM2)?Number(effectivePriceM2):null,
+      score:Number(Math.min(100,scoreRaw).toFixed(1)),
+      sameStreet:streetKey(sale.address)===streetKey(property?.address),
       surfaceGap:gap,
+      landGap,
       roomDiff,
       ageMonths:Number(age.toFixed(1)),
       tier:tier.label
@@ -861,13 +881,12 @@ async function buildComparableSales(market,property){
 
   const sourceRows=[...(Array.isArray(market?.recentSales)?market.recentSales:[]),...(Array.isArray(local)?local:[])];
   for(const sale of sourceRows){
-    const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface].join("|"));
+    const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface,sale.land].join("|"));
     if(seen.has(id))continue;
     seen.add(id);
     const distanceKm=haversineKm(origin,{lat:Number(sale.lat),lon:Number(sale.lon)});
     if(distanceKm==null)continue;
     const normalized={...sale,distanceKm:Number(distanceKm.toFixed(3)),pricePerM2:Number(sale.pricePerM2||sale.price_per_m2||0)||null};
-    // Une vente n'entre qu'une seule fois : premier niveau de critères qui la valide.
     for(const tier of tiers){
       const x=scoreSale(normalized,tier);
       if(x){candidates.push(x);break;}
@@ -900,9 +919,11 @@ async function buildComparableSales(market,property){
     searchScope:display.length?display[display.length-1].tier:"Aucun comparable répondant aux critères",
     origin,originSource,
     source:"DVF local JML / PostgreSQL",
-    method:"Comparables recherchés sur le même type de bien, avec surface et nombre de pièces proches, dans un rayon de 500 m puis 1 km maximum. Les ventes les plus proches et les plus récentes sont privilégiées.",
-    criteria:{type:typeWanted||null,surface:surface||null,rooms:rooms||null,maxRadiusKm:1},
-    engineVersion:"8.1.0-PG-DVF-COMPARABLES",
+    method:isLand
+      ?"Comparables terrains recherchés sur le même type de bien, en utilisant la surface de terrain, la proximité et la récence des ventes."
+      :"Comparables recherchés sur le même type de bien, avec surface habitable, surface de terrain lorsqu'elle est renseignée et nombre de pièces proches, dans un rayon de 500 m puis 1 km maximum.",
+    criteria:{type:typeWanted||null,surface:surface||null,landSurface:landSurface||null,rooms:rooms||null,maxRadiusKm:1},
+    engineVersion:"8.2.0-PG-DVF-COMPARABLES-TERRAIN",
     diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0}
   };
 }
@@ -912,6 +933,7 @@ app.get("/api/territory-comparables", async (req,res) => {
   const address=clean(req.query.address,180);
   const propertyType=clean(req.query.propertyType,60);
   const surface=clean(req.query.surface,40);
+  const landSurface=clean(req.query.landSurface ?? req.query.terrain,40);
   const rooms=clean(req.query.rooms,40);
   if(!city) return res.status(400).json({ok:false,code:"JML-COMP-400",error:"Commune requise."});
   try{
@@ -921,7 +943,7 @@ app.get("/api/territory-comparables", async (req,res) => {
     try{ market=await getCommuneMarketData(commune.nom,commune.code); }catch(error){
       console.warn("JML comparables market isolated:",error.message);
     }
-    const comparable=await buildComparableSales(market,{address,propertyType,surface,rooms,city:commune.nom});
+    const comparable=await buildComparableSales(market,{address,propertyType,surface,landSurface,rooms,city:commune.nom});
     return res.json({
       ok:true,version:VERSION,build:BUILD_MARKER,commune,
       comparables:comparable,
@@ -1021,21 +1043,31 @@ app.get("/api/territory-summary", async (req,res) => {
     const propertyTypeText=String(propertyType||"").toLowerCase();
     const sellerIsApartment=/appartement|studio|duplex|loft/i.test(propertyTypeText);
     const sellerIsHouse=/maison/i.test(propertyTypeText);
-    const sellerType=sellerIsApartment?"Appartement":sellerIsHouse?"Maison":"Tous biens";
+    const sellerIsApartment=/appartement|studio|duplex|loft/i.test(propertyTypeText);
+    const sellerIsHouse=/maison/i.test(propertyTypeText);
+    const sellerIsLand=/terrain/i.test(propertyTypeText);
+    const sellerType=sellerIsApartment?"Appartement":sellerIsHouse?"Maison":sellerIsLand?"Terrain":"Tous biens";
     const sellerBase=sellerIsApartment
       ? Number(market?.apartmentPrice)
       : sellerIsHouse
         ? Number(market?.housePrice)
-        : Number(market?.communalPrice);
-    const sellerSurface=Number(surface);
+        : sellerIsLand
+          ? Number(market?.terrainPrice)
+          : Number(market?.communalPrice);
+    const sellerSurface=sellerIsLand ? Number(landSurface) : Number(surface);
     const sellerHasBase=Number.isFinite(sellerBase)&&sellerBase>0;
     const sellerHasSurface=Number.isFinite(sellerSurface)&&sellerSurface>0;
-    const sellerValue=sellerHasBase&&sellerHasSurface?Math.round(sellerBase*sellerSurface):null;
+    const comparableBase=Number(comparable?.weightedPriceM2);
+    const sellerValue=sellerHasBase&&sellerHasSurface
+      ? Math.round(sellerBase*sellerSurface)
+      : (sellerIsLand&&Number.isFinite(comparableBase)&&comparableBase>0&&sellerHasSurface
+        ? Math.round(comparableBase*sellerSurface) : null);
     const sellerReference={
       available:sellerHasBase,
       type:sellerType,
       basePriceM2:sellerHasBase?sellerBase:null,
       surface:sellerHasSurface?sellerSurface:null,
+      landSurface: sellerIsLand && sellerHasSurface ? sellerSurface : (Number.isFinite(Number(landSurface))&&Number(landSurface)>0?Number(landSurface):null),
       referenceValue:sellerValue,
       range:{
         low:sellerValue!==null?Math.round(sellerValue*0.85):null,
@@ -1046,7 +1078,7 @@ app.get("/api/territory-summary", async (req,res) => {
       history:Array.isArray(market?.history)?market.history:[],
       comparables:comparable,
       explanation:sellerHasBase&&sellerHasSurface
-        ?"Repère mathématique construit à partir du prix médian du type de bien et de la surface renseignée. Il ne constitue pas une estimation certifiée."
+        ?"Repère construit à partir des transactions DVF disponibles pour le type de bien et de la surface renseignée. Pour un terrain, la surface foncière est utilisée comme base ; il ne constitue pas une estimation certifiée."
         :"Le repère personnalisé sera calculé dès que le type de bien et les données de marché seront disponibles."
     };
 
