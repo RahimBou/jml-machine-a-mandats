@@ -732,6 +732,7 @@ async function loadEditSellerSpace(){
     var d=dd.space||{};
     document.getElementById('ville').value=d.city||document.getElementById('ville').value;
     document.getElementById('type').value=d.propertyType||document.getElementById('type').value;
+    document.getElementById('type').dispatchEvent(new Event('change'));
     var horizonReverse={"0-3":"Dans les 3 mois","3-6":"Dans les 6 mois","6-12":"Dans l'année","unknown":"Je me renseigne"};
     document.getElementById('delai').value=horizonReverse[d.horizon]||document.getElementById('delai').value;
     document.getElementById('adresse').value=d.address||"";
@@ -810,7 +811,7 @@ document.getElementById('form').onsubmit=async function(ev){
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           city:payload.city,address:payload.address,propertyType:payload.propertyType,horizon:payload.horizon,
-          surface:payload.surface,rooms:payload.rooms,terrain:payload.terrain
+          surface:payload.surface,rooms:payload.rooms,dpe:payload.dpe,terrain:payload.terrain
         })
       });
       data=await response.json().catch(function(){return {};});
