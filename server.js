@@ -955,9 +955,13 @@ async function buildComparableSales(market,property){
   }
   if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Localisation indisponible",origin:null,message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."};
 
+  // Recherche progressive : on commence strictement, puis on élargit
+  // uniquement si le nombre de ventes réellement comparables est insuffisant.
   const tiers=[
     {radius:500,months:24,surfaceGap:isLand?.35:.20,landGap:isLand?.35:.50,roomsGap:2,label:isLand?"500 m / 24 mois · terrains comparables":"500 m / 24 mois · comparables proches"},
-    {radius:1000,months:24,surfaceGap:isLand?.50:.25,landGap:isLand?.50:.70,roomsGap:2,label:isLand?"1 km / 24 mois · élargissement terrains":"1 km / 24 mois · élargissement maximum"}
+    {radius:1000,months:24,surfaceGap:isLand?.50:.25,landGap:isLand?.50:.70,roomsGap:2,label:isLand?"1 km / 24 mois · élargissement terrains":"1 km / 24 mois · élargissement maximum"},
+    {radius:2000,months:36,surfaceGap:isLand?.50:.25,landGap:isLand?.60:.80,roomsGap:2,label:isLand?"2 km / 36 mois · élargissement contrôlé":"2 km / 36 mois · élargissement contrôlé"},
+    {radius:3000,months:48,surfaceGap:isLand?.60:.30,landGap:isLand?.70:.90,roomsGap:2,label:isLand?"3 km / 48 mois · dernier recours":"3 km / 48 mois · dernier recours"}
   ];
 
   let local=[];
@@ -1019,16 +1023,36 @@ async function buildComparableSales(market,property){
   };
 
   const sourceRows=[...(Array.isArray(market?.recentSales)?market.recentSales:[]),...(Array.isArray(local)?local:[])];
-  for(const sale of sourceRows){
-    const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface,sale.land].join("|"));
-    if(seen.has(id))continue;
-    seen.add(id);
-    const distanceKm=haversineKm(origin,{lat:Number(sale.lat),lon:Number(sale.lon)});
-    if(distanceKm==null)continue;
-    const normalized={...sale,distanceKm:Number(distanceKm.toFixed(3)),pricePerM2:Number(sale.pricePerM2||sale.price_per_m2||0)||null};
-    for(const tier of tiers){
-      const x=scoreSale(normalized,tier);
-      if(x){candidates.push(x);break;}
+  const evaluateRows=(rows)=>{
+    for(const sale of rows){
+      const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface,sale.land].join("|"));
+      if(seen.has(id))continue;
+      seen.add(id);
+      const distanceKm=haversineKm(origin,{lat:Number(sale.lat),lon:Number(sale.lon)});
+      if(distanceKm==null)continue;
+      const normalized={...sale,distanceKm:Number(distanceKm.toFixed(3)),pricePerM2:Number(sale.pricePerM2||sale.price_per_m2||0)||null};
+      for(const tier of tiers){
+        const x=scoreSale(normalized,tier);
+        if(x){candidates.push(x);break;}
+      }
+    }
+  };
+
+  evaluateRows(sourceRows);
+
+  // Si PostgreSQL a bien des ventes mais aucune ne passe les critères,
+  // on tente la source DVF publique pour récupérer les transactions
+  // géolocalisées manquantes. Cela ne remplace pas les ventes locales :
+  // c'est uniquement un secours pour le moteur de comparables.
+  let externalRows=0;
+  if(!candidates.length){
+    try{
+      const commune=await resolveTerritoryCommune(city,"");
+      const external=await getExternalDvfByCommune(commune?.code,city);
+      externalRows=external.length;
+      evaluateRows(external);
+    }catch(error){
+      console.warn("JML comparables DVF externe secours:",error.message);
     }
   }
 
@@ -1063,7 +1087,14 @@ async function buildComparableSales(market,property){
       :"Comparables recherchés sur le même type de bien, avec surface habitable, surface de terrain lorsqu'elle est renseignée et nombre de pièces proches, dans un rayon de 500 m puis 1 km maximum.",
     criteria:{type:typeWanted||null,surface:surface||null,landSurface:landSurface||null,rooms:rooms||null,maxRadiusKm:1},
     engineVersion:"8.2.0-PG-DVF-COMPARABLES-TERRAIN",
-    diagnostics:{postgresRows:local.length,marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0}
+    diagnostics:{
+      postgresRows:local.length,
+      marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0,
+      externalRows,
+      candidateCount:candidates.length,
+      strictCount,
+      originSource
+    }
   };
 }
 
