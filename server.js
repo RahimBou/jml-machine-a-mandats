@@ -1177,19 +1177,22 @@ async function getAdemeStreetRows(postal,street,number="",streetQuery=""){
   const streetName=dpeStreetName(street);
   const targetNumber=dpeNumber(number);
   const rawStreetQuery=String(streetQuery||"").trim();
-  const key=normalizedPostal+"|"+targetNumber+"|"+streetName;
+  // 3e modification : on mémorise le lot ADEME au niveau rue + code postal.
+  // Le numéro sert ensuite uniquement au rapprochement local ; il ne doit pas
+  // limiter la collecte à un seul résultat ADEME.
+  const key=normalizedPostal+"|"+streetName;
   if(!streetName||dpeStreetRowsCache.has(key)) return dpeStreetRowsCache.get(key)||[];
   const endpoint="https://data.ademe.fr/data-fair/api/v1/datasets/dpe03existant/lines";
   const queries=[...new Set([
-    [targetNumber,rawStreetQuery].filter(Boolean).join(" ").trim(),
-    [targetNumber,streetName].filter(Boolean).join(" ").trim()
+    rawStreetQuery,
+    streetName
   ])].filter(Boolean);
 
   try{
     let allRows=[];
     for(const query of queries){
       const url=new URL(endpoint);
-      url.searchParams.set("size","20");
+      url.searchParams.set("size","100");
       url.searchParams.set("code_postal_ban_in",normalizedPostal);
       url.searchParams.set("q",query);
       url.searchParams.set("q_fields","adresse_ban");
