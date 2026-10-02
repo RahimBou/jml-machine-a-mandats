@@ -633,7 +633,7 @@ h1 span{color:var(--gold2);display:block}
 .extra{display:none!important;grid-column:1/-1;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:#faf9f6;border:1px solid #dedbd4;border-radius:9px}
 .extra.on{display:grid!important}
 .extra-field label{display:block;font-size:11px;font-weight:700;margin:0 0 5px;color:#34463f}
-.extra-field .in{height:42px}
+.extra-field .in{height:42px}.full-extra{grid-column:1/-1}
 .bottom{grid-column:1/-1}
 .chk{align-items:flex-start}
 .chk input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:20px!important;height:20px!important;min-width:20px;flex:0 0 20px;margin:1px 0 0!important;border:1px solid #c9c1b2;border-radius:4px;background:#fff;cursor:pointer}
@@ -679,8 +679,16 @@ h1 span{color:var(--gold2);display:block}
     <div class="f"><span class="n">06</span><div><label for="delai">Quand envisagez-vous votre projet ?</label><div class="in"><select id="delai"><option>Dans les 3 mois</option><option>Dans les 6 mois</option><option>Dans l'année</option><option>Je me renseigne</option></select></div></div></div>
     <button type="button" class="opt" id="opt" aria-expanded="false"><b>+</b>Ajouter quelques caractéristiques du bien <em>(facultatif)</em></button>
     <div class="extra" id="extra" aria-hidden="true">
-  <div class="extra-field"><label for="surface">Surface (m²)</label><div class="in"><input id="surface" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Ex. 120"></div></div>
+  <div class="extra-field"><label for="surface">Surface habitable (m²)</label><div class="in"><input id="surface" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Ex. 120"></div></div>
   <div class="extra-field"><label for="pieces">Nombre de pièces</label><div class="in"><input id="pieces" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. 5"></div></div>
+  <div class="extra-field"><label for="chambres">Nombre de chambres</label><div class="in"><input id="chambres" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. 3"></div></div>
+  <div class="extra-field"><label for="terrain">Terrain (m²)</label><div class="in"><input id="terrain" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. 600"></div></div>
+  <div class="extra-field"><label for="annee">Année de construction</label><div class="in"><input id="annee" type="number" min="1800" max="2100" step="1" inputmode="numeric" placeholder="Ex. 1985"></div></div>
+  <div class="extra-field"><label for="dpe">DPE</label><div class="in"><select id="dpe"><option value="">Non renseigné</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option></select></div></div>
+  <div class="extra-field"><label for="chauffage">Chauffage</label><div class="in"><select id="chauffage"><option>Non renseigné</option><option>Gaz</option><option>Électricité</option><option>Fioul</option><option>Bois</option><option>Pompe à chaleur</option><option>Autre</option></select></div></div>
+  <div class="extra-field"><label for="stationnement">Stationnement</label><div class="in"><select id="stationnement"><option>Non renseigné</option><option>Garage</option><option>Parking</option><option>Garage + parking</option><option>Aucun</option></select></div></div>
+  <div class="extra-field full-extra"><label for="etat">État du bien</label><div class="in"><select id="etat"><option>Non renseigné</option><option>Très bon état</option><option>Bon état</option><option>À rafraîchir</option><option>Travaux à prévoir</option><option>Rénovation importante</option></select></div></div>
+  <div class="extra-field full-extra"><label for="travaux">Travaux ou éléments particuliers à signaler</label><div class="in"><input id="travaux" type="text" placeholder="Ex. toiture, isolation, extension, dépendance..."></div></div>
 </div>
     <div class="bottom"><label class="chk"><input type="checkbox" required>J'accepte que JML Immobilier utilise ces informations pour me recontacter au sujet de mon projet immobilier.</label><button class="btn" type="submit">Échanger sur mon projet →</button></div>
     <div class="ok" id="ok">Merci ! Je vous recontacte très prochainement.</div>
