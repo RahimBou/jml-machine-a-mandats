@@ -9,8 +9,8 @@ const registerPublicEventsRoute = require("./events");
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.5.0";
-const BUILD_MARKER = "dvf-postgres-terrain-surface-10-seller";
+const VERSION = "3.6.0";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v9-seller";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -930,16 +930,55 @@ function parseSaleDate(v){
   }
   return null;
 }
+function parseComparableNumber(value){
+  if(value===null||value===undefined||value==="") return null;
+  if(typeof value==="number") return Number.isFinite(value)?value:null;
+  const raw=String(value).trim().replace(/\u00a0/g," ").replace(/\s/g,"").replace(",",".");
+  const match=raw.match(/-?\d+(?:\.\d+)?/);
+  if(!match) return null;
+  const n=Number(match[0]);
+  return Number.isFinite(n)?n:null;
+}
+
+function weightedMedian(rows){
+  const usable=rows
+    .map(x=>({value:Number(x.pricePerM2),weight:Math.max(1,Number(x.score)||0)}))
+    .filter(x=>Number.isFinite(x.value)&&x.value>0)
+    .sort((a,b)=>a.value-b.value);
+  if(!usable.length) return null;
+  const total=usable.reduce((s,x)=>s+x.weight,0);
+  let acc=0;
+  for(const x of usable){
+    acc+=x.weight;
+    if(acc>=total/2) return x.value;
+  }
+  return usable[usable.length-1].value;
+}
+
+function comparableConfidence(rows,stats){
+  const n=rows.length;
+  const tierA=rows.filter(x=>x.tierCode==="A").length;
+  const tierB=rows.filter(x=>x.tierCode==="B").length;
+  const avgSurfaceGap=n?rows.reduce((s,x)=>s+(x.surfaceGap||0),0)/n:null;
+  const avgDistance=n?rows.reduce((s,x)=>s+(Number(x.distanceKm)||0),0)/n:null;
+  const spread=stats.spreadPct;
+  if(n>=6&&tierA>=3&&avgSurfaceGap!=null&&avgSurfaceGap<=0.12&&spread!=null&&spread<=25) return "Élevée";
+  if(n>=4&&tierA+tierB>=3&&avgSurfaceGap!=null&&avgSurfaceGap<=0.18) return "Bonne";
+  if(n>=3&&tierA+tierB>=2) return "Modérée";
+  if(n>=2) return "Faible";
+  return "Insuffisante";
+}
+
 async function buildComparableSales(market,property){
   const city=String(property?.city||market?.city||"").trim();
   const typeWanted=classifyDvfType(property?.propertyType,"");
-  const surface=Number(property?.surface);
-  const landSurface=Number(property?.landSurface ?? property?.terrain);
-  const rooms=Number(property?.rooms);
+  const surface=parseComparableNumber(property?.surface);
+  const landSurface=parseComparableNumber(property?.landSurface ?? property?.terrain);
+  const rooms=parseComparableNumber(property?.rooms);
   const isLand=typeWanted==="Terrain";
-  const targetSurface=isLand
-    ? landSurface
-    : (Number.isFinite(surface)&&surface>0 ? surface : null);
+  const targetSurface=isLand?landSurface:(surface!=null&&surface>0?surface:null);
+  const targetRooms=!isLand&&rooms!=null&&rooms>0?rooms:null;
+  const targetLand=!isLand&&landSurface!=null&&landSurface>0?landSurface:null;
 
   let origin=await geocodeAddress(property?.address,city);
   let originSource="Adresse";
@@ -953,72 +992,109 @@ async function buildComparableSales(market,property){
       }
     }catch(_e){}
   }
-  if(!origin) return {sales:[],sameStreet:[],median:null,weightedPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Localisation indisponible",origin:null,message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés."};
+  if(!origin) return {
+    sales:[],valuationSales:[],sameStreet:[],median:null,weightedPriceM2:null,
+    centralPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,
+    searchScope:"Localisation indisponible",origin:null,
+    message:"Ni l'adresse ni le centre de la commune n'ont pu être géolocalisés.",
+    confidence:"Insuffisante"
+  };
 
-  // Recherche progressive : on commence strictement, puis on élargit
-  // uniquement si le nombre de ventes réellement comparables est insuffisant.
   const tiers=[
-    {radius:500,months:24,surfaceGap:isLand?.35:.20,landGap:isLand?.35:.50,roomsGap:2,label:isLand?"500 m / 24 mois · terrains comparables":"500 m / 24 mois · comparables proches"},
-    {radius:1000,months:24,surfaceGap:isLand?.50:.25,landGap:isLand?.50:.70,roomsGap:2,label:isLand?"1 km / 24 mois · élargissement terrains":"1 km / 24 mois · élargissement maximum"},
-    {radius:2000,months:36,surfaceGap:isLand?.50:.25,landGap:isLand?.60:.80,roomsGap:2,label:isLand?"2 km / 36 mois · élargissement contrôlé":"2 km / 36 mois · élargissement contrôlé"},
-    {radius:3000,months:48,surfaceGap:isLand?.60:.30,landGap:isLand?.70:.90,roomsGap:2,label:isLand?"3 km / 48 mois · dernier recours":"3 km / 48 mois · dernier recours"}
+    {code:"A",radius:500,months:24,surfaceGap:isLand?.35:.15,landGap:isLand?.35:.50,roomsGap:1,label:isLand?"500 m / 24 mois · terrain très comparable":"500 m / 24 mois · comparable strict"},
+    {code:"B",radius:1000,months:24,surfaceGap:isLand?.50:.20,landGap:isLand?.50:.60,roomsGap:1,label:isLand?"1 km / 24 mois · terrain élargi":"1 km / 24 mois · comparable proche"},
+    {code:"C",radius:2000,months:36,surfaceGap:isLand?.50:.25,landGap:isLand?.60:.75,roomsGap:2,label:isLand?"2 km / 36 mois · élargissement contrôlé":"2 km / 36 mois · élargissement contrôlé"},
+    {code:"D",radius:3000,months:48,surfaceGap:isLand?.60:.30,landGap:isLand?.70:.90,roomsGap:2,label:isLand?"3 km / 48 mois · dernier recours":"3 km / 48 mois · dernier recours"}
   ];
 
   let local=[];
-  try{ local=await getLocalDvfComparables(origin,3); }
-  catch(error){ console.warn("JML comparables DVF local isolés:",error.message); local=[]; }
+  try{local=await getLocalDvfComparables(origin,3);}
+  catch(error){console.warn("JML comparables DVF local isolés:",error.message);local=[];}
 
-  const seen=new Set(), candidates=[];
+  const seen=new Set(),candidates=[];
   const now=Date.now();
   const streetKey=v=>normalizeAddress(v).replace(/\b\d+\b/g,"").trim();
   const ageMonths=v=>{const d=parseSaleDate(v);return d?Math.max(0,(now-d.getTime())/(30.4375*86400000)):99;};
 
   const scoreSale=(sale,tier)=>{
     if(typeWanted&&classifyDvfType(sale.type,sale.codtypbien||"")!==typeWanted)return null;
-    const dist=Number(sale.distanceKm);
-    if(!Number.isFinite(dist)||dist>tier.radius/1000)return null;
+    const dist=parseComparableNumber(sale.distanceKm);
+    if(dist==null||dist>tier.radius/1000)return null;
 
-    const saleSurface=Number(sale.surface);
-    const saleLand=Number(sale.land);
-    const saleComparableSurface=isLand ? saleLand : saleSurface;
-    const gap=Number.isFinite(targetSurface)&&targetSurface>0&&saleComparableSurface>0
-      ? Math.abs(saleComparableSurface-targetSurface)/targetSurface : null;
+    const saleSurface=parseComparableNumber(sale.surface);
+    const saleLand=parseComparableNumber(sale.land);
+    const saleRooms=parseComparableNumber(sale.rooms);
+    const saleComparableSurface=isLand?saleLand:saleSurface;
 
-    if(gap!==null&&gap>tier.surfaceGap)return null;
+    // Une vente sans surface comparable n'est jamais utilisée pour calculer la valeur.
+    if(targetSurface!=null&&(saleComparableSurface==null||saleComparableSurface<=0))return null;
+    const gap=targetSurface!=null?Math.abs(saleComparableSurface-targetSurface)/targetSurface:null;
+    if(gap!=null&&gap>tier.surfaceGap)return null;
 
-    const landGap=(!isLand && Number.isFinite(landSurface)&&landSurface>0&&saleLand>0)
-      ? Math.abs(saleLand-landSurface)/landSurface : null;
-    if(landGap!==null&&landGap>tier.landGap)return null;
+    // Pour une maison avec terrain renseigné, la surface de terrain devient
+    // un critère de qualification. Une donnée manquante ne doit pas être
+    // transformée en "score partiel" silencieux.
+    let landGap=null;
+    if(!isLand&&targetLand!=null){
+      if(saleLand==null||saleLand<=0){
+        if(tier.code!=="D")return null;
+      }else{
+        landGap=Math.abs(saleLand-targetLand)/targetLand;
+        if(landGap>tier.landGap)return null;
+      }
+    }
 
-    const saleRooms=Number(sale.rooms);
-    const roomDiff=!isLand&&Number.isFinite(rooms)&&rooms>0&&Number.isFinite(saleRooms)&&saleRooms>0
-      ? Math.abs(saleRooms-rooms) : null;
-    if(roomDiff!==null&&roomDiff>tier.roomsGap)return null;
+    let roomDiff=null;
+    if(targetRooms!=null){
+      if(saleRooms==null||saleRooms<=0){
+        if(tier.code!=="D")return null;
+      }else{
+        roomDiff=Math.abs(saleRooms-targetRooms);
+        if(roomDiff>tier.roomsGap)return null;
+      }
+    }
 
     const age=ageMonths(sale.date);
     if(age>tier.months)return null;
 
     const effectivePriceM2=isLand
-      ? ((Number.isFinite(Number(sale.price))&&saleLand>0) ? Number(sale.price)/saleLand : Number(sale.pricePerM2))
-      : Number(sale.pricePerM2);
+      ?((parseComparableNumber(sale.price)!=null&&saleLand>0)?parseComparableNumber(sale.price)/saleLand:parseComparableNumber(sale.pricePerM2))
+      :parseComparableNumber(sale.pricePerM2);
+    if(effectivePriceM2==null||effectivePriceM2<=0||effectivePriceM2>100000)return null;
 
     const distanceScore=Math.max(0,1-dist/(tier.radius/1000))*30;
     const recencyScore=Math.max(0,1-age/tier.months)*20;
-    const surfaceScore=gap===null?10:Math.max(0,1-gap/tier.surfaceGap)*25;
-    const landScore=isLand?0:(landGap===null?4:Math.max(0,1-landGap/tier.landGap)*8);
-    const roomsScore=roomDiff===null?5:Math.max(0,1-roomDiff/Math.max(1,tier.roomsGap))*10;
-    const scoreRaw=distanceScore+recencyScore+surfaceScore+landScore+roomsScore+(streetKey(sale.address)===streetKey(property?.address)?5:0)+(Number.isFinite(effectivePriceM2)?10:0);
+    const surfaceScore=gap==null?0:Math.max(0,1-gap/tier.surfaceGap)*25;
+    const landScore=isLand?0:(landGap==null?0:Math.max(0,1-landGap/tier.landGap)*10);
+    const roomsScore=roomDiff==null?0:Math.max(0,1-roomDiff/Math.max(1,tier.roomsGap))*10;
+    const sameStreet=streetKey(sale.address)===streetKey(property?.address)&&streetKey(property?.address)!=="";
+    const streetScore=sameStreet?5:0;
+    const scoreRaw=distanceScore+recencyScore+surfaceScore+landScore+roomsScore+streetScore;
+
+    const qualityFlags=[];
+    if(gap!=null&&gap<=.10)qualityFlags.push("surface très proche");
+    else if(gap!=null)qualityFlags.push("surface proche");
+    if(landGap!=null&&landGap<=.30)qualityFlags.push("terrain proche");
+    if(roomDiff!=null&&roomDiff<=1)qualityFlags.push("pièces proches");
+    if(sameStreet)qualityFlags.push("même rue");
+    if(age<=12)qualityFlags.push("vente récente");
+    if(tier.code==="D")qualityFlags.push("élargissement");
+    if(landGap==null&&targetLand!=null)qualityFlags.push("terrain non renseigné");
+    if(roomDiff==null&&targetRooms!=null)qualityFlags.push("pièces non renseignées");
 
     return {
       ...sale,
-      pricePerM2:Number.isFinite(effectivePriceM2)?Number(effectivePriceM2):null,
+      pricePerM2:Number(effectivePriceM2),
       score:Number(Math.min(100,scoreRaw).toFixed(1)),
-      sameStreet:streetKey(sale.address)===streetKey(property?.address),
+      sameStreet,
       surfaceGap:gap,
       landGap,
       roomDiff,
       ageMonths:Number(age.toFixed(1)),
-      tier:tier.label
+      tier:tier.label,
+      tierCode:tier.code,
+      valuationGrade:tier.code==="A"?"A":tier.code==="B"?"B":tier.code==="C"?"C":"D",
+      qualityFlags
     };
   };
 
@@ -1028,9 +1104,13 @@ async function buildComparableSales(market,property){
       const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface,sale.land].join("|"));
       if(seen.has(id))continue;
       seen.add(id);
-      const distanceKm=haversineKm(origin,{lat:Number(sale.lat),lon:Number(sale.lon)});
+      const distanceKm=haversineKm(origin,{lat:parseComparableNumber(sale.lat),lon:parseComparableNumber(sale.lon)});
       if(distanceKm==null)continue;
-      const normalized={...sale,distanceKm:Number(distanceKm.toFixed(3)),pricePerM2:Number(sale.pricePerM2||sale.price_per_m2||0)||null};
+      const normalized={
+        ...sale,
+        distanceKm:Number(distanceKm.toFixed(3)),
+        pricePerM2:parseComparableNumber(sale.pricePerM2 ?? sale.price_per_m2)
+      };
       for(const tier of tiers){
         const x=scoreSale(normalized,tier);
         if(x){candidates.push(x);break;}
@@ -1040,10 +1120,6 @@ async function buildComparableSales(market,property){
 
   evaluateRows(sourceRows);
 
-  // Si PostgreSQL a bien des ventes mais aucune ne passe les critères,
-  // on tente la source DVF publique pour récupérer les transactions
-  // géolocalisées manquantes. Cela ne remplace pas les ventes locales :
-  // c'est uniquement un secours pour le moteur de comparables.
   let externalRows=0;
   if(!candidates.length){
     try{
@@ -1051,48 +1127,92 @@ async function buildComparableSales(market,property){
       const external=await getExternalDvfByCommune(commune?.code,city);
       externalRows=external.length;
       evaluateRows(external);
-    }catch(error){
-      console.warn("JML comparables DVF externe secours:",error.message);
-    }
+    }catch(error){console.warn("JML comparables DVF externe secours:",error.message);}
   }
 
   candidates.sort((a,b)=>b.score-a.score);
-  const display=candidates.slice(0,12);
-  const values=display.map(x=>Number(x.pricePerM2)).filter(Number.isFinite).sort((a,b)=>a-b);
+  const valuationSales=candidates.slice(0,12);
+  const values=valuationSales.map(x=>Number(x.pricePerM2)).filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b);
   const median=values.length?(values.length%2?values[(values.length-1)/2]:(values[values.length/2-1]+values[values.length/2])/2):null;
-  const weightedDen=display.reduce((s,x)=>s+Math.max(0.1,x.score),0);
-  const weightedPriceM2=weightedDen?display.reduce((s,x)=>s+Number(x.pricePerM2||0)*Math.max(0.1,x.score),0)/weightedDen:null;
-  const radiusKm=display.length?Math.max(...display.map(x=>x.distanceKm)):null;
-  const closeSales=display.filter(x=>Number(x.distanceKm)<=0.5);
-  const minPriceM2=values.length?Math.round(values[0]):null;
-  const maxPriceM2=values.length?Math.round(values[values.length-1]):null;
-  const q1=values.length?values[Math.floor((values.length-1)*0.25)]:null;
-  const q3=values.length?values[Math.floor((values.length-1)*0.75)]:null;
+  const q1=values.length?values[Math.floor((values.length-1)*.25)]:null;
+  const q3=values.length?values[Math.floor((values.length-1)*.75)]:null;
   const spreadPct=median&&q1!=null&&q3!=null?Math.round((q3-q1)/median*1000)/10:null;
-  const strictCount=display.filter(x=>String(x.tier).includes("500 m")).length;
-  const closeCount=closeSales.length;
+  const centralPriceM2=weightedMedian(valuationSales);
+  const weightedDen=valuationSales.reduce((s,x)=>s+Math.max(1,x.score),0);
+  const weightedPriceM2=weightedDen?valuationSales.reduce((s,x)=>s+Number(x.pricePerM2)*Math.max(1,x.score),0)/weightedDen:null;
+
+  // Pour n>=5, on écarte uniquement les valeurs manifestement extrêmes
+  // par rapport à l'IQR. Avec moins de 5 ventes, aucune suppression
+  // statistique automatique n'est faite : on préfère réduire la confiance.
+  let outliersExcluded=0;
+  let robustSales=valuationSales.slice();
+  if(valuationSales.length>=5&&q1!=null&&q3!=null){
+    const iqr=q3-q1;
+    const low=q1-1.5*iqr,high=q3+1.5*iqr;
+    const filtered=valuationSales.filter(x=>Number(x.pricePerM2)>=low&&Number(x.pricePerM2)<=high);
+    outliersExcluded=valuationSales.length-filtered.length;
+    if(filtered.length>=3)robustSales=filtered;
+  }
+
+  const robustValues=robustSales.map(x=>Number(x.pricePerM2)).sort((a,b)=>a-b);
+  const robustMedian=robustValues.length?(robustValues.length%2?robustValues[(robustValues.length-1)/2]:(robustValues[robustValues.length/2-1]+robustValues[robustValues.length/2])/2):centralPriceM2;
+  const robustCentral=weightedMedian(robustSales)||robustMedian;
+  const rangeLow=robustValues.length?robustValues[Math.floor((robustValues.length-1)*.25)]:null;
+  const rangeHigh=robustValues.length?robustValues[Math.floor((robustValues.length-1)*.75)]:null;
+  const display=valuationSales;
+  const radiusKm=display.length?Math.max(...display.map(x=>x.distanceKm)):null;
+  const closeCount=display.filter(x=>Number(x.distanceKm)<=.5).length;
+  const strictCount=display.filter(x=>x.tierCode==="A").length;
+  const tierCounts=display.reduce((acc,x)=>{acc[x.tierCode]=(acc[x.tierCode]||0)+1;return acc;},{A:0,B:0,C:0,D:0});
+  const confidence=comparableConfidence(display,{spreadPct});
+  const usedMaxRadiusKm=radiusKm;
+  const searchScope=display.length?display.reduce((best,x)=>tiers.find(t=>t.code===x.tierCode)?.radius>(tiers.find(t=>t.code===best)?.radius||0)?x.tierCode:best,display[0].tierCode):null;
 
   return {
     sales:display,
+    valuationSales:robustSales,
     sameStreet:display.filter(s=>s.sameStreet),
     median:median!=null?Math.round(median):null,
     weightedPriceM2:weightedPriceM2!=null?Math.round(weightedPriceM2):null,
-    matchCount:display.length,totalCandidates:candidates.length,radiusKm,
-    closeCount,minPriceM2,maxPriceM2,q1:q1!=null?Math.round(q1):null,q3:q3!=null?Math.round(q3):null,spreadPct,strictCount,
-    searchScope:display.length?display[display.length-1].tier:"Aucun comparable répondant aux critères",
-    origin,originSource,
+    centralPriceM2:robustCentral!=null?Math.round(robustCentral):null,
+    matchCount:display.length,
+    valuationCount:robustSales.length,
+    totalCandidates:candidates.length,
+    radiusKm,
+    usedMaxRadiusKm,
+    closeCount,
+    strictCount,
+    tierCounts,
+    q1:q1!=null?Math.round(q1):null,
+    q3:q3!=null?Math.round(q3):null,
+    rangeLow:rangeLow!=null?Math.round(rangeLow):null,
+    rangeHigh:rangeHigh!=null?Math.round(rangeHigh):null,
+    spreadPct,
+    outliersExcluded,
+    confidence,
+    searchScope:display.length?tiers.find(t=>t.code===searchScope)?.label:"Aucun comparable répondant aux critères",
+    origin,
+    originSource,
     source:"DVF local JML / PostgreSQL",
     method:isLand
-      ?"Comparables terrains recherchés sur le même type de bien, en utilisant la surface de terrain, la proximité et la récence des ventes."
-      :"Comparables recherchés sur le même type de bien, avec surface habitable, surface de terrain lorsqu'elle est renseignée et nombre de pièces proches, dans un rayon de 500 m puis 1 km maximum.",
-    criteria:{type:typeWanted||null,surface:surface||null,landSurface:landSurface||null,rooms:rooms||null,maxRadiusKm:1},
-    engineVersion:"8.2.0-PG-DVF-COMPARABLES-TERRAIN",
+      ?"Comparaison par ventes DVF du même type, avec surface de terrain, proximité et récence ; les données manquantes sont écartées des niveaux stricts."
+      :"Comparaison par ventes DVF du même type, en privilégiant la surface habitable, le terrain lorsqu'il est renseigné, le nombre de pièces, la proximité et la récence. Les ventes sans caractéristiques essentielles ne servent pas au calcul strict.",
+    criteria:{
+      type:typeWanted||null,
+      surface:surface||null,
+      landSurface:landSurface||null,
+      rooms:rooms||null,
+      maxRadiusKm:3,
+      tiers:tiers.map(t=>({code:t.code,radiusKm:t.radius/1000,months:t.months,surfaceGap:t.surfaceGap,landGap:t.landGap,roomsGap:t.roomsGap}))
+    },
+    engineVersion:"9.0.0-PG-DVF-COMPARABLES-ROBUST",
     diagnostics:{
       postgresRows:local.length,
       marketRows:Array.isArray(market?.recentSales)?market.recentSales.length:0,
       externalRows,
       candidateCount:candidates.length,
       strictCount,
+      tierCounts,
       originSource
     }
   };
