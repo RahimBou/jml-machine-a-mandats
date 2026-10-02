@@ -35,7 +35,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .sales{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.sale{background:#faf6ee;border:1px solid var(--line);border-radius:13px;padding:12px}.sale-top{display:flex;justify-content:space-between;gap:7px}.sale-top b{font-size:10px}.price{font-size:10px;font-weight:900;color:#8a6c2e}.sale p{font-size:8.5px;line-height:1.55;color:var(--muted);margin:7px 0}.tag{display:inline-block;background:#eaf0e9;color:#52635a;border-radius:999px;padding:5px 7px;font-size:7px;font-weight:900}
 .comps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.comp{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px}.comp-top{display:flex;justify-content:space-between;gap:6px}.comp b{font-size:10px}.score{font-size:9px;color:#8a6c2e;font-weight:900}.comp p{font-size:8.5px;line-height:1.5;color:var(--muted);margin:7px 0}.pill{font-size:7px;font-weight:900;background:#eef2ed;color:#52635a;border-radius:999px;padding:5px 7px;display:inline-block}
 .nearby{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.near{background:#faf6ee;border:1px solid var(--line);border-radius:13px;padding:12px}.near b{font-size:10px}.near p{font-size:8.5px;color:var(--muted);margin:6px 0 0}
-.env{display:grid;grid-template-columns:1fr 1fr;gap:9px}.env h3{font-size:13px;margin:0 0 7px}.env p{font-size:8.5px;color:var(--muted);line-height:1.5}.rows{display:grid}.row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eee6d9;padding:8px 0;font-size:8.5px}.row b{font-size:9px}
+.env{display:grid;grid-template-columns:1fr 1fr;gap:9px}.env h3{font-size:13px;margin:0 0 7px}.env p{font-size:8.5px;color:var(--muted);line-height:1.5}.rows{display:grid}.row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eee6d9;padding:8px 0;font-size:8.5px}.row b{font-size:9px}.service-summary{margin-top:10px}.service-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.service-box{background:#fffdf7;border:1px solid rgba(24,63,50,.12);border-radius:12px;padding:10px;text-align:center}.service-box span{display:block;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.service-box strong{display:block;font-size:18px;color:#173f32;margin:4px 0}.service-box small{display:block;font-size:7px;color:#8b6e31}.service-reading{margin:10px 0 0;padding:10px 12px;background:#f8f4ea;border-radius:10px;font-size:8.5px;line-height:1.55}.service-source{margin-top:7px;font-size:7px;color:var(--muted)}@media(max-width:760px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .loading,.empty{font-size:9px;color:var(--muted);padding:7px 0}.error{background:#f6e9e5;border:1px solid #e4cec7;color:var(--bad);border-radius:12px;padding:12px;font-size:9px;line-height:1.55}
 .footer{margin-top:25px;font-size:8.5px;color:var(--muted);line-height:1.6}
 @media(max-width:760px){.hero h1{font-size:30px}.grid,.metrics,.types,.sales,.comps,.nearby,.env,.reference{grid-template-columns:1fr}.head,.project-top{display:block}.source,.status{display:inline-block;margin-top:8px}}
@@ -212,7 +212,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   <div class="card env-card" id="securityCard"><h3>🛡️ Sécurité</h3><p><b>Contexte communal :</b> ces indicateurs donnent une information générale sur le territoire. Ils ne permettent pas de conclure sur la sécurité de cette adresse précise.</p><div class="rows" id="security"><div class="loading">Vérification…</div></div></div>
   <div class="card env-card" id="risksCard"><h3>⚠️ Risques</h3><p><b>Adresse exacte :</b> les risques réglementaires doivent être vérifiés à l'adresse du bien et dans les documents officiels applicables.</p><div class="rows" id="risks"><div class="loading">Vérification…</div></div></div>
  </div>
- <div class="card env-card" id="environmentCard" style="margin-top:9px"><h3>🏫 Services et mobilité</h3><p>Les équipements et moyens de déplacement complètent la lecture du secteur. Leur présence décrit l'environnement ; elle ne constitue pas automatiquement un avantage de valeur.</p><div class="rows" id="environment"><div class="loading">Vérification…</div></div></div>
+ <div class="card env-card" id="environmentCard" style="margin-top:9px"><h3>🏫 Services et mobilité autour du bien</h3><p>Une lecture simple de l'offre de proximité permet de mieux décrire le cadre de vie autour du bien.</p><div class="service-summary" id="environment"><div class="loading">Vérification…</div></div></div>
  <div class="message" style="margin-top:9px"><b>À retenir :</b> sécurité et risques sont des informations de contexte à vérifier avec les sources officielles. Les services et la mobilité permettent surtout de décrire concrètement le cadre de vie autour du bien.</div>
 </section>
 
@@ -388,8 +388,11 @@ function renderSellerReading(r){
  const baseText=base!=null?Math.round(Number(base)).toLocaleString("fr-FR")+" €/m²":"un repère de marché";
  const communalM2=type==="Maison"?Number(m.housePrice||m.communalPrice):type==="Appartement"?Number(m.apartmentPrice||m.communalPrice):Number(m.communalPrice);
  const communalText=Number.isFinite(communalM2)&&communalM2>0?Math.round(communalM2).toLocaleString("fr-FR")+" €/m²":"non disponible";
+ const gapM2=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?Math.round(Number(base)-communalM2):null;
  const gap=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?((Number(base)/communalM2-1)*100):null;
  const gapText=gap!=null?(gap>=0?"+":"")+gap.toFixed(1).replace(".",",")+" %":"";
+ const gapM2Text=gapM2!=null?(gapM2>=0?"+":"")+gapM2.toLocaleString("fr-FR")+" €/m²":"";
+ const dpeValue=String(d.dpe||"").trim().toUpperCase();
  const count=Number(c.matchCount||0);
  const strict=Number(c.strictCount||0);
  const radius=Number(c.radiusKm||0);
@@ -399,7 +402,8 @@ function renderSellerReading(r){
  if(comparable){
    bullets.push("Le "+baseText+" n'est pas une moyenne générale : il est calculé à partir des ventes retenues comme comparables à votre "+type+" selon le type de bien, la surface, le nombre de pièces, la distance et la récence.");
    bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" ont été retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+(radius.toLocaleString("fr-FR")+" km"):"")+"."+(strict?" Parmi elles, "+strict+" correspondent au premier niveau de proximité.":""));
-   if(gap!=null) bullets.push("À titre de comparaison, le repère des maisons dans la commune est de "+communalText+". Le repère local des comparables est donc "+gapText+" par rapport à cette référence communale.");
+   if(gap!=null) bullets.push("À titre de comparaison, le repère des maisons dans la commune est de "+communalText+". Votre bien ressort à "+baseText+", soit "+gapM2Text+" ("+gapText+") par rapport à cette référence communale.");
+   if(dpeValue) bullets.push("Le DPE du bien est "+dpeValue+". Il s'agit d'un élément de contexte et il ne modifie pas mécaniquement le prix issu des ventes comparables.");
    bullets.push("La valeur affichée correspond à un repère de départ : elle ne tient pas encore compte de l'état précis du bien, de ses prestations, des travaux à prévoir ou de la stratégie de mise en vente.");
  }else{
    bullets.push("Le repère repose sur le marché communal disponible ; il ne remplace pas une analyse des ventes réellement comparables.");
@@ -444,6 +448,28 @@ function renderNearby(rows){
  $("#nearby").innerHTML=rows.map(x=>'<div class="near"><b>'+esc(x.name||x.nom||"—")+'</b><p>'+esc(x.distanceKm!=null?x.distanceKm+" km":"distance non disponible")+(x.population?" · "+Number(x.population).toLocaleString("fr-FR")+" habitants":"")+'</p></div>').join("");
 }
 
+function renderServicesEnvironment(data){
+ const node=$("#environment"), card=$("#environmentCard");
+ if(!node)return;
+ if(!data||data.available===false){
+   if(card)card.classList.add("env-unavailable");
+   node.innerHTML='<div class="env-note"><b>À vérifier avant la mise en vente</b><span>La source publique n’est pas disponible pour cette session. Aucun chiffre n’est affiché sans vérification.</span></div>';
+   return;
+ }
+ if(card)card.classList.remove("env-unavailable");
+ const c=data.counters||{};
+ const items=[
+   ["Écoles",c.schools,"Éducation"],
+   ["Commerces",c.shops,"Vie quotidienne"],
+   ["Services",c.postOffices,"Services de proximité"],
+   ["Transports",c.stations,"Mobilité"],
+   ["Santé",c.health,"Santé"],
+   ["Pharmacies",c.pharmacies,"Santé"]
+ ].filter(x=>x[1]!=null);
+ node.innerHTML='<div class="service-grid">'+items.map(x=>'<div class="service-box"><span>'+esc(x[0])+'</span><strong>'+esc(Number(x[1]).toLocaleString("fr-FR"))+'</strong><small>'+esc(x[2])+'</small></div>').join("")+'</div>'+
+ '<p class="service-reading">Le secteur bénéficie d’une offre de services permettant de décrire concrètement le cadre de vie autour du bien. Ces données décrivent l’environnement et <strong>ne sont pas directement converties en valeur €/m²</strong>.</p>'+
+ (data.note?'<div class="service-source">'+esc(data.note)+'</div>':'');
+}
 function renderRows(el,data){
  const node=$(el), card=node?.closest(".env-card");
  if(!node)return;
@@ -814,7 +840,7 @@ async function run(){
    const env=await getData("/api/territory-enrichment?"+q.toString(),17000,"Sécurité / risques / services");
    renderRows("#security",env.security);
    renderRows("#risks",env.risks);
-   renderRows("#environment",env.environment);
+   renderServicesEnvironment(env.environment);
    const allUnavailable=[env.security,env.risks,env.environment].every(x=>!x||x.available===false);
    const envSection=$("#security")?.closest(".section");
    if(envSection) envSection.style.display=allUnavailable?"none":"";
