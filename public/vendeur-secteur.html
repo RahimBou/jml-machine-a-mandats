@@ -82,6 +82,16 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 @media(max-width:430px){.nearby{grid-template-columns:1fr;}}
 .comps-note{margin:0 0 10px;padding:10px 12px;background:#f5f1e7;border:1px solid #e7decd;border-radius:9px;color:#5f6862;font-size:12px;line-height:1.45;}
 .env-unavailable{display:none!important;}
+.env-service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px;}
+.env-service{background:#faf6ee;border:1px solid var(--line);border-radius:12px;padding:11px;text-align:center;}
+.env-service span{display:block;font-size:9px;color:#69736d;margin-bottom:5px;}
+.env-service b{display:block;font-size:18px;color:var(--g);}
+.env-context{margin-top:10px;padding:10px 12px;background:#f7f3ea;border:1px solid #e9e1d2;border-radius:10px;display:flex;flex-direction:column;gap:3px;}
+.env-context b{font-size:10px;color:var(--g);}
+.env-context span,.env-source-note{font-size:8.5px;line-height:1.5;color:#69736d;}
+.env-source-note{margin-top:7px;}
+@media(max-width:760px){.env-service-grid{grid-template-columns:repeat(2,1fr);}}
+
 <style id="seller-location-v2">
 .location-reading{position:relative;overflow:hidden}
 .location-reading:after{content:"";position:absolute;right:-45px;top:-55px;width:170px;height:170px;border:1px solid rgba(201,168,91,.28);border-radius:50%}
@@ -384,6 +394,8 @@ function renderSellerReading(r){
  const strict=Number(c.strictCount||0);
  const radius=Number(c.radiusKm||0);
  const bullets=[];
+ const dpeValue=String(d.dpe||"").trim().toUpperCase();
+ if(dpeValue) bullets.push("Le DPE du bien est "+dpeValue+". Cette donnée décrit la performance énergétique du logement ; elle est présentée séparément des critères utilisés pour calculer le repère de prix.");
  if(comparable){
    bullets.push("Le "+baseText+" n'est pas une moyenne générale : il est calculé à partir des ventes retenues comme comparables à votre "+type+" selon le type de bien, la surface, le nombre de pièces, la distance et la récence.");
    bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" ont été retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+(radius.toLocaleString("fr-FR")+" km"):"")+"."+(strict?" Parmi elles, "+strict+" correspondent au premier niveau de proximité.":""));
@@ -435,6 +447,27 @@ function renderNearby(rows){
 function renderRows(el,data){
  const node=$(el), card=node?.closest(".env-card");
  if(!node)return;
+
+ // Présentation dédiée du bloc "Services et mobilité".
+ // Les compteurs proviennent ici d'un inventaire communal ; on ne les présente
+ // donc pas comme un comptage exact à quelques mètres de l'adresse.
+ if(el==="#environment" && data?.available!==false){
+   const c=data.counters||{};
+   const items=[
+     ["schools","Écoles"],
+     ["shops","Commerces"],
+     ["health","Santé"],
+     ["stations","Transports"],
+     ["postOffices","Services publics"]
+   ].filter(([key])=>c[key]!=null);
+   const cards=items.map(([key,label])=>'<div class="env-service"><span>'+esc(label)+'</span><b>'+esc(c[key])+'</b></div>').join("");
+   const total=c.totalServices!=null?' · '+Number(c.totalServices).toLocaleString("fr-FR")+" équipements et services recensés":"";
+   node.innerHTML='<div class="env-service-grid">'+cards+'</div>'+
+     '<div class="env-context"><b>Lecture du secteur</b><span>Le secteur bénéficie d’une offre de services identifiable à l’échelle de la commune'+esc(total)+'. Ces données décrivent l’environnement et ne sont pas directement converties en valeur €/m².</span></div>'+
+     '<div class="env-source-note">'+esc(data.note||"Source publique territoriale")+'</div>';
+   return;
+ }
+
  if(!data||data.available===false){
    if(card) card.classList.add("env-unavailable");
    node.innerHTML='<div class="env-note"><b>À vérifier avant la mise en vente</b><span>La source publique n’est pas disponible pour cette session. Aucun chiffre n’est affiché sans vérification.</span></div>';
@@ -534,30 +567,75 @@ function normalizeAssetCategories(data){
 function renderAssets(data){
   pageData.assets=data||null;
   cats=normalizeAssetCategories(data||{});
+
+  // Priorité de lecture vendeur : on montre d'abord les équipements
+  // qui parlent concrètement du quotidien. La distance départage ensuite
+  // les équipements d'une même catégorie. Les taxis et repères génériques
+  // restent accessibles dans le détail mais ne monopolisent plus les 5 premiers.
+  const categoryPriority={
+    schools:1, commerces:2, transport:3, health:4, parks:5, services:6
+  };
+  const itemPriority={
+    schools:[/école|collège|lycée|crèche|maternelle|primaire/i,1],
+    commerces:[/boulangerie|supermarché|supérette|épicerie|marché|commerce/i,1],
+    transport:[/gare|tram|bus|arrêt|station/i,1],
+    health:[/pharmacie|médecin|dentiste|cabinet|santé|hôpital/i,1],
+    parks:[/parc|jardin|gymnase|sport|stade|tennis|loisir/i,1],
+    services:[/poste|mairie|banque|service public/i,1]
+  };
   const all=[];
   order.forEach(([key,title])=>{
-    const c=cats[key]||{};
-    (Array.isArray(c.items)?c.items:[]).forEach(item=>{
+    const cat=cats[key]||{};
+    (Array.isArray(cat.items)?cat.items:[]).forEach(item=>{
+      const name=String(item.name||item.type||"").trim();
       const distanceKm=n(item.distanceKm);
+      const generic=/^taxi|^taxis|taxi|vsl|transport de personnes/i.test(name);
+      const match=itemPriority[key]?.[0]?.test(name)?0:1;
       all.push({
-        label:title,
-        name:item.name||item.type||"",
+        key,label:title,name,
         distance:distanceKm!=null?distanceKm.toFixed(2).replace(".",",")+" km":(item.distanceLabel||"à proximité"),
         distanceKm:distanceKm??999,
         type:item.type||item.name||"Repère",
-        source:c.source||data?.source||"Données publiques"
+        source:cat.source||data?.source||"Données publiques",
+        categoryRank:categoryPriority[key]||99,
+        itemRank:generic?3:match,
+        generic
       });
     });
   });
-  all.sort((a,b)=>a.distanceKm-b.distanceKm);
-  const used=new Set(), selected=[];
+  all.sort((a,b)=>
+    a.categoryRank-b.categoryRank ||
+    a.itemRank-b.itemRank ||
+    a.distanceKm-b.distanceKm
+  );
+
+  // Une catégorie maximum par carte : la séquence reste lisible
+  // et couvre plusieurs dimensions du cadre de vie.
+  const selected=[];
+  const usedCategories=new Set();
+  const usedNames=new Set();
   for(const item of all){
-    const sig=item.name+"|"+item.label;
-    if(used.has(sig))continue;
-    used.add(sig);
+    const sig=item.name.toLowerCase()+"|"+item.key;
+    if(usedNames.has(sig))continue;
+    if(item.generic && selected.length<5)continue;
+    if(usedCategories.has(item.key))continue;
+    usedNames.add(sig);
+    usedCategories.add(item.key);
     selected.push(item);
     if(selected.length>=5)break;
   }
+  // Si certaines catégories n'ont aucun résultat pertinent, on complète
+  // avec les meilleurs repères restants.
+  if(selected.length<5){
+    for(const item of all){
+      const sig=item.name.toLowerCase()+"|"+item.key;
+      if(usedNames.has(sig))continue;
+      usedNames.add(sig);
+      selected.push(item);
+      if(selected.length>=5)break;
+    }
+  }
+
   highlights=selected;
   const root=$("#assets");
   if(!root)return;
@@ -573,13 +651,13 @@ function renderAssets(data){
     return;
   }
   root.innerHTML=
-    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>Les éléments ci-dessous proviennent des données retournées autour de l\'adresse. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
+    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, santé, loisirs puis services. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
     '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
-      const c=cats[key]||{items:[],available:false};
-      const items=(Array.isArray(c.items)?c.items:[]).slice(0,3);
-      const body=items.length?items.map(x=>'<li><b>'+esc(x.type||x.name||"Équipement")+'</b>'+(x.name&&x.name!==x.type?' · '+esc(x.name):'')+' <span class="distance">'+esc(x.distanceLabel||((n(x.distanceKm)!=null?n(x.distanceKm).toFixed(2):"—")+" km"))+'</span></li>').join(""):'<li>'+esc(c.available===false?"Source indisponible":"Aucun repère pertinent identifié.")+'</li>';
-      return '<article class="asset"><h3>'+title+'</h3><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||data?.source||"Données publiques")+'</small></article>';
+      const cat=cats[key]||{items:[],available:false};
+      const items=(Array.isArray(cat.items)?cat.items:[]).slice(0,3);
+      const body=items.length?items.map(x=>'<li><b>'+esc(x.type||x.name||"Équipement")+'</b>'+(x.name&&x.name!==x.type?' · '+esc(x.name):'')+' <span class="distance">'+esc(x.distanceLabel||((n(x.distanceKm)!=null?n(x.distanceKm).toFixed(2):"—")+" km"))+'</span></li>').join(""):'<li>'+esc(cat.available===false?"Source indisponible":"Aucun repère pertinent identifié.")+'</li>';
+      return '<article class="asset"><h3>'+title+'</h3><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(cat.source||data?.source||"Données publiques")+'</small></article>';
     }).join("")+'</div></details>';
   const proof=selected.slice(0,4);
   $("#proof").innerHTML=proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("");
