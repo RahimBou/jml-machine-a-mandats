@@ -171,7 +171,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   <h3>Ce que cela signifie pour votre vente</h3>
   <p class="reading-title">Lecture vendeur</p>
   <p>Cette synthèse sera construite à partir des ventes réellement disponibles autour du bien.</p>
-  <ul><li>Le repère de prix est un point de départ, pas une expertise certifiée.</li><li>Les caractéristiques du bien et son environnement doivent compléter la lecture du marché.</li></ul>
+  <ul><li>Le repère de prix est une valeur centrale observée, accompagnée d’une fourchette et d’un niveau de fiabilité. Il ne constitue pas une expertise certifiée.</li><li>Les caractéristiques du bien et son environnement doivent compléter la lecture du marché.</li></ul>
  </div>
 </section>
 
@@ -275,4 +275,495 @@ async function loadServerSpace(){
 }
 
 const pageData={market:null,reference:null,assets:null,comparables:null,space:null};
-const PAGE_BUILD="2026-10-02-mon-secteur-dvf-strict-v5";>
+const PAGE_BUILD="2026-10-02-mon-secteur-dvf-strict-v5";
+const diagnostics=[];
+function addDiag(source,code,detail){
+ diagnostics.push({source,code,detail:String(detail||"")});
+ const box=$("#diagRows");
+ if(box) box.innerHTML=
+  '<div class="asset-intro"><b>5 repères de proximité vérifiés</b><p>La sélection retient les éléments les plus proches et les plus lisibles pour un acquéreur. Ils décrivent l\'environnement ; ils ne participent pas directement au calcul du prix.</p></div>'+
+  '<div class="highlight-list">'+highlights.map((x,i)=>
+    '<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>'
+  ).join("")+'</div>'+
+  '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary>'+
+  '<div class="asset-grid">'+order.map(([key,title,desc])=>{
+    const c=cats[key]||{items:[],available:false};
+    const items=(c.items||[]).slice(0,3);
+    const body=items.length
+      ?items.map(x=>'<li><b>'+esc(x.type||x.name||"Équipement")+'</b>'+(x.name&&x.name!==x.type?' · '+esc(x.name):'')+' <span class="distance">'+esc(x.distanceLabel||((Number(x.distanceKm)||0).toFixed(2)+" km"))+'</span></li>').join("")
+      :(c.available===false?'<li><b>Source indisponible</b></li>':'<li>Aucun repère pertinent identifié.</li>');
+    return '<article class="asset"><h3>'+title+'</h3><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||"Source officielle")+'</small></article>';
+  }).join("")+'</div></details>';
+ const proof=highlights.slice(0,4);
+ $("#proof").innerHTML=proof.length
+   ?proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("")
+   :'<div><b>Proximité</b><strong>À compléter</strong></div>';
+ $("#sellingPitch").textContent=highlights.length
+   ?"L'adresse bénéficie de plusieurs services accessibles à proximité : "+highlights.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+" . Ces éléments peuvent être utilisés pour décrire concrètement le quotidien d'un acquéreur, sans les présenter comme une majoration automatique du prix."
+   :"Aucun repère de proximité suffisamment pertinent n'a pu être identifié automatiquement dans le rayon retenu.";
+ renderSellerPost();
+}
+function renderMarket(data){
+ const market=data||{};
+ pageData.market=market;
+ const h=Array.isArray(market.history)?market.history.filter(x=>n(x.value)!=null):[];
+ const years=h.map(x=>Number(x.year)).filter(Number.isFinite);
+ const period=years.length?(Math.min(...years)+"–"+Math.max(...years)):"période disponible";
+ const tx=n(market.transactions)!=null?Number(market.transactions).toLocaleString("fr-FR"):"—";
+
+ $("#metrics").innerHTML=[
+  ["Prix médian communal",m2(market.communalPrice),"repère général"],
+  ["Ventes recensées",tx,"sur "+period],
+  ["Maisons",m2(market.housePrice),"repère le plus proche du bien"],
+  ["Source",market.source||"—","origine des données"]
+ ].map(x=>'<div class="metric"><label>'+esc(x[0])+'</label><strong>'+esc(x[1])+'</strong><small>'+esc(x[2])+'</small></div>').join("");
+
+ $("#types").innerHTML=
+ '<div class="type"><b>Maison</b><strong>'+esc(m2(market.housePrice))+'</strong><small>prix médian signé dans la commune</small></div>'+
+ '<div class="type"><b>Appartement</b><strong>'+esc(m2(market.apartmentPrice))+'</strong><small>repère distinct, à ne pas mélanger avec une maison</small></div>'+
+ '<div class="type"><b>Lecture pour votre bien</b><strong>'+esc(m2(market.housePrice))+'</strong><small>le repère maison est privilégié car votre bien est une maison</small></div>';
+
+ $("#marketMessage").textContent=market.message||("Ces chiffres décrivent le marché communal ; ils ne constituent pas à eux seuls une estimation du bien.");
+
+ if(!h.length){$("#history").innerHTML='<div class="empty">Historique annuel indisponible.</div>'}
+ else{
+  const vals=h.map(x=>Number(x.value)),min=Math.min(...vals),max=Math.max(...vals);
+  $("#history").innerHTML=h.map(x=>{
+   const pct=max===min?55:18+((Number(x.value)-min)/(max-min))*72;
+   return '<div class="bar"><em>'+Math.round(Number(x.value)).toLocaleString("fr-FR")+'</em><i style="height:'+pct+'%"></i><b>'+esc(x.year)+'</b></div>';
+  }).join("");
+ }
+}
+
+function renderSales(rows){
+ if(!Array.isArray(rows)||!rows.length){$("#sales").innerHTML='<div class="empty">Aucune transaction exploitable récupérée pour cette commune.</div>';return}
+ $("#sales").innerHTML='<div class="sales-note"><b>Comment lire ces ventes :</b> ce sont des transactions enregistrées dans la commune. Elles donnent du contexte au marché local ; elles ne sont pas toutes comparables à votre bien.</div>'+
+ rows.slice(0,9).map(s=>
+ '<article class="sale"><div class="sale-top"><b>'+esc(s.type||"Bien")+'</b><span class="price">'+esc(eur(s.price))+'</span></div>'+
+ '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(fmtDate(s.date))+' · '+esc(s.surface?s.surface+" m²":"surface non renseignée")+'<br>'+esc(m2(s.pricePerM2))+'</p>'+
+ '<span class="tag">'+esc(s.source||"DVF")+'</span></article>'
+ ).join("");
+}
+
+function renderReference(ref){
+ const r=ref||{};
+ const value=r.referenceValue;
+ pageData.reference=r;
+ const comparable=!!r.fromComparables;
+ const txLabel=comparable?(r.transactions??"—"):"Contexte communal";
+ const nature=comparable?"Ventes DVF comparables":"Repère communal de secours";
+ const range=r.rangeLow!=null&&r.rangeHigh!=null
+   ?eur(r.rangeLow)+" à "+eur(r.rangeHigh)
+   :"—";
+ $("#reference").innerHTML=
+ '<div class="ref-main"><h3>Valeur centrale observée</h3><div class="ref-value">'+esc(eur(value))+'</div><p>'+esc(r.explanation||"Repère indicatif disponible lorsque les données nécessaires sont présentes.")+'</p></div>'+
+ '<div class="ref-list"><div class="ref-row"><b>Fourchette observée</b><span>'+esc(range)+'</span></div>'+
+ '<div class="ref-row"><b>Repère au m²</b><span>'+esc(m2(r.basePriceM2))+'</span></div>'+
+ '<div class="ref-row"><b>Ventes prises en compte</b><span>'+esc(txLabel)+'</span></div>'+
+ '<div class="ref-row"><b>Fiabilité du repère</b><span>'+esc(r.confidence||"Faible")+'</span></div>'+
+ '<div class="ref-row"><b>Nature du repère</b><span>'+esc(nature)+'</span></div></div>';
+ renderSellerReading(r);
+}
+function renderSellerReading(r){
+ const el=$("#sellerReading");
+ if(!el)return;
+ const d=pageData.space||{};
+ const c=pageData.comparables||{};
+ const m=pageData.market||{};
+ const assets=sellerAssetHighlights();
+ const comparable=!!r.fromComparables;
+ const type=d.propertyType||"bien";
+ const commune=d.city||"la commune";
+ const base=r.basePriceM2;
+ const baseText=base!=null?Math.round(Number(base)).toLocaleString("fr-FR")+" €/m²":"un repère de marché";
+ const communalM2=type==="Maison"?Number(m.housePrice||m.communalPrice):type==="Appartement"?Number(m.apartmentPrice||m.communalPrice):Number(m.communalPrice);
+ const communalText=Number.isFinite(communalM2)&&communalM2>0?Math.round(communalM2).toLocaleString("fr-FR")+" €/m²":"non disponible";
+ const gap=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?((Number(base)/communalM2-1)*100):null;
+ const gapText=gap!=null?(gap>=0?"+":"")+gap.toFixed(1).replace(".",",")+" %":"";
+ const count=Number(c.matchCount||0);
+ const strict=Number(c.strictCount||0);
+ const radius=Number(c.radiusKm||0);
+ const bullets=[];
+ if(comparable){
+   bullets.push("Le "+baseText+" n'est pas une moyenne générale : il est calculé à partir des ventes retenues comme comparables à votre "+type+" selon le type de bien, la surface, le nombre de pièces, la distance et la récence.");
+   bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" ont été retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+(radius.toLocaleString("fr-FR")+" km"):"")+"."+(strict?" Parmi elles, "+strict+" correspondent au premier niveau de proximité.":""));
+   if(gap!=null) bullets.push("À titre de comparaison, le repère des maisons dans la commune est de "+communalText+". Le repère local des comparables est donc "+gapText+" par rapport à cette référence communale.");
+   bullets.push("La valeur affichée correspond à un repère de départ : elle ne tient pas encore compte de l'état précis du bien, de ses prestations, des travaux à prévoir ou de la stratégie de mise en vente.");
+ }else{
+   bullets.push("Le repère repose sur le marché communal disponible ; il ne remplace pas une analyse des ventes réellement comparables.");
+   bullets.push("Les caractéristiques du bien, son état, ses prestations et son environnement doivent compléter cette première lecture.");
+ }
+ if(assets.length) bullets.push("Le secteur présente aussi des éléments concrets à proximité, comme "+assets.slice(0,3).map(x=>x.label.toLowerCase()+" "+x.distance).join(", ")+".");
+ el.innerHTML='<h3>Ce que cela signifie pour votre vente</h3>'+
+   '<p class="reading-title">Pourquoi ce prix ressort</p>'+
+   '<p>Pour '+esc(commune)+', le chiffre affiché est un <b>repère de valeur indicatif</b> construit à partir des ventes comparables disponibles autour de l\'adresse.</p>'+
+   '<ul>'+bullets.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
+}
+function renderComps(c){
+ c=c||{};
+ pageData.comparables=c;
+ $("#compSummary").innerHTML=
+ '<div class="ref-main"><h3>Repère des ventes proches</h3><div class="ref-value">'+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"—")+'</div><p>'+esc(c.message||c.method||"Recherche progressive autour de l'adresse.")+'</p></div>'+
+ '<div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>'+esc(c.origin?.lat!=null?"Oui":"Non")+'</span></div>'+
+ '<div class="ref-row"><b>Périmètre retenu</b><span>'+esc(c.searchScope||"—")+'</span></div>'+
+ '<div class="ref-row"><b>Ventes retenues</b><span>'+esc(c.matchCount??"—")+'</span></div>'+
+ '<div class="ref-row"><b>Médiane des comparables</b><span>'+esc(c.median!=null?m2(c.median):"—")+'</span></div>'+
+ '<div class="ref-row"><b>Dispersion des ventes</b><span>'+esc(c.q1!=null&&c.q3!=null?"Zone centrale : "+m2(c.q1)+" à "+m2(c.q3)+(c.spreadPct!=null?" · "+String(c.spreadPct).replace(".",",")+" % d’écart":""):"—")+'</span></div>'+
+ '<div class="ref-row"><b>Très proches</b><span>'+esc(c.closeCount??"0")+'</span></div></div>';
+ const rows=Array.isArray(c.sales)?c.sales:[];
+ if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
+ $("#comps").innerHTML='<div class="comps-note"><b>Lecture vendeur :</b> le repère de '+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"prix")+' s’appuie sur les ventes jugées les plus comparables. Les ventes plus éloignées ou moins proches des caractéristiques du bien ont un poids plus faible dans le calcul.</div>'+
+ rows.map(s=>{
+  const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
+  return '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="pill">'+esc(proximity)+'</span></div>'+
+  '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+'</p>'+
+  '<div class="comp-note">'+esc(s.sameStreet?"Même rue que l’adresse étudiée.":"Retenue pour sa proximité et ses caractéristiques comparables.")+'</div></article>';
+ }).join("");
+}
+
+function renderNearby(rows){
+ if(!Array.isArray(rows)||!rows.length){$("#nearby").innerHTML='<div class="empty">Communes proches indisponibles.</div>';return}
+ $("#nearby").innerHTML=rows.map(x=>'<div class="near"><b>'+esc(x.name||x.nom||"—")+'</b><p>'+esc(x.distanceKm!=null?x.distanceKm+" km":"distance non disponible")+(x.population?" · "+Number(x.population).toLocaleString("fr-FR")+" habitants":"")+'</p></div>').join("");
+}
+
+function renderRows(el,data){
+ const node=$(el), card=node?.closest(".env-card");
+ if(!node)return;
+ if(!data||data.available===false){
+   if(card) card.classList.add("env-unavailable");
+   node.innerHTML='<div class="env-note"><b>À vérifier avant la mise en vente</b><span>La source publique n’est pas disponible pour cette session. Aucun chiffre n’est affiché sans vérification.</span></div>';
+   return;
+ }
+ if(card) card.classList.remove("env-unavailable");
+ const pairs=[];
+ if(data.year!=null) pairs.push('<div class="row"><span>Année</span><b>'+esc(data.year)+'</b></div>');
+ if(data.source) pairs.push('<div class="row"><span>Source</span><b>'+esc(data.source)+'</b></div>');
+ if(Array.isArray(data.indicators)&&data.indicators.length){
+   pairs.push('<div class="row"><span>Indicateurs</span><b>'+data.indicators.slice(0,8).map(x=>esc(x.label||x.indicator||"Indicateur")+" : "+(x.rate!=null?x.rate+" "+(x.unit||""):x.count!=null?x.count+" faits":"donnée disponible")).join("<br>")+'</b></div>');
+ }
+ if(Array.isArray(data.risks)&&data.risks.length){
+   pairs.push('<div class="row"><span>Risques recensés</span><b>'+data.risks.slice(0,12).map(esc).join("<br>")+'</b></div>');
+ }
+ if(data.catNatCount!=null) pairs.push('<div class="row"><span>Arrêtés catastrophe naturelle</span><b>'+esc(data.catNatCount)+'</b></div>');
+ if(data.counters&&typeof data.counters==="object"){
+   const labels={schools:"Écoles",health:"Santé",pharmacies:"Pharmacies",shops:"Commerces",stations:"Gares / mobilité",busStops:"Arrêts de bus",postOffices:"Poste",totalServices:"Total repères"};
+   Object.entries(labels).forEach(([key,label])=>{if(data.counters[key]!=null)pairs.push('<div class="row"><span>'+esc(label)+'</span><b>'+esc(data.counters[key])+'</b></div>');});
+ }
+ if(data.radiusKm!=null)pairs.push('<div class="row"><span>Rayon</span><b>'+esc(data.radiusKm)+" km"+'</b></div>');
+ if(data.note)pairs.push('<div class="row"><span>Précision</span><b>'+esc(data.note)+'</b></div>');
+ node.innerHTML=pairs.length?pairs.slice(0,10).join(""):'<div class="env-note"><b>Pas de donnée exploitable</b><span>Aucun indicateur vérifié n’est affiché.</span></div>';
+}
+
+async function getData(url,timeoutMs,label){
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{cache:"no-store",signal:ctl.signal,headers:{"Accept":"application/json"}});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok || payload.ok===false){
+      const error=new Error(payload.error||payload.message||("Réponse HTTP "+response.status));
+      error.code=payload.code||("HTTP-"+response.status);
+      throw error;
+    }
+    return payload;
+  }catch(error){
+    if(error?.name==="AbortError"){
+      const e=new Error((label||"La source")+" a dépassé son délai de réponse.");
+      e.code="JML-TIMEOUT";
+      throw e;
+    }
+    throw error;
+  }finally{clearTimeout(timer);}
+}
+
+let highlights=[];
+let cats={};
+let order=[
+  ["schools","Écoles","Écoles et établissements scolaires proches."],
+  ["commerces","Commerces","Commerces et activités du quotidien."],
+  ["health","Santé","Pharmacies et professionnels de santé."],
+  ["transport","Mobilité","Gares, arrêts et autres repères de mobilité."],
+  ["parks","Loisirs","Parcs, équipements sportifs et espaces de loisirs."],
+  ["services","Services","Poste, banque, restauration et services locaux."]
+];
+
+function setProject(d){
+  d=d||{};
+  $("#city").textContent=d.city||"Commune non renseignée";
+  $("#address").textContent=d.address||"Adresse non renseignée";
+  $("#type").textContent=d.propertyType||"—";
+  $("#surface").textContent=d.surface?String(d.surface)+" m²":"—";
+  $("#rooms").textContent=d.rooms?String(d.rooms):"—";
+  $("#dpe").textContent=d.dpe||"—";
+  const map=$("#map");
+  if(map){
+    const q=[d.address,d.city].filter(Boolean).join(", ");
+    if(q){
+      map.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);
+      map.style.display="inline-block";
+    }else map.style.display="none";
+  }
+}
+
+function normalizeAssetCategories(data){
+  const source=data?.categories||{};
+  const aliases={
+    schools:["schools","school","education"],
+    commerces:["commerces","commerce","shops","shopping"],
+    health:["health","sante","santé","medical","pharmacies"],
+    transport:["transport","mobility","mobilite","mobilité"],
+    parks:["parks","loisirs","leisure","sport"],
+    services:["services","service"]
+  };
+  const out={};
+  Object.entries(aliases).forEach(([key,keys])=>{
+    let found=null;
+    for(const k of keys){if(source[k]){found=source[k];break;}}
+    out[key]=found||{items:[],available:false,source:"Source non disponible"};
+  });
+  return out;
+}
+
+function renderAssets(data){
+  pageData.assets=data||null;
+  cats=normalizeAssetCategories(data||{});
+  const all=[];
+  order.forEach(([key,title])=>{
+    const c=cats[key]||{};
+    (Array.isArray(c.items)?c.items:[]).forEach(item=>{
+      const distanceKm=n(item.distanceKm);
+      all.push({
+        label:title,
+        name:item.name||item.type||"",
+        distance:distanceKm!=null?distanceKm.toFixed(2).replace(".",",")+" km":(item.distanceLabel||"à proximité"),
+        distanceKm:distanceKm??999,
+        type:item.type||item.name||"Repère",
+        source:c.source||data?.source||"Données publiques"
+      });
+    });
+  });
+  all.sort((a,b)=>a.distanceKm-b.distanceKm);
+  const used=new Set(), selected=[];
+  for(const item of all){
+    const sig=item.name+"|"+item.label;
+    if(used.has(sig))continue;
+    used.add(sig);
+    selected.push(item);
+    if(selected.length>=5)break;
+  }
+  highlights=selected;
+  const root=$("#assets");
+  if(!root)return;
+  if(data?.available===false){
+    root.innerHTML='<div class="asset-intro"><b>Données de proximité indisponibles pour cette session</b><p>'+esc(data.message||"La source publique n'a pas répondu. Aucun équipement n'est inventé.")+'</p></div>';
+    $("#proof").innerHTML='<div><b>Proximité</b><strong>À vérifier</strong></div><div><b>Vie quotidienne</b><strong>À vérifier</strong></div><div><b>Mobilité</b><strong>À vérifier</strong></div><div><b>Famille / loisirs</b><strong>À vérifier</strong></div>';
+    $("#sellingPitch").textContent="Les équipements autour de l'adresse devront être vérifiés avant d'être repris dans l'argumentaire vendeur.";
+    return;
+  }
+  if(!selected.length){
+    root.innerHTML='<div class="asset-intro"><b>Aucun repère de proximité suffisamment pertinent</b><p>La source a répondu, mais aucun équipement exploitable n\'a été identifié dans le périmètre retenu.</p></div>';
+    $("#proof").innerHTML='<div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div>';
+    return;
+  }
+  root.innerHTML=
+    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>Les éléments ci-dessous proviennent des données retournées autour de l\'adresse. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
+    '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
+    '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
+      const c=cats[key]||{items:[],available:false};
+      const items=(Array.isArray(c.items)?c.items:[]).slice(0,3);
+      const body=items.length?items.map(x=>'<li><b>'+esc(x.type||x.name||"Équipement")+'</b>'+(x.name&&x.name!==x.type?' · '+esc(x.name):'')+' <span class="distance">'+esc(x.distanceLabel||((n(x.distanceKm)!=null?n(x.distanceKm).toFixed(2):"—")+" km"))+'</span></li>').join(""):'<li>'+esc(c.available===false?"Source indisponible":"Aucun repère pertinent identifié.")+'</li>';
+      return '<article class="asset"><h3>'+title+'</h3><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||data?.source||"Données publiques")+'</small></article>';
+    }).join("")+'</div></details>';
+  const proof=selected.slice(0,4);
+  $("#proof").innerHTML=proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("");
+  $("#sellingPitch").textContent="L'adresse bénéficie de plusieurs repères accessibles à proximité : "+selected.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+" . Ces éléments peuvent être utilisés pour décrire concrètement le quotidien d'un acquéreur, sans les présenter comme une majoration automatique du prix.";
+}
+
+function sellerAssetHighlights(){return highlights.slice(0,5);}
+
+function renderSellerPost(){
+  const el=$("#sellerPost");
+  if(!el)return;
+  const d=pageData.space||{}, m=pageData.market||{}, r=pageData.reference||{}, c=pageData.comparables||{};
+  const commune=d.city||"la commune";
+  const type=d.propertyType||"bien";
+  const surface=d.surface?String(d.surface)+" m²":"surface non renseignée";
+  const price=r.referenceValue!=null?eur(r.referenceValue):"repère de valeur non disponible";
+  const m2text=r.basePriceM2!=null?m2(r.basePriceM2):"repère au m² non disponible";
+  const places=highlights.slice(0,3).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ");
+  const comp=c.matchCount?String(c.matchCount)+" vente"+(c.matchCount>1?"s":"")+" comparable"+(c.matchCount>1?"s":""):"aucune vente comparable exploitable";
+  el.textContent="Pour "+commune+", votre "+type+" de "+surface+" dispose d'un repère de valeur indicatif de "+price+" ("+m2text+"). Ce repère s'appuie sur les données de marché disponibles"+(c.matchCount?" et sur "+comp:"")+" .";
+  if(places) el.textContent+=" Côté environnement, les données disponibles font ressortir notamment "+places+".";
+  el.textContent+=" Ces éléments décrivent le marché et le cadre de vie ; ils ne remplacent pas l'analyse précise de l'état du bien, de ses prestations et de sa stratégie de vente.";
+}
+
+async function run(){
+ try{
+  const d=await loadServerSpace();
+  pageData.space=d;
+  setProject(d);
+ addDiag("Page / navigateur","JML-D001",PAGE_BUILD+" · données du projet récupérées depuis l’espace vendeur / URL");
+ $("#status").textContent="Dossier chargé · recherche des données locales…";
+ if(!d.city){
+  $("#status").textContent="Commune manquante";
+  $("#marketMessage").className="message bad";
+  $("#marketMessage").textContent="La commune n'est pas transmise à cette page. Retournez dans l'espace vendeur et ouvrez Mon secteur depuis le projet.";
+  return;
+ }
+
+ const base=new URLSearchParams({city:d.city});
+ if(d.address)base.set("address",d.address);
+ if(d.propertyType)base.set("propertyType",d.propertyType);
+ if(d.surface)base.set("surface",d.surface);
+ if(d.rooms)base.set("rooms",d.rooms);
+ if(d.terrain)base.set("landSurface",d.terrain);
+
+ // 1. Marché communal indépendant : il doit fonctionner même si le moteur de comparables tombe.
+ try{
+  const market=await getData("/api/commune-market?"+new URLSearchParams({city:d.city}).toString(),12000,"Marché communal");
+  renderMarket(market);
+  renderSales(market.recentSales||[]);
+  $("#status").textContent="Marché communal chargé";
+  const isHouse=/maison/i.test(d.propertyType||"");
+  const isApt=/appartement|studio|duplex|loft/i.test(d.propertyType||"");
+  const basePrice=isHouse?market.housePrice:isApt?market.apartmentPrice:market.communalPrice;
+  const surf=n(d.surface);
+  renderReference({basePriceM2:basePrice,surface:surf,referenceValue:n(basePrice)!=null&&surf?Math.round(Number(basePrice)*surf):null,
+   transactions:market.transactions,type:isHouse?"Maison":isApt?"Appartement":"Tous biens",
+   explanation:"Repère calculé à partir du prix médian communal disponible et de la surface renseignée. Il ne constitue pas une estimation certifiée."
+  });
+  renderSellerPost();
+ }catch(e){
+  addDiag("Marché communal",e.code||"JML-MARKET-CLIENT",e.message||"Erreur");
+  $("#status").textContent="Marché partiellement indisponible";
+  $("#marketMessage").className="message bad";
+  $("#marketMessage").textContent="Les données communales n'ont pas répondu : "+(e.message||"erreur temporaire")+". Les autres blocs continuent indépendamment.";
+  $("#sales").innerHTML='<div class="error">Les transactions communales n’ont pas pu être chargées. Cela n’empêche pas la recherche des comparables.</div>';
+ }
+
+ // 1bis. Atouts géolocalisés : totalement indépendant du moteur marché.
+ try{
+  const assetParams=new URLSearchParams();
+  if(d.address) assetParams.set("address",d.address);
+  if(d.city) assetParams.set("city",d.city);
+  const assets=await getData("/api/territory-assets?"+assetParams.toString(),13500,"Équipements / géocodage");
+  renderAssets(assets);
+  renderSellerPost();
+ }catch(e){
+  renderAssets({available:false,code:e.code||"JML-ASSET-CLIENT",message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+"."});
+ }
+
+ // 2. Comparables : appel séparé.
+ try{
+  const territory=await getData("/api/territory-comparables?"+base.toString(),20000,"Comparables / territoire");
+  const comps=territory.comparables||{};
+  renderComps(comps);
+
+  // Le repère vendeur est recalculé après les comparables :
+  // les ventes proches et de même type sont plus directement utiles
+  // que le seul prix médian communal.
+  const surf=n(d.surface);
+  const isHouse=/maison/i.test(d.propertyType||"");
+  const compM2=n(comps.weightedPriceM2);
+  const houseM2=n(pageData.market?.housePrice);
+  const selectedM2=compM2!=null?compM2:(isHouse?houseM2:n(pageData.market?.communalPrice));
+  renderReference({
+    basePriceM2:selectedM2,
+    surface:surf,
+    referenceValue:selectedM2!=null&&surf?Math.round(selectedM2*surf):null,
+    rangeLow:comps.rangeLow!=null&&surf?Math.round(Number(comps.rangeLow)*surf):null,
+    rangeHigh:comps.rangeHigh!=null&&surf?Math.round(Number(comps.rangeHigh)*surf):null,
+    confidence:comps.confidence||"Faible",
+    transactions:comps.matchCount||0,
+    type:d.propertyType||"Bien",
+    fromComparables:compM2!=null,
+    explanation:compM2!=null
+      ?"Valeur centrale construite à partir des transactions DVF réellement comparables retenues autour de l'adresse. La médiane pondérée limite l'influence d'une vente atypique."
+      :"Aucun repère comparable suffisamment exploitable : le prix maison communal reste utilisé comme contexte de secours."
+  });
+  renderSellerPost();
+  if(territory.ok!==false) $("#status").textContent="Données marché + comparables chargés";
+  else $("#status").textContent="Marché communal chargé · comparables en mode dégradé";
+  try{
+    const nearby=await getData("/api/territory-nearby?"+new URLSearchParams({city:d.city,address:d.address}).toString(),9000,"Communes proches");
+    if(Array.isArray(nearby.nearby))renderNearby(nearby.nearby);
+  }catch(_nearbyError){
+    $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
+  }
+ }catch(e){
+  addDiag("Comparables / territoire",e.code||"JML-COMP-CLIENT",e.message||"Erreur");
+  $("#comps").innerHTML='<div class="error"><b>'+esc(e.code||"JML-COMP-CLIENT")+'</b> · La recherche autour de l’adresse a échoué ou dépassé son délai. Les données communales restent indépendantes.</div>';
+  $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
+ }
+
+ // 3. Enrichissements : résolution de commune indépendante du moteur marché.
+ try{
+  const communeData=await getData("/api/territory-commune?"+new URLSearchParams({
+   city:d.city||"",
+   address:d.address||""
+  }).toString(),8000,"Enrichissement / commune");
+  const c=communeData.commune;
+  const coords=c?.centre?.coordinates;
+  if(/^\d{5}$/.test(String(c?.code||""))&&Array.isArray(coords)&&coords.length>=2){
+   const q=new URLSearchParams({code:c.code,lat:String(coords[1]),lon:String(coords[0])});
+   const env=await getData("/api/territory-enrichment?"+q.toString(),17000,"Sécurité / risques / services");
+   renderRows("#security",env.security);
+   renderRows("#risks",env.risks);
+   renderRows("#environment",env.environment);
+   const allUnavailable=[env.security,env.risks,env.environment].every(x=>!x||x.available===false);
+   const envSection=$("#security")?.closest(".section");
+   if(envSection) envSection.style.display=allUnavailable?"none":"";
+  }else{
+   renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
+  }
+ }catch(e){
+  addDiag("Sécurité / risques / services",e.code||"JML-ENV-CLIENT",e.message||"Erreur");
+  renderRows("#security",null);renderRows("#risks",null);renderRows("#environment",null);
+ }
+ }catch(error){
+  addDiag("Initialisation de la page",error?.code||"JML-INIT-CLIENT",error?.message||"Erreur inattendue.");
+  $("#status").textContent="Erreur de chargement";
+  $("#marketMessage").className="message bad";
+  $("#marketMessage").textContent="Le dossier vendeur n'a pas pu être chargé correctement. Rechargez votre espace vendeur depuis son lien personnel.";
+ }
+}
+const copyPost=$("#copyPost");
+if(copyPost)copyPost.addEventListener("click",async()=>{
+ const text=$("#sellerPost")?.textContent||"";
+ try{
+  await navigator.clipboard.writeText(text);
+  copyPost.textContent="✓ Texte copié";
+  setTimeout(()=>copyPost.textContent="Copier le texte",1800);
+ }catch(_e){
+  copyPost.textContent="Copie indisponible";
+  setTimeout(()=>copyPost.textContent="Copier le texte",1800);
+ }
+});
+run();
+})();
+</script>
+<style id="jml-page-compact-v1">
+/* Version compacte : conserve tout le contenu, réduit uniquement les espaces */
+.wrap{padding:14px 14px 38px!important}
+.hero{padding:20px 21px 18px!important;border-radius:20px!important}
+.hero h1{font-size:33px!important;margin:6px 0!important}
+.back{margin-top:12px!important;padding:8px 12px!important}
+.section{margin-top:16px!important}
+.card{padding:15px!important;border-radius:16px!important}
+.value-intro{padding:14px!important}
+.asset-grid,.benefit-grid{gap:8px!important;margin-top:8px!important}
+.asset,.benefit,.post-card{padding:11px!important}
+.head{margin-bottom:7px!important}
+.project{margin-top:10px!important}
+.grid{gap:7px!important;margin-top:10px!important}
+.box{padding:10px!important}
+.metrics{gap:7px!important}
+.metric{padding:11px!important}
+.types{gap:7px!important;margin-top:7px!important}
+.type{padding:10px!important}
+.post-card{margin-top:8px!important}
+.post-text{margin-top:7px!important;padding:10px!important}
+@media(max-width:760px){.wrap{padding-bottom:28px!important}.hero{padding:18px!important}.section{margin-top:12px!important}}
+</style>
+</body>
+</html>
