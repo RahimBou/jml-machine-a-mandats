@@ -1223,11 +1223,12 @@ async function getAdemeDpeByAddress(address,city="",postal=""){
   if(local?.dpe)return local;
   const raw=String(address||"").trim(), normalized=normalizeAddress(raw);
   if(!normalized)return null;
-  const cacheKey=normalized+"|"+normalizeAddress(city);
+  const targetPostalInput=String(postal||"").trim();
+  const cacheKey=normalized+"|"+normalizeAddress(city)+"|"+targetPostalInput;
   if(dpeCache.has(cacheKey))return dpeCache.get(cacheKey);
   try{
     const targetNumber=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1]||"";
-    const targetPostal=(raw.match(/\b(\d{5})\b/)||[])[1]||"";
+    const targetPostal=targetPostalInput || (raw.match(/\b(\d{5})\b/)||[])[1]||"";
     const targetCity=normalizeAddress(city);
     const targetStreet=dpeStreetName(normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim());
     let best=null,bestScore=-1;
