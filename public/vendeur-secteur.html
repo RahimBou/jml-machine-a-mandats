@@ -443,6 +443,149 @@ function renderRows(el,data){
  node.innerHTML=pairs.length?pairs.slice(0,10).join(""):'<div class="env-note"><b>Pas de donnée exploitable</b><span>Aucun indicateur vérifié n’est affiché.</span></div>';
 }
 
+async function getData(url,timeoutMs,label){
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{cache:"no-store",signal:ctl.signal,headers:{"Accept":"application/json"}});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok || payload.ok===false){
+      const error=new Error(payload.error||payload.message||("Réponse HTTP "+response.status));
+      error.code=payload.code||("HTTP-"+response.status);
+      throw error;
+    }
+    return payload;
+  }catch(error){
+    if(error?.name==="AbortError"){
+      const e=new Error((label||"La source")+" a dépassé son délai de réponse.");
+      e.code="JML-TIMEOUT";
+      throw e;
+    }
+    throw error;
+  }finally{clearTimeout(timer);}
+}
+
+let highlights=[];
+let cats={};
+let order=[
+  ["schools","Écoles","Écoles et établissements scolaires proches."],
+  ["commerces","Commerces","Commerces et activités du quotidien."],
+  ["health","Santé","Pharmacies et professionnels de santé."],
+  ["transport","Mobilité","Gares, arrêts et autres repères de mobilité."],
+  ["parks","Loisirs","Parcs, équipements sportifs et espaces de loisirs."],
+  ["services","Services","Poste, banque, restauration et services locaux."]
+];
+
+function setProject(d){
+  d=d||{};
+  $("#city").textContent=d.city||"Commune non renseignée";
+  $("#address").textContent=d.address||"Adresse non renseignée";
+  $("#type").textContent=d.propertyType||"—";
+  $("#surface").textContent=d.surface?String(d.surface)+" m²":"—";
+  $("#rooms").textContent=d.rooms?String(d.rooms):"—";
+  $("#dpe").textContent=d.dpe||"—";
+  const map=$("#map");
+  if(map){
+    const q=[d.address,d.city].filter(Boolean).join(", ");
+    if(q){
+      map.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);
+      map.style.display="inline-block";
+    }else map.style.display="none";
+  }
+}
+
+function normalizeAssetCategories(data){
+  const source=data?.categories||{};
+  const aliases={
+    schools:["schools","school","education"],
+    commerces:["commerces","commerce","shops","shopping"],
+    health:["health","sante","santé","medical","pharmacies"],
+    transport:["transport","mobility","mobilite","mobilité"],
+    parks:["parks","loisirs","leisure","sport"],
+    services:["services","service"]
+  };
+  const out={};
+  Object.entries(aliases).forEach(([key,keys])=>{
+    let found=null;
+    for(const k of keys){if(source[k]){found=source[k];break;}}
+    out[key]=found||{items:[],available:false,source:"Source non disponible"};
+  });
+  return out;
+}
+
+function renderAssets(data){
+  pageData.assets=data||null;
+  cats=normalizeAssetCategories(data||{});
+  const all=[];
+  order.forEach(([key,title])=>{
+    const c=cats[key]||{};
+    (Array.isArray(c.items)?c.items:[]).forEach(item=>{
+      const distanceKm=n(item.distanceKm);
+      all.push({
+        label:title,
+        name:item.name||item.type||"",
+        distance:distanceKm!=null?distanceKm.toFixed(2).replace(".",",")+" km":(item.distanceLabel||"à proximité"),
+        distanceKm:distanceKm??999,
+        type:item.type||item.name||"Repère",
+        source:c.source||data?.source||"Données publiques"
+      });
+    });
+  });
+  all.sort((a,b)=>a.distanceKm-b.distanceKm);
+  const used=new Set(), selected=[];
+  for(const item of all){
+    const sig=item.name+"|"+item.label;
+    if(used.has(sig))continue;
+    used.add(sig);
+    selected.push(item);
+    if(selected.length>=5)break;
+  }
+  highlights=selected;
+  const root=$("#assets");
+  if(!root)return;
+  if(data?.available===false){
+    root.innerHTML='<div class="asset-intro"><b>Données de proximité indisponibles pour cette session</b><p>'+esc(data.message||"La source publique n'a pas répondu. Aucun équipement n'est inventé.")+'</p></div>';
+    $("#proof").innerHTML='<div><b>Proximité</b><strong>À vérifier</strong></div><div><b>Vie quotidienne</b><strong>À vérifier</strong></div><div><b>Mobilité</b><strong>À vérifier</strong></div><div><b>Famille / loisirs</b><strong>À vérifier</strong></div>';
+    $("#sellingPitch").textContent="Les équipements autour de l'adresse devront être vérifiés avant d'être repris dans l'argumentaire vendeur.";
+    return;
+  }
+  if(!selected.length){
+    root.innerHTML='<div class="asset-intro"><b>Aucun repère de proximité suffisamment pertinent</b><p>La source a répondu, mais aucun équipement exploitable n'a été identifié dans le périmètre retenu.</p></div>';
+    $("#proof").innerHTML='<div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div>';
+    return;
+  }
+  root.innerHTML=
+    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>Les éléments ci-dessous proviennent des données retournées autour de l'adresse. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
+    '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
+    '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
+      const c=cats[key]||{items:[],available:false};
+      const items=(Array.isArray(c.items)?c.items:[]).slice(0,3);
+      const body=items.length?items.map(x=>'<li><b>'+esc(x.type||x.name||"Équipement")+'</b>'+(x.name&&x.name!==x.type?' · '+esc(x.name):'')+' <span class="distance">'+esc(x.distanceLabel||((n(x.distanceKm)!=null?n(x.distanceKm).toFixed(2):"—")+" km"))+'</span></li>').join(""):'<li>'+esc(c.available===false?"Source indisponible":"Aucun repère pertinent identifié.")+'</li>';
+      return '<article class="asset"><h3>'+title+'</h3><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||data?.source||"Données publiques")+'</small></article>';
+    }).join("")+'</div></details>';
+  const proof=selected.slice(0,4);
+  $("#proof").innerHTML=proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("");
+  $("#sellingPitch").textContent="L'adresse bénéficie de plusieurs repères accessibles à proximité : "+selected.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+" . Ces éléments peuvent être utilisés pour décrire concrètement le quotidien d'un acquéreur, sans les présenter comme une majoration automatique du prix.";
+}
+
+function sellerAssetHighlights(){return highlights.slice(0,5);}
+
+function renderSellerPost(){
+  const el=$("#sellerPost");
+  if(!el)return;
+  const d=pageData.space||{}, m=pageData.market||{}, r=pageData.reference||{}, c=pageData.comparables||{};
+  const commune=d.city||"la commune";
+  const type=d.propertyType||"bien";
+  const surface=d.surface?String(d.surface)+" m²":"surface non renseignée";
+  const price=r.referenceValue!=null?eur(r.referenceValue):"repère de valeur non disponible";
+  const m2text=r.basePriceM2!=null?m2(r.basePriceM2):"repère au m² non disponible";
+  const places=highlights.slice(0,3).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ");
+  const comp=c.matchCount?String(c.matchCount)+" vente"+(c.matchCount>1?"s":"")+" comparable"+(c.matchCount>1?"s":""):"aucune vente comparable exploitable";
+  el.textContent="Pour "+commune+", votre "+type+" de "+surface+" dispose d'un repère de valeur indicatif de "+price+" ("+m2text+"). Ce repère s'appuie sur les données de marché disponibles"+(c.matchCount?" et sur "+comp:"")+" .";
+  if(places) el.textContent+=" Côté environnement, les données disponibles font ressortir notamment "+places+".";
+  el.textContent+=" Ces éléments décrivent le marché et le cadre de vie ; ils ne remplacent pas l'analyse précise de l'état du bien, de ses prestations et de sa stratégie de vente.";
+}
+
 async function run(){
  const d=await loadServerSpace();
  pageData.space=d;
