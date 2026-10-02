@@ -1075,7 +1075,7 @@ function scoreAdemeAddress(row,address,city){
   const target=normalizeAddress(raw);
   const targetCity=normalizeAddress(city);
   const targetNumber=(raw.match(/^\s*(\d+[A-Za-z]?)/)||[])[1]||"";
-  const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").trim();
+  const targetStreet=normalizeAddress(raw).replace(/^\d+[A-Z]?\s*/,"").replace(/\b\d{5}\b/g,"").replace(targetCity,"").trim();
   const rowStreet=normalizeAddress(parts.street);
   const rowNumber=normalizeAddress(parts.number);
   const rowCity=normalizeAddress(parts.city);
