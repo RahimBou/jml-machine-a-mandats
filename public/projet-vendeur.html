@@ -959,6 +959,34 @@ body{font-family:Inter,Arial,Helvetica,sans-serif!important;color:var(--jink)!im
 @media(max-width:520px){
 .jml-hero{height:505px}.jml-hero h1{font-size:35px}.jml-hero-copy{font-size:13px}.jml-form-head h2{font-size:27px}.jml-extra-grid{grid-template-columns:1fr}.jml-trust{grid-template-columns:1fr}.jml-trust-item,.jml-trust-item:nth-child(odd){border-right:0;border-bottom:1px solid #d5c8aa}.jml-trust-item:last-child{border-bottom:0}
 }
+</style><style id="jml-reference-scale-fix">
+/* La maquette reste en composition desktop jusqu'aux petits écrans */
+@media (min-width:701px) and (max-width:1200px){
+  .jml-hero{height:350px!important;min-height:350px!important}
+  .jml-hero-inner{padding-left:7.8%!important;padding-right:7.8%!important}
+  .jml-hero h1{font-size:50px!important;max-width:690px!important}
+  .jml-hero-copy{font-size:14px!important}
+  .jml-slogan{right:6%!important;font-size:23px!important}
+  .jml-hero-points{left:7.8%!important;gap:30px!important}
+  .jml-point{font-size:12px!important}
+  .jml-point-icon{width:44px!important;height:44px!important;flex-basis:44px!important}
+  .jml-form-card{width:88%!important;margin:-1px auto 0!important;padding-left:38px!important;padding-right:38px!important}
+  .jml-form-head{min-height:112px!important}
+  .jml-form-head h2{font-size:32px!important}
+  .jml-form-head p{font-size:11px!important}
+  .jml-local{right:0!important;top:23px!important;width:340px!important}
+  .jml-fields{column-gap:28px!important}
+  .jml-field{padding-left:40px!important}
+  .jml-num{width:32px!important;height:32px!important}
+  .jml-field label{font-size:10.5px!important}
+  .jml-field input,.jml-field select{height:43px!important;font-size:13px!important}
+  .jml-trust{grid-template-columns:repeat(4,1fr)!important;padding-left:4%!important;padding-right:4%!important}
+  .jml-trust-item{padding-left:14px!important;padding-right:14px!important}
+}
+@media(max-width:700px){
+  .jml-hero{height:505px!important;min-height:505px!important}
+  .jml-form-card{width:calc(100% - 24px)!important;margin:-42px 12px 0!important}
+}
 </style></head>
 <body>
 <div class="jml-page">
