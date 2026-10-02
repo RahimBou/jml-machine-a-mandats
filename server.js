@@ -192,6 +192,69 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
   };
 }
 
+const communeExternalDvfCache = new Map();
+
+function normalizeExternalDvfRow(row, fallbackCity=""){
+  const value=Number(row?.valeur_fonciere);
+  const built=Number(row?.surface_reelle_bati);
+  const land=Number(row?.surface_terrain);
+  const typeLocal=String(row?.type_local||"").trim();
+  let type=null;
+  if(/maison/i.test(typeLocal)) type="Maison";
+  else if(/appartement/i.test(typeLocal)) type="Appartement";
+  else if(!typeLocal && Number.isFinite(land)&&land>0 && (!Number.isFinite(built)||built<=0)) type="Terrain";
+  if(!type||!Number.isFinite(value)||value<=0) return null;
+  const surface=type==="Terrain"?0:(Number.isFinite(built)&&built>0?built:0);
+  const comparableSurface=type==="Terrain"?land:surface;
+  if(!Number.isFinite(comparableSurface)||comparableSurface<=0) return null;
+  const pricePerM2=value/comparableSurface;
+  if(!Number.isFinite(pricePerM2)||pricePerM2<=0||pricePerM2>100000) return null;
+  const date=String(row?.date_mutation||"").slice(0,10);
+  const address=[row?.adresse_numero,row?.adresse_suffixe,row?.adresse_nom_voie].filter(Boolean).join(" ").trim();
+  return {
+    id:String(row?.id_mutation||[date,address,value,comparableSurface].join("|")),
+    date,
+    type,
+    price:value,
+    surface,
+    rooms:Number(row?.nombre_pieces_principales)||null,
+    land:Number.isFinite(land)&&land>0?land:null,
+    lat:Number(row?.latitude)||null,
+    lon:Number(row?.longitude)||null,
+    address,
+    street:String(row?.adresse_nom_voie||"").trim(),
+    postal:String(row?.code_postal||"").trim(),
+    code:String(row?.code_commune||"").trim(),
+    city:String(row?.nom_commune||fallbackCity).trim(),
+    pricePerM2,
+    source:"DVF public / API Cquest"
+  };
+}
+
+async function getExternalDvfByCommune(communeCode, city=""){
+  const code=String(communeCode||"").trim();
+  if(!/^\\d{5}$/.test(code)) return [];
+  const key=code;
+  const cached=communeExternalDvfCache.get(key);
+  if(cached&&cached.expiresAt>Date.now()) return cached.rows;
+  try{
+    const url="https://api.cquest.org/dvf?code_commune="+encodeURIComponent(code)+"&nature_mutation=Vente";
+    const response=await fetch(url,{
+      headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur/3.5.0"},
+      signal:AbortSignal.timeout(12000)
+    });
+    if(!response.ok) throw new Error("DVF externe HTTP "+response.status);
+    const payload=await response.json();
+    const raw=Array.isArray(payload?.resultats)?payload.resultats:(Array.isArray(payload?.features)?payload.features.map(x=>x?.properties||{}):[]);
+    const rows=raw.map(x=>normalizeExternalDvfRow(x,city)).filter(Boolean);
+    communeExternalDvfCache.set(key,{expiresAt:Date.now()+6*60*60*1000,rows});
+    return rows;
+  }catch(error){
+    console.warn("JML DVF externe secours:",error.message);
+    return [];
+  }
+}
+
 const communeMarketCache = new Map();
 const IMMO_DATA_API_BASE_URL = String(process.env.IMMO_DATA_API_BASE_URL || "https://api.immo-data.fr").replace(/\/+$/,"");
 
@@ -469,22 +532,98 @@ function decodeBasicEntities(value){
 
 async function getCommuneMarketData(city,code){
   const cleanCity=clean(city,100), communeCode=String(code||"").trim();
-  const key="pg1|"+normalizeSearchCity(cleanCity)+"|"+communeCode;
+  const key="pg2|"+normalizeSearchCity(cleanCity)+"|"+communeCode;
   const cached=communeMarketCache.get(key);
   if(cached&&cached.expiresAt>Date.now()) return {...cached.data,cache:true};
-  const empty={city:cleanCity,found:false,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:"Aucune donnée DVF importée n'est encore disponible pour cette commune.",recentSales:[],recentSalesSource:"PostgreSQL DVF local",nearby:[],history:[],transactions:null,communalPrice:null,housePrice:null,apartmentPrice:null,terrainPrice:null};
-  if(!pool||!/^\d{5}$/.test(communeCode)) return empty;
-  try{
-    const summary=await db(`SELECT COUNT(*)::int AS transactions,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS communal_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Maison') AS house_price,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Appartement') AS apartment_price,
-      percentile_cont(0.5) WITHIN GROUP (ORDER BY (price / NULLIF(land_surface,0))) FILTER (WHERE property_type='Terrain' AND land_surface>0) AS terrain_price
-      FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months'`,[communeCode]);
-    const recent=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,commune_name AS city,price_per_m2::float8 AS "pricePerM2",source FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months' ORDER BY sale_date DESC LIMIT 12`,[communeCode]);
-    const history=await db(`SELECT EXTRACT(YEAR FROM sale_date)::int AS year,COUNT(*)::int AS transactions,percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS value FROM jml_dvf_sales WHERE commune_code=$1 GROUP BY EXTRACT(YEAR FROM sale_date) ORDER BY year`,[communeCode]);
-    const s=summary.rows[0]||{};
-    const data={city:cleanCity,found:Number(s.transactions||0)>0,source:"DVF local JML / PostgreSQL",sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",message:Number(s.transactions||0)>0?"Repère communal calculé directement à partir des transactions DVF importées dans PostgreSQL.":"Aucune transaction DVF importée n'est disponible pour cette commune.",recentSales:recent.rows,recentSalesSource:"DVF local JML / PostgreSQL",nearby:[],history:history.rows.map(x=>({year:x.year,value:x.value!=null?Math.round(Number(x.value)):null,transactions:x.transactions})),transactions:Number(s.transactions||0)||null,communalPrice:s.communal_price!=null?Math.round(Number(s.communal_price)):null,housePrice:s.house_price!=null?Math.round(Number(s.house_price)):null,apartmentPrice:s.apartment_price!=null?Math.round(Number(s.apartment_price)):null,terrainPrice:s.terrain_price!=null?Math.round(Number(s.terrain_price)):null,period:"DVF importé / 24 derniers mois"};
-    communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data}); return {...data,cache:false};
-  }catch(error){console.warn("JML PostgreSQL DVF market:",error.message);return {...empty,message:"La base DVF PostgreSQL est temporairement indisponible."};}
+
+  const empty={
+    city:cleanCity,found:false,
+    source:"DVF local JML / PostgreSQL",
+    sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",
+    message:"Aucune transaction DVF disponible pour cette commune.",
+    recentSales:[],recentSalesSource:"DVF",
+    nearby:[],history:[],transactions:null,
+    communalPrice:null,housePrice:null,apartmentPrice:null,terrainPrice:null
+  };
+
+  // 1. PostgreSQL reste la source principale lorsque les données DVF ont été importées.
+  if(pool&&/^\\d{5}$/.test(communeCode)){
+    try{
+      const summary=await db(`SELECT COUNT(*)::int AS transactions,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS communal_price,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Maison') AS house_price,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) FILTER (WHERE property_type='Appartement') AS apartment_price,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY (price / NULLIF(land_surface,0))) FILTER (WHERE property_type='Terrain' AND land_surface>0) AS terrain_price
+        FROM jml_dvf_sales
+        WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months'`,[communeCode]);
+      const s=summary.rows[0]||{};
+      if(Number(s.transactions||0)>0){
+        const recent=await db(`SELECT mutation_id AS id,TO_CHAR(sale_date,'YYYY-MM-DD') AS date,property_type AS type,
+          price::float8 AS price,surface::float8 AS surface,rooms::float8 AS rooms,land_surface::float8 AS land,
+          latitude AS lat,longitude AS lon,address,street,postal_code AS postal,commune_code AS code,
+          commune_name AS city,price_per_m2::float8 AS "pricePerM2",source
+          FROM jml_dvf_sales WHERE commune_code=$1 AND sale_date>=CURRENT_DATE-INTERVAL '24 months'
+          ORDER BY sale_date DESC LIMIT 12`,[communeCode]);
+        const history=await db(`SELECT EXTRACT(YEAR FROM sale_date)::int AS year,COUNT(*)::int AS transactions,
+          percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS value
+          FROM jml_dvf_sales WHERE commune_code=$1 GROUP BY EXTRACT(YEAR FROM sale_date) ORDER BY year`,[communeCode]);
+        const data={
+          city:cleanCity,found:true,source:"DVF local JML / PostgreSQL",
+          sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",
+          message:"Repère communal calculé à partir des transactions DVF importées dans PostgreSQL.",
+          recentSales:recent.rows,recentSalesSource:"DVF local JML / PostgreSQL",nearby:[],
+          history:history.rows.map(x=>({year:x.year,value:x.value!=null?Math.round(Number(x.value)):null,transactions:x.transactions})),
+          transactions:Number(s.transactions)||null,
+          communalPrice:s.communal_price!=null?Math.round(Number(s.communal_price)):null,
+          housePrice:s.house_price!=null?Math.round(Number(s.house_price)):null,
+          apartmentPrice:s.apartment_price!=null?Math.round(Number(s.apartment_price)):null,
+          terrainPrice:s.terrain_price!=null?Math.round(Number(s.terrain_price)):null,
+          period:"DVF importé / 24 derniers mois"
+        };
+        communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});
+        return {...data,cache:false};
+      }
+    }catch(error){
+      console.warn("JML PostgreSQL DVF market:",error.message);
+    }
+  }
+
+  // 2. Secours automatique : DVF public géolocalisé. Cela évite d'afficher
+  // "Aucune donnée" lorsque PostgreSQL n'a pas encore reçu l'import DVF.
+  const external=await getExternalDvfByCommune(communeCode,cleanCity);
+  if(external.length){
+    const values=external.map(x=>x.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);
+    const median=values.length?(values.length%2?values[(values.length-1)/2]:(values[values.length/2-1]+values[values.length/2])/2):null;
+    const medianOf=type=>{const v=external.filter(x=>x.type===type).map(x=>x.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);return v.length?(v.length%2?v[(v.length-1)/2]:(v[v.length/2-1]+v[v.length/2])/2):null;};
+    const terrain=external.filter(x=>x.type==="Terrain").map(x=>x.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);
+    const terrainMedian=terrain.length?(terrain.length%2?terrain[(terrain.length-1)/2]:(terrain[terrain.length/2-1]+terrain[terrain.length/2])/2):null;
+    const years={};
+    external.forEach(x=>{const y=String(x.date||"").slice(0,4);if(!years[y])years[y]=[];years[y].push(x.pricePerM2);});
+    const history=Object.entries(years).sort((a,b)=>a[0].localeCompare(b[0])).map(([year,v])=>({
+      year:Number(year),transactions:v.length,value:Math.round(v.slice().sort((a,b)=>a-b)[Math.floor((v.length-1)/2)])
+    }));
+    const data={
+      city:cleanCity,found:true,source:"DVF public / API Cquest",
+      sourceUrl:"https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/",
+      message:"Transactions DVF publiques chargées pour cette commune. Les données détaillées servent de repère de marché et de comparables.",
+      recentSales:external.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,50),
+      recentSalesSource:"DVF public / API Cquest",nearby:[],history,
+      transactions:external.length,
+      communalPrice:median!=null?Math.round(median):null,
+      housePrice:medianOf("Maison")!=null?Math.round(medianOf("Maison")):null,
+      apartmentPrice:medianOf("Appartement")!=null?Math.round(medianOf("Appartement")):null,
+      terrainPrice:terrainMedian!=null?Math.round(terrainMedian):null,
+      period:"DVF public disponible / transactions de la commune"
+    };
+    communeMarketCache.set(key,{expiresAt:Date.now()+6*60*60*1000,data});
+    return {...data,cache:false};
+  }
+
+  const result={...empty,source:"DVF public + PostgreSQL",message:"Les sources DVF n'ont renvoyé aucune transaction exploitable pour cette commune."};
+  communeMarketCache.set(key,{expiresAt:Date.now()+30*60*1000,data:result});
+  return {...result,cache:false};
 }
+
 async function getLocalDvfComparables(origin,maxKm=3){
   if(!pool||!origin)return [];
   const lat=Number(origin.lat),lon=Number(origin.lon); if(!Number.isFinite(lat)||!Number.isFinite(lon))return [];
