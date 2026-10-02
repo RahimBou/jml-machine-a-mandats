@@ -489,7 +489,14 @@ input,select,textarea{border:1px solid var(--line)!important;border-radius:8px!i
 input:focus,select:focus,textarea:focus{outline:0!important;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(199,154,59,.22)!important}
 a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offset:2px}
 @media(max-width:600px){.seller-dashboard-hero{min-height:420px!important}.seller-dashboard-overlay{padding:22px!important;background:linear-gradient(180deg,rgba(15,43,34,.9),rgba(15,43,34,.55))!important}}
-</style><style id="jml-access-actions">.seller-access-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.seller-access-actions .secondary{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;min-height:40px;padding:9px 13px;border-radius:9px}@media(max-width:600px){.seller-access-actions{flex-direction:column}.seller-access-actions .secondary{width:100%;box-sizing:border-box}}</style></head>
+</style><style id="jml-access-actions">.seller-access-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.seller-access-actions .secondary{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;min-height:40px;padding:9px 13px;border-radius:9px}@media(max-width:600px){.seller-access-actions{flex-direction:column}.seller-access-actions .secondary{width:100%;box-sizing:border-box}}</style><style id="seller-hero-photo-fix">
+.seller-dashboard-hero{position:relative;overflow:hidden;min-height:360px!important;border-radius:22px!important}
+.seller-dashboard-photo{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;display:block!important}
+.seller-dashboard-overlay{position:relative!important;z-index:2!important;min-height:360px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:42px!important;box-sizing:border-box!important;background:linear-gradient(90deg,rgba(15,61,52,.92) 0%,rgba(15,61,52,.78) 43%,rgba(15,61,52,.28) 78%,rgba(15,61,52,.08) 100%)!important}
+.seller-dashboard-overlay h3{max-width:560px!important}
+.seller-dashboard-overlay p{max-width:540px!important}
+@media(max-width:600px){.seller-dashboard-hero{min-height:300px!important}.seller-dashboard-overlay{min-height:300px!important;padding:26px 22px!important;background:linear-gradient(90deg,rgba(15,61,52,.94),rgba(15,61,52,.58),rgba(15,61,52,.18))!important}}
+</style></head>
 <body>
 <div class="fb-wrap">
 <section class="fb-card">
@@ -508,7 +515,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offs
 
   <div class="seller-space">
     <div class="seller-dashboard-hero jml-architecture">
-      <img class="seller-dashboard-photo" src="/assets/ardenne-hero.jpg?v=3.6.0" alt="Paysage des Ardennes" loading="eager" decoding="async">
+      <img class="seller-dashboard-photo" src="/assets/charleville-reference.jpg?v=4.0.0" alt="Paysage des Ardennes au coucher du soleil" loading="eager" decoding="async" onerror="this.onerror=null;this.src='/assets/hero-ardennais-realiste.jpg?v=4.0.0';">
       <div class="seller-dashboard-overlay">
         <div class="seller-dashboard-kicker">JML IMMOBILIER · ARDENNES</div>
         <h3>Votre espace vendeur</h3>
