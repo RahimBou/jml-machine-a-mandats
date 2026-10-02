@@ -40,13 +40,13 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .footer{margin-top:25px;font-size:8.5px;color:var(--muted);line-height:1.6}
 @media(max-width:760px){.hero h1{font-size:30px}.grid,.metrics,.types,.sales,.comps,.nearby,.env,.reference{grid-template-columns:1fr}.head,.project-top{display:block}.source,.status{display:inline-block;margin-top:8px}}
 
-.highlight-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 12px}.highlight-item{display:flex;gap:8px;align-items:center;background:#fffdf7;border:1px solid rgba(24,63,50,.12);border-radius:12px;padding:10px}.highlight-num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#d7b45b;color:#173f32;font-weight:800;flex:0 0 auto}.highlight-item b{font-size:.78rem}.highlight-item small{display:block;font-size:.67rem}.highlight-item p{margin:3px 0 0;font-size:.68rem;color:#8b6e31}.asset-details{margin-top:8px;border-top:1px dashed rgba(24,63,50,.16);padding-top:6px}.asset-details summary{cursor:pointer;font-weight:700;font-size:.75rem}.asset-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px}.asset-grid .asset{min-width:0}.asset-grid .asset ul{font-size:.68rem}.asset-grid .asset h3{font-size:.8rem}.asset-grid .asset p{font-size:.68rem}@media(max-width:760px){.highlight-list,.asset-grid{grid-template-columns:1fr 1fr}.highlight-item{min-height:62px}.highlight-item b{font-size:.74rem}}@media(max-width:430px){.highlight-list{grid-template-columns:1fr}.asset-grid{grid-template-columns:1fr}}
+.highlight-list{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:10px 0 12px}.highlight-item{display:flex;gap:8px;align-items:center;background:#fffdf7;border:1px solid rgba(24,63,50,.12);border-radius:12px;padding:10px}.highlight-num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#d7b45b;color:#173f32;font-weight:800;flex:0 0 auto}.highlight-item b{font-size:.78rem}.highlight-item small{display:block;font-size:.67rem}.highlight-item p{margin:3px 0 0;font-size:.68rem;color:#8b6e31}.asset-details{margin-top:8px;border-top:1px dashed rgba(24,63,50,.16);padding-top:6px}.asset-details summary{cursor:pointer;font-weight:700;font-size:.75rem}.asset-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px}.asset-grid .asset{min-width:0}.asset-grid .asset ul{font-size:.68rem}.asset-grid .asset h3{font-size:.8rem}.asset-grid .asset p{font-size:.68rem}@media(max-width:760px){.highlight-list,.asset-grid{grid-template-columns:1fr 1fr}.highlight-item{min-height:62px}.highlight-item b{font-size:.74rem}}@media(max-width:430px){.highlight-list{grid-template-columns:1fr}.asset-grid{grid-template-columns:1fr}}
 
 /* Correctif mobile : les éléments d'introduction et la liste des atouts
    sont des blocs distincts. On évite que la grille parent les écrase. */
 .asset-grid{display:block !important;}
 .asset-grid > .asset-intro{width:100%;margin-bottom:10px;}
-.asset-grid > .highlight-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;margin:10px 0 12px;}
+.asset-grid > .highlight-list{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));width:100%;margin:10px 0 12px;}
 .asset-grid > .asset-details{width:100%;}
 @media(max-width:760px){
   .asset-grid > .highlight-list{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -156,7 +156,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   </div>
   <div class="method-separation" style="margin-top:10px">
    <div><strong>📊 Ce qui sert à établir le prix</strong><span>Ventes DVF comparables · type de bien · surface · pièces · distance · récence.</span></div>
-   <div><strong>📍 Ce qui sert à présenter le secteur</strong><span>Écoles · commerces · santé · mobilité · loisirs et autres services vérifiés autour de l'adresse.</span></div>
+   <div><strong>📍 Ce qui sert à présenter le secteur</strong><span>Écoles · commerces · mobilité · grands axes routiers · santé · loisirs et autres services vérifiés autour de l'adresse.</span></div>
   </div>
  </div>
 </section>
@@ -546,7 +546,8 @@ let order=[
   ["schools","Écoles","Écoles et établissements scolaires proches."],
   ["commerces","Commerces","Commerces et activités du quotidien."],
   ["health","Santé","Pharmacies et professionnels de santé."],
-  ["transport","Mobilité","Gares, arrêts et autres repères de mobilité."],
+  ["transport","Mobilité","Gares et autres repères de mobilité vérifiés."],
+  ["roads","Grands axes routiers","Autoroutes, voies rapides et axes principaux à proximité."],
   ["parks","Loisirs","Parcs, équipements sportifs et espaces de loisirs."],
   ["services","Services","Poste, banque, restauration et services locaux."]
 ];
@@ -579,6 +580,7 @@ function normalizeAssetCategories(data){
     commerces:["commerces","commerce","shops","shopping","daily"],
     health:["health","sante","santé","medical","pharmacies"],
     transport:["transport","mobility","mobilite","mobilité"],
+    roads:["roads","road","grands_axes","grands-axes","axes_routiers"],
     parks:["parks","loisirs","leisure","sport"],
     services:["services","service"]
   };
@@ -600,12 +602,13 @@ function renderAssets(data){
   // les équipements d'une même catégorie. Les taxis et repères génériques
   // restent accessibles dans le détail mais ne monopolisent plus les 5 premiers.
   const categoryPriority={
-    schools:1, commerces:2, transport:3, health:4, parks:5, services:6
+    schools:1, commerces:2, transport:3, roads:4, health:5, parks:6, services:7
   };
   const itemPriority={
     schools:[/école|collège|lycée|crèche|maternelle|primaire/i,1],
     commerces:[/boulangerie|supermarché|supérette|épicerie|marché|commerce/i,1],
     transport:[/gare|tram|bus|arrêt|station/i,1],
+    roads:[/\bA\s?\d+\b|\bN\s?\d+\b|\bD\s?\d+\b|autoroute|voie rapide|route principale|axe départemental|rocade/i,1],
     health:[/pharmacie|médecin|dentiste|cabinet|santé|hôpital/i,1],
     parks:[/parc|jardin|gymnase|sport|stade|tennis|loisir/i,1],
     services:[/poste|mairie|banque|service public/i,1]
@@ -650,7 +653,7 @@ function renderAssets(data){
     usedNames.add(sig);
     usedCategories.add(categorySig);
     selected.push(item);
-    if(selected.length>=5)break;
+    if(selected.length>=6)break;
   }
   // Si certaines catégories n'ont aucun résultat pertinent, on complète
   // avec les meilleurs repères restants.
@@ -662,7 +665,7 @@ function renderAssets(data){
       usedNames.add(sig);
       usedCategories.add(categorySig);
       selected.push(item);
-      if(selected.length>=5)break;
+      if(selected.length>=6)break;
     }
   }
 
@@ -681,7 +684,7 @@ function renderAssets(data){
     return;
   }
   root.innerHTML=
-    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, santé, loisirs puis services. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
+    '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, grands axes routiers, santé, loisirs puis services. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
     '<div class="highlight-list">'+selected.map((x,i)=>'<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>').join("")+'</div>'+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
       const cat=cats[key]||{items:[],available:false};
