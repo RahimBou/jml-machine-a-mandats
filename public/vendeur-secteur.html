@@ -578,6 +578,16 @@ h1,h2,h3{
   letter-spacing:.05em;
 }
 .comp-note span{display:block;font-weight:500}
+.comp-strong{
+  background:#e7f1eb!important;
+  color:#24685b!important;
+  border-color:#cfe1d8!important;
+}
+.comp-sector{
+  background:#f3f0e8!important;
+  color:#6d654f!important;
+  border-color:#e3dccb!important;
+}
 .pill{
   font-size:7px;
   font-weight:900;
@@ -1051,24 +1061,51 @@ function renderComps(c){
  const rows=Array.isArray(c.sales)?c.sales:[];
  if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
  const renderCompRows=(list)=>list.map(s=>{
-  const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
+  const distance=Number(s.distanceKm);
+  const surface=Number(s.surface);
+  const subjectSurface=Number((pageData.space||{}).surface);
+  const rooms=Number(s.rooms);
+  const subjectRooms=Number((pageData.space||{}).rooms);
+  const surfaceGap=Number.isFinite(surface)&&Number.isFinite(subjectSurface)&&subjectSurface>0?Math.abs(surface-subjectSurface)/subjectSurface:null;
+  const roomsClose=Number.isFinite(rooms)&&Number.isFinite(subjectRooms)&&subjectRooms>0?Math.abs(rooms-subjectRooms)<=1:false;
+  const sameStreet=!!s.sameStreet;
+  const veryClose=Number.isFinite(distance)&&distance<=0.5;
+  const proximity=sameStreet?"Même rue":(veryClose?"Très proche":"Secteur proche");
+  const proximityClass=sameStreet||veryClose?"comp-strong":"comp-sector";
   const finalPrice=Number.isFinite(Number(s.price))&&Number(s.price)>0?eur(s.price):"Prix non disponible";
-  const roomsText=Number.isFinite(Number(s.rooms))&&Number(s.rooms)>0?String(Math.round(Number(s.rooms)))+" pièces":"";
+  const roomsText=Number.isFinite(rooms)&&rooms>0?String(Math.round(rooms))+" pièces":"";
   const dpeText=s.dpe?String(s.dpe).toUpperCase():"";
-  const characteristics=[s.surface?String(Math.round(Number(s.surface)))+" m²":"",roomsText,dpeText?"DPE "+dpeText:""].filter(Boolean).join(" · ");
+  const characteristics=[surface?String(Math.round(surface))+" m²":"",roomsText,dpeText?"DPE "+dpeText:""].filter(Boolean).join(" · ");
   const adjusted=Number.isFinite(Number(s.pricePerM2))?m2(s.pricePerM2):"—";
   const original=Number.isFinite(Number(s.originalPricePerM2))?m2(s.originalPricePerM2):"";
   const temporalNote=s.temporalRevalued&&original
     ?"Prix/m² de vente : "+original+" · repère actualisé : "+adjusted
     :"Prix/m² de vente : "+adjusted;
+  let reasonTitle,reasonText;
+  if(sameStreet){
+    reasonTitle="Repère très proche";
+    reasonText="Même rue que votre bien : un repère géographique particulièrement direct.";
+  }else if(veryClose&&surfaceGap!==null&&surfaceGap<=0.15&&roomsClose){
+    reasonTitle="Repère très proche";
+    reasonText="À moins de 500 m, avec une surface et un nombre de pièces proches de votre bien.";
+  }else if(veryClose){
+    reasonTitle="Repère très proche";
+    reasonText="À moins de 500 m de votre bien : la proximité renforce son intérêt comme repère.";
+  }else if(surfaceGap!==null&&surfaceGap<=0.15&&roomsClose){
+    reasonTitle="Repère proche";
+    reasonText="Surface et nombre de pièces proches ; la distance permet de compléter le marché local.";
+  }else{
+    reasonTitle="Repère de secteur";
+    reasonText="Vente plus éloignée, conservée pour compléter la lecture du marché local.";
+  }
   return '<article class="comp">'+
-    '<div class="comp-top"><div><b>'+esc(s.type||"Bien")+'</b><span class="comp-source">VENTE RÉELLE</span></div><span class="pill">'+esc(proximity)+'</span></div>'+
+    '<div class="comp-top"><div><b>'+esc(s.type||"Bien")+'</b><span class="comp-source">VENTE RÉELLE</span></div><span class="pill '+proximityClass+'">'+esc(proximity)+'</span></div>'+
     '<div class="comp-price"><span>PRIX DE VENTE FINAL</span><strong>'+esc(finalPrice)+'</strong></div>'+
     '<div class="comp-address">'+esc(s.address||"Adresse non renseignée")+'</div>'+
     '<div class="comp-meta"><span>'+esc(fmtDate(s.date))+'</span><span>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+'</span></div>'+
     '<div class="comp-characteristics">'+esc(characteristics||"Caractéristiques non disponibles")+'</div>'+
     '<div class="comp-m2">'+esc(temporalNote)+'</div>'+
-    '<div class="comp-note"><b>'+esc(s.sameStreet?"Même rue":"Pourquoi cette vente ?")+'</b><span>'+esc(s.sameStreet?"Une vente située dans la même rue constitue un repère géographique direct.":"Sa proximité et ses caractéristiques permettent de la comparer à votre bien.")+'</span></div>'+
+    '<div class="comp-note"><b>'+esc(reasonTitle)+'</b><span>'+esc(reasonText)+'</span></div>'+
     '</article>';
  }).join("");
  const visibleRows=rows.slice(0,6);
