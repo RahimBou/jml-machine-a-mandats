@@ -500,14 +500,15 @@ h1,h2,h3{
   gap:8px;
   align-items:flex-start;
 }
-.comp-top>div:first-child{min-width:0}
-.comp b{display:block;font-size:10px;color:#263c35}
+.comp-top>div:first-child{min-width:0;display:block}
+.comp b{display:block;font-size:10px;line-height:1.15;color:#263c35}
 .comp-source{
   display:block;
-  margin-top:2px;
+  margin-top:4px;
   font-size:6.5px;
+  line-height:1;
   font-weight:900;
-  letter-spacing:.1em;
+  letter-spacing:.11em;
   color:#a0803a;
 }
 .comp-price{
@@ -568,10 +569,11 @@ h1,h2,h3{
   color:var(--muted);
 }
 .comp-note b{
-  display:block;
-  margin-bottom:2px;
+  display:block!important;
+  margin-bottom:3px;
   color:#52645b;
   font-size:7.5px;
+  line-height:1.2;
   text-transform:uppercase;
   letter-spacing:.05em;
 }
