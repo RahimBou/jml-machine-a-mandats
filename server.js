@@ -1,7 +1,6 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
 const zlib = require("zlib");
 const readline = require("readline");
 const { Readable } = require("stream");
@@ -52,7 +51,6 @@ app.get("/health", (req, res) => {
     persistentDashboard:true
   });
 });
-app.post("/api/address-intelligence", async (req,res)=>{res.setHeader("Cache-Control","no-store");try{res.status(200).json(await generateSellerAddressIntelligence(req.body||{}));}catch(error){console.error("JML address-intelligence:",error);res.status(200).json({ok:false,code:"JML-AI-SERVER"});}});
 app.get("/api/bpe-status", async (req,res) => {
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
   if(!pool) return res.status(200).json({ok:true,ready:false,total:0,reason:"database_unavailable"});
@@ -95,10 +93,7 @@ app.get(["/vendeur-secteur","/vendeur-secteur.html"], (req,res) => {
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma","no-cache");
   res.setHeader("Expires","0");
-  const file=fs.readFileSync(path.join(__dirname, "public", "vendeur-secteur.html"),"utf8");
-  const style="<style id=\"seller-ai-v1\">.micro-ai-status{margin:8px 0 10px;padding:9px 12px;border-radius:12px;font-size:9px;font-weight:800;background:#f3efe6;color:#6f633f}.micro-ai-status.loading{background:#f7f2e5;color:#8a6c2e}.micro-ai-status.ok{background:#e9f2ed;color:#245346}.micro-ai-status.fallback{background:#f3f1ed;color:#6d746f}.micro-ai-status .ai-step{display:inline-flex;align-items:center;gap:6px;margin-right:12px}.micro-ai-status .ai-dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}.micro-ai-status.loading .ai-dot{animation:jmlAiPulse 1s infinite}@keyframes jmlAiPulse{50%{opacity:.3;transform:scale(.72)}}.micro-ai-status small{display:block;margin-top:4px;font-weight:600;opacity:.72}</style>";
-  const injectedHtml=file.replace("</head>",style+"<script>"+sellerAiClientScript+"</script></head>").replace("  renderSellerMicroApp(assets);","  renderSellerMicroApp(assets);\n  runSellerAi(assets);");
-  res.type("html").send(injectedHtml);
+  res.sendFile(path.join(__dirname, "public", "vendeur-secteur.html"));
 });
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], etag: false, lastModified: false }));
 
@@ -339,68 +334,6 @@ async function getOfficialTerritoryAssets(lat,lon,communeCode){
   };
 }
 
-
-const sellerAiClientScript = "async function runSellerAi(data){\n const host=document.getElementById(\"sellerMicroApp\"); if(!host)return;\n const setStatus=(kind,title,detail)=>{let el=document.getElementById(\"microAiStatus\");if(!el){el=document.createElement(\"div\");el.id=\"microAiStatus\";host.insertBefore(el,host.firstChild);}el.className=\"micro-ai-status \"+kind;el.innerHTML=\"<span class=\\\"ai-step\\\"><span class=\\\"ai-dot\\\"></span>\"+String(title).replace(/[<>&]/g,\"\")+\"</span><small>\"+String(detail||\"\").replace(/[<>&]/g,\"\")+\"</small>\"};\n setStatus(\"loading\",\"JML · préparation des faits vérifiés\",\"Les données de proximité sont transmises à Gemini uniquement après contrôle des repères disponibles.\");\n const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),4500);\n try{\n  setStatus(\"loading\",\"Gemini 3.8 Flash · analyse de l’adresse\",\"Gemini cherche les combinaisons les plus utiles à raconter à partir des faits fournis.\");\n  const response=await fetch(\"/api/address-intelligence\",{method:\"POST\",headers:{\"Content-Type\":\"application/json\"},body:JSON.stringify({categories:data?.categories||{}}),signal:controller.signal});\n  const result=await response.json();\n  if(!result?.ok||!Array.isArray(result.arguments)||result.arguments.length<2)throw new Error(result?.code||\"JML-AI-FALLBACK\");\n  setStatus(\"loading\",\"JML · contrôle des propositions Gemini\",\"Chaque argument est vérifié contre les lieux et distances réellement disponibles.\");\n  const sig=document.getElementById(\"microSignature\"),grid=document.getElementById(\"microStories\");\n  if(sig)sig.innerHTML=\"<b>✦ \"+String(result.signature||result.arguments[0].title).replace(/[<>&]/g,\"\")+\"</b><span>Une lecture personnalisée de l’adresse, construite uniquement à partir des repères vérifiés disponibles autour du bien.</span>\";\n  if(grid){grid.innerHTML=result.arguments.map(s=>{const title=String(s.title||\"\").replace(/[<>&]/g,\"\"),text=String(s.text||\"\").replace(/[<>&]/g,\"\"),proof=String(s.proof||\"\").replace(/[<>&]/g,\"\");return '<article class=\"micro-story\"><span class=\"story-icon\">✦</span><span class=\"story-kicker\">ANALYSE GEMINI · FAITS VÉRIFIÉS</span><strong>'+title+'</strong><p>'+text+'</p><div class=\"micro-proof\">'+proof+'</div></article>';}).join(\"\");}\n  const poster=document.getElementById(\"sellerPoster\"); if(poster)poster.textContent=[\"JML IMMOBILIER\",\"✦ LES ATOUTS DE VOTRE ADRESSE\",\"\",...result.arguments.slice(0,4).flatMap(s=>[s.title,s.text,s.proof,\"\"])].join(\"\\n\");\n  setStatus(\"ok\",\"✓ Gemini 3.8 Flash · analyse validée par JML\",result.cached?\"Résultat contrôlé réutilisé depuis le cache.\":\"Propositions générées puis contrôlées contre les faits vérifiés.\");\n }catch(error){setStatus(\"fallback\",\"JML · analyse Gemini non disponible\",\"La lecture déterministe déjà affichée est conservée : aucun contenu non vérifié n’est ajouté.\");console.warn(\"JML interface Gemini (secours JML conservé):\",error?.message||error);}\n finally{clearTimeout(timer);}\n}"
-const sellerAiCache = new Map();
-const SELLER_AI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-const SELLER_AI_TTL_MS = 12 * 60 * 60 * 1000;
-function sellerAiCacheKey(payload){return crypto.createHash("sha256").update(JSON.stringify({city:clean(payload?.city,120),address:clean(payload?.address,240),propertyType:clean(payload?.propertyType,80),surface:Number(payload?.surface)||null,categories:payload?.categories||{}})).digest("hex");}
-function flattenSellerEvidence(categories){const out=[],seen=new Set();for(const [category,value] of Object.entries(categories||{})){for(const item of (Array.isArray(value?.items)?value.items:[])){const name=clean(item?.name,180),distanceKm=Number(item?.distanceKm);if(!name||!Number.isFinite(distanceKm))continue;const key=name.toLowerCase()+"|"+distanceKm.toFixed(2);if(seen.has(key))continue;seen.add(key);out.push({name,distanceKm:Number(distanceKm.toFixed(2)),category});}}return out.slice(0,80);}
-function validateSellerAiResult(result,evidence){
- if(!result||typeof result!=="object")return{ok:false,code:"JML-AI-INVALID"};
- const allowed=new Map(evidence.map(x=>[x.name.toLowerCase()+"|"+x.distanceKm.toFixed(2),x]));
- const forbidden=/\b(exceptionnel|exceptionnelle|unique|rare|idéal|idéale|parfait|parfaite|meilleur|meilleure|numéro 1|n° ?1)\b/i;
- const cleanArgs=[];
- for(const raw of (Array.isArray(result.arguments)?result.arguments:[]).slice(0,5)){
-  const title=clean(raw?.title,100),text=clean(raw?.text,500),proof=clean(raw?.proof,300);
-  if(!title||!text||forbidden.test(title+" "+text+" "+proof))continue;
-  const verified=[];
-  for(const ref of (Array.isArray(raw?.evidence)?raw.evidence:[]).slice(0,4)){
-   const name=clean(ref?.name,180),distanceKm=Number(ref?.distanceKm);
-   if(!name||!Number.isFinite(distanceKm))continue;
-   const exact=allowed.get(name.toLowerCase()+"|"+distanceKm.toFixed(2));
-   if(exact)verified.push(exact);
-  }
-  if(!verified.length)continue;
-  if(proof&&!verified.some(x=>proof.toLowerCase().includes(x.name.toLowerCase())))continue;
-  cleanArgs.push({title,text,proof:proof||verified.map(x=>x.name+" · "+x.distanceKm.toFixed(2)+" km").join(" · "),evidence:verified.map(x=>({name:x.name,category:x.category,distanceKm:x.distanceKm}))});
- }
- const signature=clean(result.signature,180);
- if(!cleanArgs.length)return{ok:false,code:"JML-AI-NO-VALID-ARGUMENT"};
- if(forbidden.test(signature))return{ok:false,code:"JML-AI-FORBIDDEN-CLAIM"};
- return{ok:true,data:{status:"ok",engine:"Gemini 3.8 Flash",signature:signature||cleanArgs[0].title,arguments:cleanArgs,warnings:[],cached:false}};
-}
-async function generateSellerAddressIntelligence(payload){
- const apiKey=String(process.env.GEMINI_API_KEY||"").trim();
- if(!apiKey)return{ok:false,code:"JML-AI-NOKEY",message:"GEMINI_API_KEY non configurée sur Render."};
- const evidence=flattenSellerEvidence(payload?.categories);
- if(evidence.length<2)return{ok:false,code:"JML-AI-INSUFFICIENT",message:"Pas assez de repères vérifiés."};
- const key=sellerAiCacheKey(payload),cached=sellerAiCache.get(key);if(cached&&cached.expiresAt>Date.now())return {...cached.data,cached:true};
- const facts=evidence.map((x,i)=>({id:i+1,name:x.name,category:x.category,distanceKm:x.distanceKm}));
- const prompt=[
- "Tu es le rédacteur immobilier de JML Immobilier. Raconte cette adresse à un propriétaire vendeur français.",
- "RÈGLE ABSOLUE : utilise UNIQUEMENT les faits JSON fournis. N'invente aucun lieu, distance, service, qualité, temps de trajet, stationnement, attractivité, valeur immobilière ou clientèle.",
- "Aucun prix, aucun €/m² et aucune promesse de vente. N'utilise pas : exceptionnel, unique, rare, idéal, parfait, meilleur, numéro 1.",
- "Tu peux regrouper plusieurs faits vérifiés pour créer une phrase naturelle et mémorisable. Chaque argument doit être démontrable par ses références.",
- "Évite les formulations génériques. Cherche ce qui distingue CETTE adresse parmi les faits fournis.",
- "Adresse : "+(clean(payload?.address,240)||"non précisée"),
- "Commune : "+(clean(payload?.city,120)||"non précisée"),
- "Type : "+(clean(payload?.propertyType,80)||"non précisé"),
- "Surface : "+(Number(payload?.surface)||"non précisée"),
- "Faits vérifiés : "+JSON.stringify(facts),
- "Retourne UNIQUEMENT ce JSON valide : {\"signature\":\"courte phrase\",\"arguments\":[{\"title\":\"titre court\",\"text\":\"2 phrases maximum\",\"proof\":\"preuve avec un nom exact\",\"evidence\":[{\"name\":\"nom exact\",\"distanceKm\":0.00}]}],\"warnings\":[]}",
- "Produis 2 à 5 arguments. Favorise les combinaisons pertinentes de 2 ou 3 faits."
- ].join("\n");
- const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(SELLER_AI_MODEL)+":generateContent";
- try{
-  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json"}}),signal:AbortSignal.timeout(5000)});
-  const raw=await response.text();if(!response.ok)throw new Error("Gemini HTTP "+response.status+" · "+raw.slice(0,300));
-  const parsed=JSON.parse(raw),text=parsed?.candidates?.[0]?.content?.parts?.map(p=>p?.text||"").join("").trim()||"";
-  const result=JSON.parse(text);
-  const validated=validateSellerAiResult(result,evidence);if(!validated.ok)return{ok:false,code:validated.code,message:"Réponse Gemini écartée par le contrôle JML."};
-  sellerAiCache.set(key,{expiresAt:Date.now()+SELLER_AI_TTL_MS,data:validated.data});return validated.data;
- }catch(error){console.warn("JML Gemini vendeur:",error.message);return{ok:false,code:"JML-AI-ERROR",message:"Analyse Gemini indisponible temporairement."};}
-}
 
 const communeExternalDvfCache = new Map();
 
