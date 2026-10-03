@@ -1499,6 +1499,8 @@ async function buildComparableSales(market,property){
   if(!subjectDpe){ const autoDpe=await getAdemeDpeByAddress(property?.address,city); if(autoDpe?.dpe){subjectDpe=autoDpe.dpe;subjectDpeSource=autoDpe.source;} }
   let local=[];
   try{local=await getLocalDvfComparables(origin,MAX_RADIUS_KM,commune?.code||"");}catch(error){console.warn("JML comparables DVF local:",error.message);}
+  let freshDvfPlus=[];
+  try{freshDvfPlus=await getFreshDvfPlusComparables(origin,property,commune?.code||"");}catch(error){console.warn("JML comparables DVF+ récent:",error.message);}
 
   const seen=new Set(),candidates=[];
   const now=Date.now();
@@ -1535,6 +1537,11 @@ async function buildComparableSales(market,property){
 
     const age=ageMonths(sale.date);
     if(age>MAX_AGE_MONTHS)return null;
+    const saleAddress=normalizeAddress(sale.address);
+    const propertyAddress=normalizeAddress(property?.address);
+    const sameAddress=!!saleAddress&&!!propertyAddress&&saleAddress===propertyAddress;
+    const fresh12m=age<=12;
+
     const salePrice=parsePositiveNumber(sale.price);
     const salePriceM2=parsePositiveNumber(sale.pricePerM2);
     const effectivePriceM2=isLand?(saleLand!==null&&salePrice!==null?salePrice/saleLand:salePriceM2):salePriceM2;
@@ -1549,12 +1556,14 @@ async function buildComparableSales(market,property){
     const landSim=isLand?1:(landSurface!==null&&landSurface<100?0.65:(landRatio===null?0.65:expSim(landRatio,0.55)));
     const sameStreet=streetKey(sale.address)===streetKey(property?.address);
 
-    const raw=20+24*distanceSim+20*surfaceSim+12*roomsSim+10*landSim+9*recencySim+(sameStreet?5:0);
+    const freshBonus=fresh12m?6:0;
+    const exactBonus=sameAddress&&fresh12m&&surfaceRatio!==null&&surfaceRatio<=0.15?12:0;
+    const raw=20+24*distanceSim+20*surfaceSim+12*roomsSim+10*landSim+9*recencySim+freshBonus+exactBonus+(sameStreet?5:0);
     const score=Math.round(Math.min(100,raw));
-    return {...sale,pricePerM2:effectivePriceM2,score,sameStreet,surfaceGap:surfaceRatio,landGap:landRatio,roomDiff,ageMonths:Number(age.toFixed(1)),tierId:dist<=0.5?"A":dist<=1?"B":dist<=2?"C":"D",tier:dist<=0.5?"0–500 m":dist<=1?"500 m–1 km":dist<=2?"1–2 km":"2–3 km"};
+    return {...sale,pricePerM2:effectivePriceM2,score,sameStreet,sameAddress,fresh12m,surfaceGap:surfaceRatio,landGap:landRatio,roomDiff,ageMonths:Number(age.toFixed(1)),tierId:dist<=0.5?"A":dist<=1?"B":dist<=2?"C":"D",tier:dist<=0.5?"0–500 m":dist<=1?"500 m–1 km":dist<=2?"1–2 km":"2–3 km"};
   };
 
-  const sourceRows=[...(Array.isArray(market?.recentSales)?market.recentSales:[]),...(Array.isArray(local)?local:[])];
+  const sourceRows=[...(Array.isArray(freshDvfPlus)?freshDvfPlus:[]),...(Array.isArray(market?.recentSales)?market.recentSales:[]),...(Array.isArray(local)?local:[])];
   const evaluateRows=rows=>{
     for(const sale of rows){
       const id=String(sale.id||[sale.date,sale.address,sale.price,sale.surface,sale.land,sale.lat,sale.lon].join("|"));
