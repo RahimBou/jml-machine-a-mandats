@@ -143,31 +143,6 @@ function requireAdminOr401(req,res){
   return true;
 }
 
-app.post("/api/admin/login",(req,res)=>{
-  if(!ADMIN_PASSWORD) return apiError(res,503,"JML-AUTH-001","Accès professionnel non configuré. Ajoutez JML_ADMIN_PASSWORD dans Render.");
-  const ip=String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"unknown").split(",")[0].trim();
-  const now=Date.now();
-  const attempt=adminLoginAttempts.get(ip)||{count:0,startedAt:now};
-  if(now-attempt.startedAt>ADMIN_LOGIN_WINDOW_MS){attempt.count=0;attempt.startedAt=now;}
-  if(attempt.count>=ADMIN_LOGIN_MAX_ATTEMPTS) return apiError(res,429,"JML-AUTH-003","Trop de tentatives. Réessayez dans quelques minutes.");
-  const password=String(req.body?.password||"");
-  if(!crypto.timingSafeEqual(Buffer.from(password),Buffer.from(ADMIN_PASSWORD))){
-    attempt.count+=1; adminLoginAttempts.set(ip,attempt);
-    return apiError(res,401,"JML-AUTH-004","Mot de passe incorrect.");
-  }
-  adminLoginAttempts.delete(ip);
-  const token=createAdminSessionToken();
-  const secure=req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https";
-  res.setHeader("Set-Cookie","jml_admin_session="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Max-Age="+Math.floor(ADMIN_SESSION_TTL_MS/1000)+(secure?"; Secure":""));
-  res.json({ok:true});
-});
-
-app.post("/api/admin/logout",(req,res)=>{
-  const secure=req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https";
-  res.setHeader("Set-Cookie","jml_admin_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"+(secure?"; Secure":""));
-  res.json({ok:true});
-});
-
 app.get("/espace-pro",(req,res)=>{
   if(!isAdminAuthenticated(req)) return res.redirect(302,"/pro-login");
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate, proxy-revalidate");
