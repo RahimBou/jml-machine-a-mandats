@@ -721,7 +721,104 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offs
 .seller-dashboard-overlay h3{max-width:560px!important}
 .seller-dashboard-overlay p{max-width:540px!important}
 @media(max-width:600px){.seller-dashboard-hero{min-height:300px!important}.seller-dashboard-overlay{min-height:300px!important;padding:26px 22px!important;background:linear-gradient(90deg,rgba(15,61,52,.94),rgba(15,61,52,.58),rgba(15,61,52,.18))!important}}
-</style></head>
+</style><style id="jml-guides-clean">
+/* Guides vendeur — cartes compactes, sans espaces inutiles et visuels liés au sujet */
+.seller-guides{
+  padding:16px!important;
+  margin-top:10px!important;
+}
+.seller-guides .seller-panel-head{
+  margin-bottom:10px!important;
+}
+.seller-guide-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin:0!important;
+}
+.seller-guide-grid a{
+  min-height:132px!important;
+  height:132px!important;
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:86px minmax(0,1fr)!important;
+  grid-template-rows:auto auto 1fr!important;
+  column-gap:12px!important;
+  padding:0 12px 10px 0!important;
+  overflow:hidden!important;
+  border:1px solid #ded3bf!important;
+  border-radius:14px!important;
+  background:#fffdf9!important;
+}
+.seller-guide-grid a:before{
+  grid-row:1/-1!important;
+  width:86px!important;
+  height:132px!important;
+  min-height:0!important;
+  margin:0!important;
+  border-radius:0!important;
+  background-position:center!important;
+  background-size:cover!important;
+}
+.seller-guide-grid a:nth-child(1):before{
+  background-image:url("/assets/guide-travaux-photo.svg")!important;
+}
+.seller-guide-grid a:nth-child(2):before{
+  background-image:url("/assets/guide-documents-photo.svg")!important;
+}
+.seller-guide-grid a:nth-child(3):before{
+  background-image:url("/assets/guide-project-photo.svg")!important;
+}
+.seller-guide-grid a:after{
+  display:none!important;
+}
+.seller-guide-grid a>span{display:none!important}
+.seller-guide-grid a strong{
+  padding-top:13px!important;
+  margin:0!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+}
+.seller-guide-grid a small{
+  margin:5px 0 0!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+}
+.seller-guide-grid a b{
+  align-self:end!important;
+  margin:0!important;
+  padding:5px 0 0!important;
+  font-size:9px!important;
+}
+.seller-appointment-preview{
+  margin-top:10px!important;
+  min-height:0!important;
+  padding:15px 18px!important;
+}
+.seller-appointment-preview h4{
+  margin:2px 0 3px!important;
+}
+.seller-appointment-preview p{
+  margin:0!important;
+}
+.seller-v2{
+  margin-top:10px!important;
+}
+@media(max-width:760px){
+  .seller-guides{padding:14px!important}
+  .seller-guide-grid{grid-template-columns:1fr!important}
+  .seller-guide-grid a{
+    height:118px!important;
+    min-height:118px!important;
+    grid-template-columns:78px minmax(0,1fr)!important;
+  }
+  .seller-guide-grid a:before{
+    width:78px!important;
+    height:118px!important;
+  }
+}
+</style>
+</head>
 <body>
 <div class="fb-wrap">
 <section class="fb-card">
