@@ -84,15 +84,15 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
   const r=await fetch(url,{cache:"no-store",credentials:"same-origin",...options});
   let d={};try{d=await r.json()}catch{}
   if(r.status===401 && retry){
-    const password=window.prompt("Accès professionnel JML\\n\\nEntrez votre mot de passe :");
-    if(password){
-      const login=await fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({password})});
-      let ld={};try{ld=await login.json()}catch{}
-      if(login.ok) return api(url,options,false);
-      throw new Error(ld.error||"Authentification refusée.");
-    }
+    const login=await fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({password:window.__JML_PASSWORD||""})});
+    let ld={};try{ld=await login.json()}catch{}
+    if(login.ok) return api(url,options,false);
   }
-  if(!r.ok)throw new Error(d.error||"Erreur serveur");
+  if(!r.ok){
+    const detail=d.error||("HTTP "+r.status);
+    const code=d.code?(" ["+d.code+"]"):"";
+    throw new Error("API "+url+" → "+detail+code);
+  }
   return d;
 }
 
@@ -109,7 +109,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
     }).join("");
   }catch(e){
     console.warn(e);
-    $("appointmentRequestsBox").innerHTML='<div class="prospect-empty">Impossible de charger les demandes de rendez-vous.</div>';
+    $("appointmentRequestsBox").innerHTML='<div class="prospect-empty" style="color:#9a3b32"><strong>Erreur demandes RDV</strong><br><small>'+esc(e.message||e)+'</small></div>';
   }
  }
  async function handleAppointmentAction(id,action){
@@ -147,7 +147,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
         </div>
       </div>
     </div>`).join("");
-  }catch(e){console.warn(e);$("prospectsBox").innerHTML='<div class="prospect-empty">Impossible de charger les prospects. Réessayez.</div>'}
+  }catch(e){console.warn(e);$("prospectsBox").innerHTML='<div class="prospect-empty" style="color:#9a3b32"><strong>Erreur chargement prospects</strong><br><small>'+esc(e.message||e)+'</small></div>'}
  }
 
  function findProspect(id){return prospects.find(p=>String(p.id)===String(id))}
