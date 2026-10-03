@@ -225,6 +225,31 @@ async function deleteGoogleCalendarEvent(pool, eventId) {
   }
 }
 
+async function syncConfirmedAppointments(pool) {
+  if (!pool) return;
+  try {
+    const q=await pool.query("SELECT id,name,email,phone,requested_at,requested_location,calendar_event_id FROM jml_appointment_requests WHERE status='Confirmée' AND calendar_event_id IS NULL AND requested_at IS NOT NULL ORDER BY requested_at LIMIT 10");
+    for (const r of q.rows) {
+      const start=new Date(r.requested_at), end=new Date(start.getTime()+60*60*1000);
+      if(!Number.isFinite(start.getTime())) continue;
+      const busy=await getGoogleCalendarBusy(pool,start,end);
+      if(busy.some(x=>new Date(x.start)<end&&new Date(x.end)>start)) {
+        console.warn("JML Calendar: créneau confirmé mais déjà occupé",r.id);
+        continue;
+      }
+      const event=await createGoogleCalendarEvent(pool,{
+        start,end,
+        summary:"Rendez-vous vendeur — "+String(r.name||"Prospect"),
+        description:"Rendez-vous confirmé avec JML Immobilier."+(r.email?"\nE-mail : "+r.email:"")+(r.phone?"\nTéléphone : "+r.phone:""),
+        location:r.requested_location||""
+      });
+      if(event?.id) await pool.query("UPDATE jml_appointment_requests SET calendar_event_id=$2 WHERE id=$1",[r.id,event.id]);
+    }
+  } catch(error) {
+    console.warn("JML Calendar sync:",error?.message||error);
+  }
+}
+
 async function registerGoogleCalendarRoutes(app, options) {
   const pool = options?.pool || null;
   const isAdminAuthenticated = options?.isAdminAuthenticated || (() => false);
@@ -344,6 +369,10 @@ async function registerGoogleCalendarRoutes(app, options) {
   // Les routes qui utilisent PostgreSQL appellent déjà ensureTable() au besoin.
   try {
     await ensureTable(pool);
+    if (pool) {
+      await syncConfirmedAppointments(pool);
+      setInterval(() => syncConfirmedAppointments(pool), 30000);
+    }
   } catch (error) {
     console.warn("JML Google Calendar table:", error.message);
   }
