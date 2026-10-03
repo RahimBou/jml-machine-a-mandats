@@ -1262,7 +1262,29 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
     const refText=ref.referenceValue?(" · Repère surface : "+Number(ref.referenceValue).toLocaleString("fr-FR")+" €"):"";
     if(marketSource)marketSource.textContent=source+" · "+period+". "+(matches?matches+" comparable(s) identifié(s).":"Les comparables précis seront affinés avec l’adresse.")+refText;
   }catch(error){
-    console.warn("JML seller dashboard market:",error);
+    console.warn("JML seller dashboard territory-summary:",error);
+    /* Secours : le bloc marché ne doit pas dépendre du calcul fin des comparables.
+       Si territory-summary échoue, on récupère au minimum le marché communal. */
+    try{
+      const fallback=await fetch("/api/commune-market?city="+encodeURIComponent(city),{cache:"no-store"});
+      const fm=await fallback.json();
+      if(fallback.ok&&fm.ok){
+        const type=String(d.propertyType||"").toLowerCase();
+        const typePrice=/appartement|studio|duplex|loft/i.test(type)?fm.apartmentPrice:/maison/i.test(type)?fm.housePrice:/terrain/i.test(type)?fm.terrainPrice:fm.communalPrice;
+        const tx=Number(fm.transactions||0);
+        if(marketCards){
+          marketCards.innerHTML=[
+            ["Médiane communale",formatPrice(fm.communalPrice),fm.period||"DVF disponibles"],
+            [d.propertyType||"Votre bien",formatPrice(typePrice),"Repère du type de bien"],
+            ["Transactions",tx?tx.toLocaleString("fr-FR"):"Données insuffisantes","Ventes DVF disponibles"]
+          ].map(x=>"<div class=\"seller-metric\"><span>"+escHtml(x[0])+"</span><strong>"+escHtml(x[1])+"</strong><small>"+escHtml(x[2])+"</small></div>").join("");
+        }
+        if(marketSource)marketSource.textContent=String(fm.source||"DVF")+" · "+String(fm.period||"période disponible")+" · affichage de secours communal.";
+        return;
+      }
+    }catch(fallbackError){
+      console.warn("JML seller dashboard market fallback:",fallbackError);
+    }
     if(marketCards)marketCards.innerHTML='<div class="seller-metric"><span>Repère local</span><strong>Données indisponibles</strong><small>Le service DVF sera réessayé</small></div><div class="seller-metric"><span>Type de bien</span><strong>'+escHtml(d.propertyType||"Votre bien")+'</strong><small>Informations enregistrées</small></div><div class="seller-metric"><span>Transactions</span><strong>Données indisponibles</strong><small>Pas de valeur inventée</small></div>';
     if(marketSource)marketSource.textContent="Les données DVF/comparables ne sont pas disponibles pour le moment. Aucune valeur n’est inventée.";
   }
