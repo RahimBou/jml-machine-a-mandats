@@ -162,7 +162,9 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .road-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .road-card{background:#fff!important;border:1px solid #e5dfd2!important;border-radius:12px!important;padding:10px!important}
 .highlight-list{margin-top:8px}
-@media(max-width:760px){.seller-focus{grid-template-columns:1fr}.road-list{grid-template-columns:1fr 1fr}}
+.road-empty{background:linear-gradient(135deg,#f1f4ef,#fbf7ee)!important}
+.road-empty-note{display:inline-block;margin-top:5px;padding:8px 10px;border-radius:9px;background:#fff;border:1px solid #e6dfd2;font-size:8px;color:#68736c}
+@media(max-width:760px){.road-list{grid-template-columns:1fr 1fr}}
 @media(max-width:470px){.road-list{grid-template-columns:1fr}}</style></head>
 <body>
 <main class="wrap">
@@ -207,19 +209,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   </div>
   <div class="seller-poster" id="sellerPoster"></div>
 </section>
-  <div class="seller-focus">
-   <div class="seller-focus-main">
-    <div class="benefit-kicker">💬 POUR LE RENDEZ-VOUS</div>
-    <h3>Pourquoi cet emplacement est facile à présenter</h3>
-    <p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs, concrets et vérifiables.</p>
-    <div class="seller-focus-note">Objectif : donner au vendeur des arguments simples à mémoriser et faciles à reprendre face à un acquéreur.</div>
-   </div>
-   <div class="seller-focus-side">
-    <div class="benefit-kicker">📍 LES REPÈRES À RETENIR</div>
-    <div class="proof" id="proof"><div><b>École</b><strong>—</strong></div><div><b>Commerces</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Santé</b><strong>—</strong></div></div>
-   </div>
-  </div>
-<div class="seller-proof-heading"><span>LES PREUVES DERRIÈRE LES ARGUMENTS</span><b>Les 5 repères vérifiés autour de l’adresse</b></div>
+<div class="seller-proof-heading"><span>LES PREUVES DERRIÈRE LES ARGUMENTS</span><b>5 repères vérifiés autour de l’adresse</b></div>
 <div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
 
   <details class="diag" id="diagnostics"><summary>🔎 Diagnostic des sources</summary><div id="diagRows"><div class="diag-row"><span>Initialisation</span><b class="diag-code">JML-D000</b></div></div></details>
@@ -382,7 +372,7 @@ function addDiag(source,code,detail){
  $("#proof").innerHTML=proof.length
    ?proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("")
    :'<div><b>Proximité</b><strong>À compléter</strong></div>';
- $("#sellingPitch").textContent=highlights.length
+ const sellingPitchNode=$("#sellingPitch"); if(sellingPitchNode) sellingPitchNode.textContent=highlights.length
    ?"L'adresse bénéficie de plusieurs services accessibles à proximité : "+highlights.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+" . Ces éléments peuvent être utilisés pour décrire concrètement le quotidien d'un acquéreur, sans les présenter comme une majoration automatique du prix."
    :"Aucun repère de proximité suffisamment pertinent n'a pu être identifié automatiquement dans le rayon retenu.";
  renderSellerPost();
@@ -684,8 +674,11 @@ function roadIcon(type){
   return /autoroute|voie rapide/.test(s)?"🛣️":"🚗";
 }
 function renderMajorRoads(cat,data){
-  const items=Array.isArray(cat?.items)?cat.items.slice(0,3):[];
-  if(!items.length)return "";
+  const items=Array.isArray(cat?.items)?cat.items.filter(Boolean).slice(0,3):[];
+  const source=cat?.source||data?.roadSource||"Données publiques";
+  if(!items.length){
+    return '<div class="road-strip road-empty" id="road-proximity"><div class="road-head"><div><span class="road-kicker">ACCESSIBILITÉ</span><b>🚗 Grands axes routiers</b></div><span>Rayon 3 km</span></div><p class="road-intro">Aucun grand axe routier suffisamment proche n’a été identifié dans les données disponibles pour cette adresse. Aucune route n’est inventée.</p><div class="road-empty-note">À vérifier si nécessaire avec la carte du secteur avant de reprendre cet argument en rendez-vous.</div><small class="road-source">Source : '+esc(source)+' · Les axes routiers décrivent l’accessibilité et ne sont pas intégrés au calcul du prix.</small></div>';
+  }
   const body=items.map(x=>{
     const parts=[x.ref,x.name].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
     const title=parts.join(" · ")||"Axe routier";
@@ -693,7 +686,7 @@ function renderMajorRoads(cat,data){
     const distanceText=Number.isFinite(distance)?distance.toFixed(2).replace(".",",")+" km":"à proximité";
     return '<div class="road-item road-card"><div class="road-icon">'+roadIcon(x.type)+'</div><div class="road-copy"><strong>'+esc(title)+'</strong><small>'+esc(x.type||"Grand axe routier")+'</small></div><div class="road-distance">'+esc(distanceText)+'</div></div>';
   }).join("");
-  return '<div class="road-strip" id="road-proximity"><div class="road-head"><div><span class="road-kicker">ACCESSIBILITÉ</span><b>🚗 Un secteur bien connecté</b></div><span>Rayon 3 km</span></div><p class="road-intro">Les principaux axes à proximité facilitent les déplacements vers les pôles voisins et renforcent la praticité de l’adresse au quotidien.</p><div class="road-list">'+body+'</div><small class="road-source">Source : '+esc(cat?.source||data?.roadSource||"OpenStreetMap / Overpass")+' · © OpenStreetMap contributors · Ces axes décrivent l’accessibilité routière et ne sont pas intégrés au calcul du prix.</small></div>';
+  return '<div class="road-strip" id="road-proximity"><div class="road-head"><div><span class="road-kicker">ACCESSIBILITÉ</span><b>🚗 Les grands axes à retenir</b></div><span>Rayon 3 km</span></div><p class="road-intro">Les principaux axes identifiés autour de l’adresse donnent un repère simple sur les déplacements vers les pôles voisins.</p><div class="road-list">'+body+'</div><small class="road-source">Source : '+esc(source)+' · © OpenStreetMap contributors · Ces axes décrivent l’accessibilité routière et ne sont pas intégrés au calcul du prix.</small></div>';
 }
 function renderSellerAttractiveness(data){
   const c=cats||{};
