@@ -2387,6 +2387,18 @@ async function initDb() {
   await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS consent BOOLEAN NOT NULL DEFAULT FALSE`);
   await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
 
+  // Compatibilité avec les anciennes bases : toutes les colonnes utilisées par la création
+  // de l'espace vendeur doivent exister avant /api/leads, sinon la transaction est annulée.
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS access_token TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS prospect_id TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS city TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS address TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS property_type TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS horizon TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS surface TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS rooms TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS dpe TEXT`);
+  await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS terrain TEXT`);
   await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS owner_data JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS expected_price TEXT`);
   await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS sale_reason TEXT`);
