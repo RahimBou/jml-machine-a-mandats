@@ -141,6 +141,37 @@ async function getAccessToken(pool) {
   };
 }
 
+async function getGoogleCalendarBusy(pool, start, end) {
+  const startDate = start instanceof Date ? start : new Date(start);
+  const endDate = end instanceof Date ? end : new Date(end);
+  if (!Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime()) || endDate <= startDate) {
+    throw new Error("Période Google Calendar invalide.");
+  }
+  const token = await getAccessToken(pool);
+  const response = await fetch(FREEBUSY_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + token.accessToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      timeMin: startDate.toISOString(),
+      timeMax: endDate.toISOString(),
+      timeZone: "Europe/Paris",
+      items: [{ id: token.calendarId || "primary" }]
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error("Google freebusy HTTP " + response.status + ": " + (payload.error?.message || "unknown"));
+  }
+  const calendar = payload?.calendars?.[token.calendarId || "primary"] || {};
+  if (Array.isArray(calendar.errors) && calendar.errors.length) {
+    throw new Error("Google Calendar : disponibilité indisponible.");
+  }
+  return Array.isArray(calendar.busy) ? calendar.busy : [];
+}
+
 function requireConfigured(res) {
   const config = getConfig();
   if (!config.clientId || !config.clientSecret || !config.redirectUri) {
@@ -254,31 +285,13 @@ async function registerGoogleCalendarRoutes(app, options) {
         return res.status(400).json({ ok: false, code: "JML-CAL-005", error: "Période trop longue." });
       }
 
-      const token = await getAccessToken(pool);
-      const response = await fetch(FREEBUSY_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + token.accessToken,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          timeMin: start.toISOString(),
-          timeMax: end.toISOString(),
-          timeZone: "Europe/Paris",
-          items: [{ id: token.calendarId || "primary" }]
-        })
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error("Google freebusy HTTP " + response.status + ": " + (payload.error?.message || "unknown"));
-      }
-
-      const calendar = payload?.calendars?.[token.calendarId || "primary"] || {};
+      const busy = await getGoogleCalendarBusy(pool, start, end);
+      const saved = await loadRefreshToken(pool);
       res.setHeader("Cache-Control", "no-store");
       res.json({
         ok: true,
-        calendarId: token.calendarId || "primary",
-        busy: Array.isArray(calendar.busy) ? calendar.busy : []
+        calendarId: saved?.calendarId || config.calendarId || "primary",
+        busy
       });
     } catch (error) {
       const message = String(error?.message || error);
@@ -296,4 +309,4 @@ async function registerGoogleCalendarRoutes(app, options) {
   }
 }
 
-module.exports = { registerGoogleCalendarRoutes, SCOPES };
+module.exports = { registerGoogleCalendarRoutes, getGoogleCalendarBusy, SCOPES };
