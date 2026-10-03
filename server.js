@@ -1390,6 +1390,83 @@ async function getAdemeDpeByAddress(address,city="",postal=""){
   }
 }
 
+const dvfPlusFreshCache=new Map();
+
+function normalizeDvfPlusRow(row, fallbackCity=""){
+  const x=row?.properties && typeof row.properties==="object" ? row.properties : (row||{});
+  const geometry=row?.geometry||x?.geometry||null;
+  let lon=Number(x.longitude??x.lon??x.x);
+  let lat=Number(x.latitude??x.lat??x.y);
+  if((!Number.isFinite(lon)||!Number.isFinite(lat))&&geometry?.type==="Point"&&Array.isArray(geometry.coordinates)){
+    lon=Number(geometry.coordinates[0]); lat=Number(geometry.coordinates[1]);
+  }
+  const date=String(x.datemut??x.date_mutation??x.dateMutation??"").slice(0,10);
+  const price=parsePositiveNumber(x.valeurfonc??x.valeur_fonciere??x.valeurFonciere??x.price);
+  const surface=parsePositiveNumber(x.sbati??x.surface_reelle_bati??x.surface);
+  const land=parsePositiveNumber(x.sterr??x.surface_terrain??x.land_surface);
+  const rooms=parsePositiveNumber(x.nblocapt??x.nbpiece??x.nombre_pieces_principales??x.rooms);
+  const type=classifyDvfType(x.codtypbien??x.code_type_local??x.type_local??x.libtypbien??x.type,"");
+  if(!date||price===null||price<=0||surface===null||surface<=0||!Number.isFinite(lat)||!Number.isFinite(lon)||!type)return null;
+  const address=[
+    x.adresse_numero??x.numero_voie,
+    x.adresse_suffixe,
+    x.adresse_nom_voie??x.nom_voie,
+    x.code_postal,
+    x.nom_commune??fallbackCity
+  ].filter(v=>v!=null&&String(v).trim()!=="").join(" ").trim();
+  return {
+    id:String(x.idmutation??x.id_mutation??x.id||[date,address,price,surface,lat,lon].join("|")),
+    date,type,price,surface,rooms:rooms??null,land:land??null,lat,lon,address,
+    street:String(x.adresse_nom_voie??x.nom_voie??x.street??"").trim(),
+    postal:String(x.code_postal??"").trim(),
+    code:String(x.code_insee??x.code_commune??"").trim(),
+    city:String(x.nom_commune??x.libcommune??fallbackCity).trim(),
+    pricePerM2:price/surface,
+    source:"DVF+ Cerema"
+  };
+}
+
+async function getFreshDvfPlusComparables(origin,property,communeCode=""){
+  const lat=Number(origin?.lat),lon=Number(origin?.lon);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon))return [];
+  const type=classifyDvfType(property?.propertyType,"");
+  if(type!=="Maison"&&type!=="Appartement")return [];
+  const key=[lat.toFixed(4),lon.toFixed(4),type].join("|");
+  const cached=dvfPlusFreshCache.get(key);
+  if(cached&&cached.expiresAt>Date.now())return cached.rows;
+  const half=0.009; // bbox < 0.02° imposé par l'API DVF+ ; environ 1 km autour du bien
+  const url=new URL("https://apidf.cerema.fr/dvf_opendata/geomutations/");
+  url.searchParams.set("in_bbox",[lon-half,lat-half,lon+half,lat+half].join(","));
+  url.searchParams.set("anneemut_min",String(new Date().getFullYear()-1));
+  url.searchParams.set("codtypbien",type==="Maison"?"111":"121");
+  url.searchParams.set("fields","all");
+  url.searchParams.set("page_size","500");
+  url.searchParams.set("paginate","true");
+  try{
+    const response=await fetch(url,{
+      headers:{"Accept":"application/json","User-Agent":"JML-Projet-Vendeur-DVFPlus/1.0"},
+      signal:AbortSignal.timeout(9000)
+    });
+    if(!response.ok)throw new Error("DVF+ Cerema HTTP "+response.status);
+    const payload=await response.json().catch(()=>({}));
+    const raw=Array.isArray(payload?.features)?payload.features:
+      Array.isArray(payload?.results)?payload.results:
+      Array.isArray(payload?.data)?payload.data:[];
+    const cutoff=Date.now()-365*24*60*60*1000;
+    const rows=raw.map(x=>normalizeDvfPlusRow(x,property?.city||"")).filter(Boolean).filter(x=>{
+      const d=parseSaleDate(x.date);
+      return d&&d.getTime()>=cutoff;
+    });
+    dvfPlusFreshCache.set(key,{expiresAt:Date.now()+60*60*1000,rows});
+    console.log("JML DVF+ récent:",type,rows.length,"transactions <12 mois");
+    return rows;
+  }catch(error){
+    console.warn("JML DVF+ récent indisponible:",String(error?.message||error));
+    dvfPlusFreshCache.set(key,{expiresAt:Date.now()+15*60*1000,rows:[]});
+    return [];
+  }
+}
+
 async function buildComparableSales(market,property){
   const city=String(property?.city||market?.city||"").trim();
   const typeWanted=classifyDvfType(property?.propertyType,"");
