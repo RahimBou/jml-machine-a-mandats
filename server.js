@@ -9,6 +9,8 @@ const crypto = require("crypto");
 const registerPublicEventsRoute = require("./events");
 
 const app = express();
+app.set("trust proxy", 1);
+
 
 // Réseau externe : certaines API publiques peuvent fermer brutalement leur flux
 // (ECONNRESET / AbortError / "terminated"). On journalise ces erreurs réseau
@@ -105,6 +107,29 @@ const pool = hasDatabase ? new Pool({
   max: 5,
   connectionTimeoutMillis: 10000
 }) : null;
+
+const adminSessions = new Map();
+let dbReady = false;
+const ADMIN_PASSWORD = String(process.env.JML_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "").trim();
+const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+function getCookie(req,name){
+  const raw=String(req.headers.cookie||"");
+  const part=raw.split(";").map(x=>x.trim()).find(x=>x.startsWith(name+"="));
+  return part ? decodeURIComponent(part.slice(name.length+1)) : "";
+}
+function isAdminAuthenticated(req){
+  const token=getCookie(req,"jml_admin_session");
+  if(!token)return false;
+  const expiresAt=adminSessions.get(token);
+  if(!expiresAt)return false;
+  if(expiresAt<=Date.now()){adminSessions.delete(token);return false;}
+  return true;
+}
+function requireAdminOr401(req,res){
+  if(!ADMIN_PASSWORD) return apiError(res,503,"JML-AUTH-001","Accès professionnel non configuré. Ajoutez JML_ADMIN_PASSWORD dans Render.");
+  if(!isAdminAuthenticated(req)){res.status(401).json({ok:false,code:"JML-AUTH-002",error:"Authentification professionnelle requise."});return false;}
+  return true;
+}
 
 const memory = { prospects: new Map(), leads: new Map(), sellerSpaces: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
@@ -2643,7 +2668,7 @@ function scoreProspect(p) {
 }
 
 app.get("/api/dpe/status", async (_req,res) => {
-  if(!pool)return res.json({ok:true,ready:false,total:0,department:"08",source:"ADEME DPE"});
+  if(!pool || !dbReady)return res.json({ok:true,ready:false,total:0,department:"08",source:"ADEME DPE"});
   try{
     const q=await db("SELECT COUNT(*)::int AS total,COUNT(DISTINCT city_code)::int AS communes,MAX(imported_at) AS imported_at FROM jml_dpe WHERE department_code='08'");
     return res.json({ok:true,ready:Number(q.rows[0]?.total||0)>0,total:Number(q.rows[0]?.total||0),communes:Number(q.rows[0]?.communes||0),importedAt:q.rows[0]?.imported_at||null,department:"08",source:"ADEME DPE — base locale"});
@@ -2660,10 +2685,12 @@ app.get("/api/health", async (_req,res) => {
     try { await db("SELECT 1"); database = "postgres"; }
     catch(e){ database = "postgres-error"; databaseError = e.message; }
   }
-  res.json({ok:true,app:"JML Projet Vendeur",version:VERSION,database, databaseError, region:"Ardennes",sector:"Charleville-Mézières"});
+  res.json({ok:true,app:"JML Projet Vendeur",version:VERSION,database,databaseReady:dbReady,databaseError,adminConfigured:!!ADMIN_PASSWORD,region:"Ardennes",sector:"Charleville-Mézières"});
 });
 
 app.get("/api/diagnostic", async (_req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   if(!pool) return res.json({ok:true,version:VERSION,database:"memory",prospects:memory.prospects.size,leads:memory.leads.size});
   try{
     const q=await db("SELECT COUNT(*)::int AS count FROM jml_prospects");
@@ -2687,6 +2714,8 @@ app.get("/api/diagnostic", async (_req,res) => {
 });
 
 app.get("/api/pipeline", async (_req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(pool){
       const q=await db("SELECT status,COUNT(*)::int AS count FROM jml_prospects GROUP BY status");
@@ -2700,7 +2729,26 @@ app.get("/api/pipeline", async (_req,res) => {
   }catch(e){ unexpected(res,"JML-P006","Pipeline indisponible.",e); }
 });
 
+app.post("/api/admin/login", async (req,res)=>{
+  if(!ADMIN_PASSWORD) return apiError(res,503,"JML-AUTH-001","Accès professionnel non configuré. Ajoutez JML_ADMIN_PASSWORD dans Render.");
+  const password=String(req.body?.password||"");
+  if(!password || password!==ADMIN_PASSWORD) return apiError(res,401,"JML-AUTH-003","Mot de passe incorrect.");
+  const token=crypto.randomBytes(32).toString("hex");
+  adminSessions.set(token,Date.now()+ADMIN_SESSION_TTL_MS);
+  const secure=req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https";
+  res.setHeader("Set-Cookie","jml_admin_session="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Max-Age="+Math.floor(ADMIN_SESSION_TTL_MS/1000)+(secure?"; Secure":""));
+  res.json({ok:true});
+});
+app.post("/api/admin/logout", async (req,res)=>{
+  const token=getCookie(req,"jml_admin_session");
+  if(token)adminSessions.delete(token);
+  res.setHeader("Set-Cookie","jml_admin_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
+  res.json({ok:true});
+});
+
 app.get("/api/prospects", async (_req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(pool){
       const q=await db("SELECT * FROM jml_prospects ORDER BY updated_at DESC, created_at DESC");
@@ -2713,6 +2761,8 @@ app.get("/api/prospects", async (_req,res) => {
 });
 
 app.post("/api/prospects", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   const p=normalizeProspect(req.body||{});
   if(!p.name) return apiError(res,400,"JML-P001","Nom / prénom requis.");
   if(!validEmail(p.email)) return apiError(res,400,"JML-P002","Email invalide.");
@@ -2743,6 +2793,8 @@ app.post("/api/prospects", async (req,res) => {
 });
 
 app.put("/api/prospects/:id/status", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   const status=clean(req.body?.status,40);
   if(!STATUS_VALUES.includes(status)) return apiError(res,400,"JML-P007","Statut invalide.");
   try{
@@ -2759,6 +2811,8 @@ app.put("/api/prospects/:id/status", async (req,res) => {
 });
 
 app.put("/api/prospects/:id", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(pool){
       const old=await db("SELECT * FROM jml_prospects WHERE id=$1",[req.params.id]);
@@ -2782,6 +2836,8 @@ app.put("/api/prospects/:id", async (req,res) => {
 });
 
 app.post("/api/prospects/:id/qualify", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     let p;
     if(pool){
@@ -2800,6 +2856,8 @@ app.post("/api/prospects/:id/qualify", async (req,res) => {
 });
 
 app.get("/api/prospects/:id/activities", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(pool){
       const q=await db("SELECT id,type,note,outcome,appointment_at,appointment_location,created_at FROM jml_activities WHERE prospect_id=$1 ORDER BY created_at DESC LIMIT 100",[req.params.id]);
@@ -2810,6 +2868,8 @@ app.get("/api/prospects/:id/activities", async (req,res) => {
 });
 
 app.post("/api/prospects/:id/activity", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   const type=clean(req.body?.type,40);
   const note=clean(req.body?.note,1000);
   const outcome=clean(req.body?.outcome,80);
@@ -2867,6 +2927,8 @@ app.post("/api/prospects/:id/activity", async (req,res) => {
 });
 
 app.put("/api/prospects/:id/follow-up", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   const nextAction=clean(req.body?.nextAction,500);
   const raw=req.body?.nextActionAt;
   const nextActionAt=raw?new Date(raw):null;
@@ -2886,6 +2948,8 @@ app.put("/api/prospects/:id/follow-up", async (req,res) => {
 });
 
 app.delete("/api/prospects/:id", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(pool){
       const q=await db("DELETE FROM jml_prospects WHERE id=$1",[req.params.id]);
@@ -2899,6 +2963,8 @@ app.delete("/api/prospects/:id", async (req,res) => {
 
 
 app.get("/api/appointment-requests", async (_req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(!pool) return res.json({ok:true,requests:[]});
     const q=await db("SELECT r.*, p.name AS prospect_name, p.status AS prospect_status FROM jml_appointment_requests r LEFT JOIN jml_prospects p ON p.id=r.prospect_id ORDER BY CASE WHEN r.status='À traiter' THEN 0 ELSE 1 END, r.created_at DESC");
@@ -2907,6 +2973,8 @@ app.get("/api/appointment-requests", async (_req,res) => {
 });
 
 app.post("/api/appointment-requests/:id/confirm", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   const id=clean(req.params.id,100);
   try{
     if(!pool) return apiError(res,503,"JML-A012","PostgreSQL n'est pas configuré.");
@@ -2926,6 +2994,8 @@ app.post("/api/appointment-requests/:id/confirm", async (req,res) => {
 });
 
 app.post("/api/appointment-requests/:id/reject", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(!pool) return apiError(res,503,"JML-A017","PostgreSQL n'est pas configuré.");
     const q=await db("SELECT id,status FROM jml_appointment_requests WHERE id=$1",[req.params.id]);
@@ -3059,7 +3129,7 @@ app.post("/api/seller-access", async (req,res)=>{
     );
     if(!q.rowCount) return res.json(generic);
     const row=q.rows[0];
-    const sellerSpaceUrl=req.protocol+"://"+req.get("host")+"/espace-vendeur/"+encodeURIComponent(row.access_token);
+    const sellerSpaceUrl=(process.env.PUBLIC_APP_URL||((req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https")?"https":"http")+"://"+req.get("host"))+"/espace-vendeur/"+encodeURIComponent(row.access_token);
     const lead={name:row.prospect_name||"Bonjour",email:email};
     try{
       const sent=await sendLeadConfirmationEmail(lead,sellerSpaceUrl);
@@ -3171,14 +3241,20 @@ app.post("/api/leads", async (req,res) => {
 
         // Le prospect et son espace vendeur doivent être créés dans la même
         // transaction : si l'un échoue, rien n'est validé partiellement.
-        const sellerSpace=await createSellerSpace(
-          {city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},
-          prospectId,
-          client
+        const existingSpaceResult=await client.query(
+          "SELECT * FROM jml_seller_spaces WHERE prospect_id=$1 ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST LIMIT 1",
+          [prospectId]
         );
+        const sellerSpace=existingSpaceResult.rowCount
+          ? sellerSpacePublic(existingSpaceResult.rows[0])
+          : await createSellerSpace(
+              {city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},
+              prospectId,
+              client
+            );
         await client.query("COMMIT");
 
-        const sellerSpaceUrl=req.protocol+"://"+req.get("host")+"/espace-vendeur/"+sellerSpace.accessToken;
+        const sellerSpaceUrl=(process.env.PUBLIC_APP_URL||((req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https")?"https":"http")+"://"+req.get("host"))+"/espace-vendeur/"+sellerSpace.accessToken;
         let emailConfirmation = { sent: false, reason: "no-email" };
         try {
           emailConfirmation = await sendLeadConfirmationEmail(lead,sellerSpaceUrl);
@@ -3216,7 +3292,10 @@ app.post("/api/leads", async (req,res) => {
       memory.prospects.set(p.id,out);
       prospectId=p.id;
     }
-    const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
+    let sellerSpace=[...memory.sellerSpaces.values()].find(s=>String(s.prospectId||"")===String(prospectId||""))||null;
+    if(!sellerSpace){
+      sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
+    }
     const sellerSpaceUrl=req.protocol+"://"+req.get("host")+"/espace-vendeur/"+sellerSpace.accessToken;
     let emailConfirmation = { sent: false, reason: "no-email" };
     try {
@@ -3239,6 +3318,8 @@ app.post("/api/leads", async (req,res) => {
 });
 
 app.get("/api/leads", async (_req,res) => {
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     if(pool){const q=await db("SELECT * FROM jml_leads ORDER BY created_at DESC LIMIT 500");return res.json({ok:true,persisted:true,leads:q.rows});}
     res.json({ok:true,persisted:false,leads:[...memory.leads.values()].reverse()});
@@ -3282,6 +3363,8 @@ function buildMandatIntelligence(prospects, activitiesByProspect = new Map()){
 }
 
 app.get("/api/mandat-intelligence", async (_req,res)=>{
+  if(!requireAdminOr401(req,res)) return;
+
   try{
     let prospects=[],activities=[];
     if(pool){
@@ -3331,6 +3414,7 @@ async function start(){
   app.listen(PORT,()=>console.log(`JML Projet Vendeur v${VERSION} HTTP listening on ${PORT}`));
   try{
     await initDb();
+    dbReady = true;
     console.log(`JML Projet Vendeur v${VERSION} database ready`);
     setTimeout(async()=>{
       try{
