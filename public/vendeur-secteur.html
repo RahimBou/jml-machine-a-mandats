@@ -968,7 +968,7 @@ async function run(){
  if(d.rooms)base.set("rooms",d.rooms);
  if(d.terrain)base.set("landSurface",d.terrain);
 
- // 1. Marché communal indépendant : il doit fonctionner même si le moteur de comparables tombe.
+ // 1. Marché communal indépendant : lancé en parallèle des atouts géolocalisés et du moteur de comparables.
  try{
   const market=await getData("/api/commune-market?"+new URLSearchParams({city:d.city}).toString(),12000,"Marché communal");
   renderMarket(market);
@@ -987,29 +987,32 @@ async function run(){
   $("#sales").innerHTML='<div class="error">Les transactions communales n’ont pas pu être chargées. Cela n’empêche pas la recherche des comparables.</div>';
  }
 
- // 1bis. Atouts géolocalisés : totalement indépendant du moteur marché.
- try{
-  const assetParams=new URLSearchParams();
-  if(d.address) assetParams.set("address",d.address);
-  if(d.city) assetParams.set("city",d.city);
-  const assets=await getData("/api/territory-assets?"+assetParams.toString(),13500,"Équipements / géocodage");
-  renderAssets(assets);
-  renderSellerMicroApp(assets);
-  renderSellerPost();
- }catch(e){
-  const assetError={
+ // 1bis. Atouts géolocalisés : lancé en parallèle du marché communal.
+ // Cela évite qu'un blocage du marché empêche la micro-application vendeur
+ // et les équipements de proximité de démarrer.
+ const assetsPromise=(async()=>{
+  try{
+   const assetParams=new URLSearchParams();
+   if(d.address) assetParams.set("address",d.address);
+   if(d.city) assetParams.set("city",d.city);
+   return await getData("/api/territory-assets?"+assetParams.toString(),13500,"Équipements / géocodage");
+  }catch(e){
+   return {
     available:false,
     code:e.code||"JML-ASSET-CLIENT",
     message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+" ."
-  };
-  addDiag("Équipements / géocodage",assetError.code,assetError.message);
-  renderAssets(assetError);
-  // Important : même en cas d'échec du service de proximité,
-  // la micro-application doit sortir de son état "chargement".
-  // Elle affiche alors un état contrôlé sans inventer d'argument.
-  renderSellerMicroApp(assetError);
-  renderSellerPost();
+   };
+  }
+ })();
+
+ // Rendu des atouts dès que leur requête parallèle est terminée.
+ const assets=await assetsPromise;
+ if(assets?.available===false){
+  addDiag("Équipements / géocodage",assets.code||"JML-ASSET-CLIENT",assets.message||"Source indisponible");
  }
+ renderAssets(assets);
+ renderSellerMicroApp(assets);
+ renderSellerPost();
 
  // 2. Comparables : appel séparé.
  try{
