@@ -237,6 +237,7 @@ async function sendResendMail(to, subject, text, html) {
 async function syncConfirmedAppointments(pool) {
   if (!pool) return;
   try {
+    await pool.query("UPDATE jml_appointment_requests SET response_token=encode(gen_random_bytes(24),'hex') WHERE response_token IS NULL AND status IN ('À traiter','À revoir')");
     const q=await pool.query("SELECT id,name,email,phone,requested_at,requested_location,calendar_event_id FROM jml_appointment_requests WHERE status='Confirmée' AND calendar_event_id IS NULL AND requested_at IS NOT NULL ORDER BY requested_at LIMIT 10");
     for (const r of q.rows) {
       const start=new Date(r.requested_at), end=new Date(start.getTime()+60*60*1000);
