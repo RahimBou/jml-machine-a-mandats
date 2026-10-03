@@ -190,24 +190,64 @@ h1,h2,h3{
 /* REPÈRE DE MARCHÉ */
 #reference{
   display:grid;
-  grid-template-columns:1.05fr .95fr;
-  gap:10px;
+  grid-template-columns:1.08fr .92fr;
+  gap:12px;
+}
+#reference .ref-main{
+  min-height:190px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.reference-formula{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  margin:5px 0 9px;
+  padding:6px 11px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  color:#f5f1e6;
+  font-size:11px;
+  font-weight:900;
+}
+.reference-sub{
+  font-size:8.5px!important;
+  line-height:1.45!important;
+  color:#dbe7e0!important;
 }
 #reference .ref-main{
   background:var(--g);
   color:#fff;
   border-radius:15px;
-  padding:17px;
+  padding:19px;
   border-left:4px solid var(--gold);
+  position:relative;
+  overflow:hidden;
+}
+#reference .ref-main:after{
+  content:"";
+  position:absolute;
+  right:-55px;
+  bottom:-75px;
+  width:210px;
+  height:210px;
+  border-radius:50%;
+  border:28px solid rgba(255,255,255,.045);
+  pointer-events:none;
 }
 #reference .ref-main h3{
   font-size:13px;
   margin:0;
 }
 #reference .ref-value{
-  font:700 34px Georgia,"Times New Roman",serif;
+  font:700 38px Georgia,"Times New Roman",serif;
   color:var(--gold);
-  margin:9px 0 4px;
+  margin:8px 0 3px;
+  position:relative;
+  z-index:1;
 }
 #reference .ref-main p{
   font-size:9px;
@@ -215,6 +255,8 @@ h1,h2,h3{
   color:#dbe7e0;
   margin:0;
   max-width:760px;
+  position:relative;
+  z-index:1;
 }
 .ref-list{
   display:grid;
@@ -861,6 +903,12 @@ function renderSales(rows){
 function renderReference(ref){
  const r=ref||{};
  const value=r.referenceValue;
+ const d=pageData.space||{};
+ const surface=Number(d.surface);
+ const base=Number(r.basePriceM2);
+ const formula=Number.isFinite(surface)&&surface>0&&Number.isFinite(base)&&base>0
+   ?surface.toLocaleString("fr-FR")+" m² × "+Math.round(base).toLocaleString("fr-FR")+" €/m² = "+eur(value)
+   :"Repère construit à partir des ventes comparables disponibles";
  pageData.reference=r;
  const comparable=!!r.fromComparables;
  const txLabel=comparable?(r.transactions??"—"):"Contexte communal";
@@ -871,9 +919,10 @@ function renderReference(ref){
  $("#reference").innerHTML=
  '<div class="ref-main seller-reference-main">'+
    '<span class="reference-kicker">REPÈRE DE VALEUR</span>'+
-   '<h3>Valeur centrale observée</h3>'+
+   '<h3>Valeur centrale du marché</h3>'+
    '<div class="ref-value">'+esc(eur(value))+'</div>'+
-   '<p>'+esc(r.explanation||"Repère indicatif disponible lorsque les données nécessaires sont présentes.")+'</p>'+
+   '<div class="reference-formula">'+esc(formula)+'</div>'+
+   '<p class="reference-sub">Cette valeur est calculée à partir des ventes réelles comparables retenues autour de votre bien.</p>'+
  '</div>'+
  '<div class="ref-list seller-reference-details">'+
    '<div class="ref-row reference-range"><b>Fourchette observée</b><span>'+esc(range)+'</span></div>'+
