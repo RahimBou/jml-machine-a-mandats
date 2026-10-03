@@ -3042,6 +3042,39 @@ function sellerSpacePublic(row){
   };
 }
 
+app.post("/api/seller-access", async (req,res)=>{
+  const email=cleanEmail(req.body?.email);
+  if(!validEmail(email)) return apiError(res,400,"JML-A001","Adresse e-mail invalide.");
+  const generic={ok:true,message:"Si un espace vendeur correspond à cette adresse, un lien d’accès vient d’être envoyé."};
+  try{
+    if(!pool) return res.json(generic);
+    const q=await db(
+      `SELECT ss.*, p.name AS prospect_name, p.email AS prospect_email
+       FROM jml_seller_spaces ss
+       LEFT JOIN jml_prospects p ON p.id=ss.prospect_id
+       WHERE LOWER(COALESCE(p.email,''))=LOWER($1)
+       ORDER BY ss.updated_at DESC NULLS LAST, ss.created_at DESC NULLS LAST
+       LIMIT 1`,
+      [email]
+    );
+    if(!q.rowCount) return res.json(generic);
+    const row=q.rows[0];
+    const sellerSpaceUrl=req.protocol+"://"+req.get("host")+"/espace-vendeur/"+encodeURIComponent(row.access_token);
+    const lead={name:row.prospect_name||"Bonjour",email:email};
+    try{
+      const sent=await sendLeadConfirmationEmail(lead,sellerSpaceUrl);
+      if(sent?.sent) return res.json(generic);
+      console.warn("JML seller access email not sent:",sent?.reason||"unknown");
+    }catch(emailErr){
+      console.error("JML seller access email failed:",emailErr);
+    }
+    return res.json(generic);
+  }catch(e){
+    console.error("JML seller access lookup failed:",e);
+    return res.json(generic);
+  }
+});
+
 app.get("/api/seller-space/:token", async (req,res)=>{
   const token=clean(req.params.token,100);
   if(!token) return apiError(res,400,"JML-S001","Accès vendeur invalide.");
