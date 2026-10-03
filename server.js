@@ -2014,7 +2014,7 @@ app.get("/api/territory-summary", async (req,res) => {
 
     return res.json({
       ok:true,version:VERSION,build:BUILD_MARKER,commune,
-      market:{...market,comparables},sellerReference,nearby,
+      market:{...market,comparables:comparable},sellerReference,nearby,
       source:"API Géo + Géoplateforme IGN/BAN + DVF PostgreSQL",
       diagnostics:{
         communeResolver:"geo.api.gouv.fr par code postal/nom, puis Géoplateforme",
