@@ -198,23 +198,23 @@ body{margin:0;background:var(--jml-bg);color:var(--jml-text);font-family:Inter,s
 
 /* VALUE — the visual centre of the page */
 .section:has(#reference){margin-top:20px!important}
-#reference{display:grid!important;grid-template-columns:minmax(0,1.55fr) minmax(245px,.75fr)!important;gap:9px!important}
-#reference .ref-main{min-height:175px;padding:22px 24px!important;border-radius:15px!important;background:var(--jml-green)!important;display:flex;flex-direction:column;justify-content:center}
+#reference{display:grid!important;grid-template-columns:minmax(0,1.35fr) minmax(290px,.65fr)!important;gap:10px!important;align-items:stretch}
+#reference .ref-main{min-height:155px;padding:20px 22px!important;border-radius:15px!important;background:var(--jml-green)!important;display:flex;flex-direction:column;justify-content:center}
 #reference .ref-main:before{content:"LE CHIFFRE À RETENIR";display:block;margin-bottom:5px;color:#ddc686;font-size:8px;font-weight:900;letter-spacing:.14em}
 #reference .ref-main h3{margin:0;color:#fff!important;font:700 18px/1.1 Georgia,"Times New Roman",serif}
-#reference .ref-value{margin:9px 0 7px!important;color:#f0d48a!important;font-size:43px!important;font-weight:850!important;line-height:1}
+#reference .ref-value{margin:8px 0 6px!important;color:#f0d48a!important;font-size:39px!important;font-weight:850!important;line-height:1}
 #reference .ref-main p{margin:0;max-width:620px;color:#dbe7e1!important;font-size:9px!important;line-height:1.5}
-#reference .ref-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-#reference .ref-row{min-height:0;padding:11px 12px!important;border:1px solid var(--jml-line)!important;border-radius:10px!important;background:#fff!important;display:flex;flex-direction:column;justify-content:center}
+#reference .ref-list{display:grid;grid-template-columns:1fr 1fr;gap:7px;align-content:stretch}
+#reference .ref-row{min-height:64px;padding:10px 12px!important;border:1px solid var(--jml-line)!important;border-radius:10px!important;background:#fff!important;display:flex;flex-direction:column;justify-content:center}
 #reference .ref-row:first-child{grid-column:1/-1;background:var(--jml-gold-soft)!important;border-color:#ead9b5!important}
 #reference .ref-row b{color:#8a928c!important;font-size:7px!important;text-transform:uppercase;letter-spacing:.06em}
 #reference .ref-row span{margin-top:4px;color:var(--jml-green)!important;font-size:11px!important;font-weight:850}
 
 /* READING — one calm explanation, not two technical columns */
 #sellerReading{margin-top:8px!important;padding:14px 16px!important;border:1px solid var(--jml-line)!important;border-radius:13px!important;background:#fffdf8!important}
-.seller-reading-head{display:flex!important;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px!important;padding-bottom:7px!important;border-bottom:1px solid #eee7da!important}
-.seller-reading-head span{color:#95753b!important;font-size:7px!important;font-weight:900!important;letter-spacing:.12em}
-.seller-reading-head b{color:var(--jml-green)!important;font:700 15px Georgia,"Times New Roman",serif}
+.seller-reading-head{display:block!important;margin-bottom:10px!important;padding-bottom:8px!important;border-bottom:1px solid #eee7da!important}
+.seller-reading-head span{display:block;color:#95753b!important;font-size:7px!important;font-weight:900!important;letter-spacing:.12em}
+.seller-reading-head b{display:block;margin-top:3px;color:var(--jml-green)!important;font:700 18px Georgia,"Times New Roman",serif}
 .seller-reading-grid{display:grid!important;grid-template-columns:1.2fr .8fr!important;gap:12px!important}
 .seller-reading-grid>div{padding:0!important;border:0!important;background:transparent!important}
 .seller-reading-grid .reading-title{margin:0 0 4px!important;color:var(--jml-green)!important;font-size:8px!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.06em}
@@ -234,13 +234,13 @@ body{margin:0;background:var(--jml-bg);color:var(--jml-text);font-family:Inter,s
 
 #comps{display:block!important;margin-top:8px!important}
 #comps .comps-note{margin:0 0 8px!important;padding:9px 11px!important;border:1px solid #ebe4d7!important;border-radius:9px!important;background:#faf8f3!important;color:#66716b!important;font-size:8px!important;line-height:1.45!important}
-#comps .comps-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
-#comps .comp{padding:12px!important;border:1px solid var(--jml-line)!important;border-radius:12px!important;background:#fff!important;box-shadow:none!important}
+#comps .comps-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+#comps .comp{min-height:122px;padding:14px!important;border:1px solid var(--jml-line)!important;border-radius:12px!important;background:#fff!important;box-shadow:0 3px 12px rgba(35,52,46,.025)!important;display:flex;flex-direction:column}
 #comps .comp-top{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:5px}
 #comps .comp-top b{color:var(--jml-green)!important;font-size:10px!important}
 #comps .comp .pill{padding:3px 6px!important;border-radius:999px!important;background:var(--jml-gold-soft)!important;color:#80642e!important;font-size:6.5px!important;font-weight:850}
-#comps .comp p{margin:7px 0!important;color:#68736d!important;font-size:8px!important;line-height:1.45!important}
-#comps .comp-note{margin-top:7px!important;padding-top:7px!important;border-top:1px solid #eee9df!important;color:#87908a!important;font-size:7px!important;line-height:1.35!important}
+#comps .comp p{margin:8px 0!important;color:#68736d!important;font-size:9px!important;line-height:1.5!important}
+#comps .comp-note{margin-top:auto;padding-top:7px!important;border-top:1px solid #eee9df!important;color:#87908a!important;font-size:7px!important;line-height:1.35!important}
 #comps .comps-more{margin-top:8px!important}
 #comps .comps-more summary{cursor:pointer;color:var(--jml-green)!important;font-size:8px!important;font-weight:800}
 #comps .comps-more .comps-grid{margin-top:8px}
@@ -275,7 +275,19 @@ body{margin:0;background:var(--jml-bg);color:var(--jml-text);font-family:Inter,s
  .seller-reading-head{display:block!important}
  .seller-reading-head b{display:block;margin-top:3px}
 }
-</style></head>
+</style>
+/* Dernier niveau de hiérarchie : les 3 premiers comparables sont prioritaires. */
+#comps .comps-grid>.comp:nth-child(n+4){background:#fbfaf7!important}
+#comps .comps-grid>.comp:nth-child(n+4) .comp-note{color:#a0a6a1!important}
+@media(max-width:760px){
+ #reference{grid-template-columns:1fr!important}
+ #reference .ref-list{grid-template-columns:1fr 1fr}
+ .seller-reading-head b{font-size:16px!important}
+}
+@media(max-width:480px){
+ #reference .ref-list{grid-template-columns:1fr!important}
+}
+</head>
 <body>
 <main class="wrap">
 <section class="hero jml-architecture jml-architecture ardenne-visual">
