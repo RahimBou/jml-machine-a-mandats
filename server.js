@@ -7,6 +7,7 @@ const { Readable } = require("stream");
 const { Pool } = require("pg");
 const crypto = require("crypto");
 const registerPublicEventsRoute = require("./events");
+const { registerGoogleCalendarRoutes } = require("./google-calendar");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -38,8 +39,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.9.4";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15-ai-v16";
+const VERSION = "3.9.5";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15-ai-v16-google-calendar";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -133,6 +134,10 @@ function requireAdminOr401(req,res){
   if(!isAdminAuthenticated(req)){res.status(401).json({ok:false,code:"JML-AUTH-002",error:"Authentification professionnelle requise."});return false;}
   return true;
 }
+
+registerGoogleCalendarRoutes(app, { pool, isAdminAuthenticated }).catch(error => {
+  console.warn("JML Google Calendar routes init:", error?.message || error);
+});
 
 const memory = { prospects: new Map(), leads: new Map(), sellerSpaces: new Map() };
 const clean = (v, max = 500) => String(v ?? "").trim().slice(0, max);
