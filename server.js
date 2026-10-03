@@ -109,9 +109,12 @@ const pool = hasDatabase ? new Pool({
 }) : null;
 
 const adminSessions = new Map();
+const adminLoginAttempts = new Map();
 let dbReady = false;
 const ADMIN_PASSWORD = String(process.env.JML_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "").trim();
 const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_LOGIN_MAX_ATTEMPTS = 8;
 function getCookie(req,name){
   const raw=String(req.headers.cookie||"");
   const part=raw.split(";").map(x=>x.trim()).find(x=>x.startsWith(name+"="));
@@ -2675,6 +2678,7 @@ app.get("/api/dpe/status", async (_req,res) => {
   }catch(error){return res.status(200).json({ok:false,ready:false,total:0,error:String(error?.message||error)});}
 });
 app.get("/api/dpe/import", async (req,res) => {
+  if(!requireAdminOr401(req,res)) return;
   if(String(req.query.department||"08")!=="08")return res.status(400).json({ok:false,error:"Seul le département 08 est activé."});
   try{return res.json(await importAdemeDpeDepartment("08"));}catch(error){console.error("JML ADEME DPE import:",error);return res.status(502).json({ok:false,error:String(error?.message||error)});}
 });
@@ -2731,8 +2735,20 @@ app.get("/api/pipeline", async (_req,res) => {
 
 app.post("/api/admin/login", async (req,res)=>{
   if(!ADMIN_PASSWORD) return apiError(res,503,"JML-AUTH-001","Accès professionnel non configuré. Ajoutez JML_ADMIN_PASSWORD dans Render.");
+  const clientKey=String(req.ip||req.headers["x-forwarded-for"]||"unknown").split(",")[0].trim().slice(0,120);
+  const nowMs=Date.now();
+  const current=adminLoginAttempts.get(clientKey);
+  if(current && nowMs-current.startedAt<ADMIN_LOGIN_WINDOW_MS && current.count>=ADMIN_LOGIN_MAX_ATTEMPTS){
+    return res.status(429).json({ok:false,code:"JML-AUTH-004",error:"Trop de tentatives. Réessayez dans quelques minutes."});
+  }
+  if(!current || nowMs-current.startedAt>=ADMIN_LOGIN_WINDOW_MS) adminLoginAttempts.set(clientKey,{startedAt:nowMs,count:0});
   const password=String(req.body?.password||"");
-  if(!password || password!==ADMIN_PASSWORD) return apiError(res,401,"JML-AUTH-003","Mot de passe incorrect.");
+  if(!password || password!==ADMIN_PASSWORD){
+    const attempt=adminLoginAttempts.get(clientKey)||{startedAt:nowMs,count:0};
+    attempt.count+=1; adminLoginAttempts.set(clientKey,attempt);
+    return apiError(res,401,"JML-AUTH-003","Mot de passe incorrect.");
+  }
+  adminLoginAttempts.delete(clientKey);
   const token=crypto.randomBytes(32).toString("hex");
   adminSessions.set(token,Date.now()+ADMIN_SESSION_TTL_MS);
   const secure=req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https";
