@@ -122,7 +122,10 @@ function getCookie(req,name){
   return part ? decodeURIComponent(part.slice(name.length+1)) : "";
 }
 function isAdminAuthenticated(req){
-  const token=getCookie(req,"jml_admin_session");
+  const cookieToken=getCookie(req,"jml_admin_session");
+  const auth=String(req.headers.authorization||"");
+  const bearerToken=auth.startsWith("Bearer ")?auth.slice(7).trim():"";
+  const token=cookieToken||bearerToken;
   if(!token)return false;
   const expiresAt=adminSessions.get(token);
   if(!expiresAt)return false;
@@ -2758,7 +2761,7 @@ app.post("/api/admin/login", async (req,res)=>{
   adminSessions.set(token,Date.now()+ADMIN_SESSION_TTL_MS);
   const secure=req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https";
   res.setHeader("Set-Cookie","jml_admin_session="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Max-Age="+Math.floor(ADMIN_SESSION_TTL_MS/1000)+(secure?"; Secure":""));
-  res.json({ok:true});
+  res.json({ok:true,sessionToken:token,expiresIn:ADMIN_SESSION_TTL_MS});
 });
 app.post("/api/admin/logout", async (req,res)=>{
   const token=getCookie(req,"jml_admin_session");
