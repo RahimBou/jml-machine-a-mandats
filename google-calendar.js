@@ -348,6 +348,20 @@ async function registerGoogleCalendarRoutes(app, options) {
     }
   });
 
+  app.post("/api/google-calendar/disconnect", async (req, res) => {
+    if (!isAdminAuthenticated(req)) {
+      return res.status(401).json({ ok: false, code: "JML-CAL-002", error: "Authentification professionnelle requise." });
+    }
+    try {
+      await ensureTable(pool);
+      await pool.query("DELETE FROM jml_google_calendar_tokens WHERE id=1");
+      return res.json({ ok: true, connected: false });
+    } catch (error) {
+      console.error("JML Google Calendar disconnect:", error);
+      return res.status(500).json({ ok: false, code: "JML-CAL-007", error: "Déconnexion Google Calendar impossible." });
+    }
+  });
+
   app.get("/api/google-calendar/status", async (req, res) => {
     if (!isAdminAuthenticated(req)) {
       return res.status(401).json({ ok: false, code: "JML-CAL-002", error: "Authentification professionnelle requise." });
