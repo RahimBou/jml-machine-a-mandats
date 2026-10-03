@@ -1131,5 +1131,87 @@ run();
 .comps-grid .comp{height:100%;}
 @media(max-width:760px){.seller-reading-grid{grid-template-columns:1fr}.seller-reading-head{display:block}.seller-reading-head b{display:block;margin-top:4px}.comps-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.seller-reference-main .ref-value{font-size:31px!important}.seller-reference-main{min-height:180px!important}.seller-reading{padding:14px!important}}
+</style>
+<style id="seller-client-minimal-v5">
+/* V5 — interface vendeur simplifiée : seules les informations utiles au propriétaire restent visibles. */
+body{background:#f7f5ef!important;}
+.wrap{max-width:980px!important;padding:12px 14px 42px!important;}
+.hero{background:#173b32!important;border-radius:18px!important;padding:22px 22px 20px!important;box-shadow:0 8px 22px rgba(23,59,50,.10)!important;min-height:0!important;}
+.hero:before,.hero:after{display:none!important;}
+.hero.jml-architecture{background-image:none!important;}
+.hero h1{font-size:31px!important;margin:5px 0 6px!important;}
+.hero p{font-size:11px!important;max-width:680px!important;color:#dfe9e4!important;}
+.hero .back{margin-top:13px!important;background:#d7b45b!important;padding:8px 12px!important;}
+.card{box-shadow:none!important;border-color:#e5dfd3!important;}
+/* Le client n'a pas besoin des tableaux techniques communaux, transactions brutes,
+   communes voisines ni des données sécurité/risques dans cette première lecture. */
+body>.wrap>section:nth-of-type(3),
+body>.wrap>section:nth-of-type(5),
+body>.wrap>section:nth-of-type(6),
+body>.wrap>section:nth-of-type(7){display:none!important;}
+/* Si le DOM change, les identifiants restent le filet de sécurité. */
+#metrics,#types,#history,#sales,#nearby,#securityCard,#risksCard,#environmentCard{display:none!important;}
+/* La fiche du bien devient très courte. */
+.project{margin-top:10px!important;}
+.project .card{padding:14px 16px!important;}
+.project-top .status{font-size:8px!important;}
+.grid{grid-template-columns:repeat(4,1fr)!important;margin-top:8px!important;}
+.box{background:#faf8f3!important;padding:10px!important;border:1px solid #eee8dc!important;}
+.box strong{font-size:14px!important;}
+.map{margin-top:8px!important;}
+/* Le repère est le coeur de la page. */
+section:has(#reference){margin-top:14px!important;}
+section:has(#reference) .head{margin-bottom:7px!important;}
+section:has(#reference) .head h2{font-size:23px!important;}
+.reference{grid-template-columns:1.25fr .75fr!important;gap:9px!important;}
+.seller-reference-main{min-height:190px!important;padding:18px!important;}
+.seller-reference-main .ref-value{font-size:36px!important;}
+.seller-reference-details .ref-row{min-height:43px!important;padding:9px 10px!important;}
+.seller-reading{margin-top:9px!important;padding:14px!important;}
+.seller-reading-head{margin-bottom:8px!important;padding-bottom:7px!important;}
+.seller-reading-head b{font-size:15px!important;}
+.seller-reading-grid{gap:9px!important;}
+.seller-reading-grid>div{padding:11px!important;}
+.seller-reading-grid li{font-size:8.5px!important;}
+/* Les comparables deviennent une preuve simple, pas un tableau d'expert. */
+section:has(#compSummary){margin-top:14px!important;}
+section:has(#compSummary) .head h2{font-size:23px!important;}
+section:has(#compSummary) .head .source{display:none!important;}
+#compSummary{grid-template-columns:1fr!important;}
+.seller-comps-main{min-height:125px!important;padding:16px!important;}
+.seller-comps-main .ref-value{font-size:28px!important;}
+#compSummary .ref-list{display:none!important;}
+.comps-note{font-size:9px!important;margin-bottom:9px!important;padding:10px 12px!important;}
+.comps-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;}
+.comps-grid .comp{padding:10px!important;}
+.comps-grid .comp p{font-size:8px!important;line-height:1.45!important;}
+.comps-grid .comp-note{font-size:7px!important;}
+.comps-more{margin-top:8px!important;}
+.comps-more summary{font-size:8px!important;}
+/* On cache les détails techniques même lorsqu'ils sont générés par le moteur. */
+.diag,.source{font-size:7px!important;}
+footer,.footer{font-size:8px!important;}
+@media(max-width:760px){
+ .grid{grid-template-columns:repeat(2,1fr)!important;}
+ .reference{grid-template-columns:1fr!important;}
+ .seller-reference-main{min-height:165px!important;}
+ .seller-reference-main .ref-value{font-size:32px!important;}
+ .comps-grid{grid-template-columns:1fr 1fr!important;}
+}
+@media(max-width:480px){
+ .wrap{padding:9px 10px 30px!important;}
+ .hero{padding:17px!important;border-radius:16px!important;}
+ .hero h1{font-size:27px!important;}
+ .hero p{font-size:10px!important;}
+ .project .card{padding:12px!important;}
+ .grid{gap:6px!important;}
+ .box{padding:9px!important;}
+ .box strong{font-size:13px!important;}
+ .section{margin-top:11px!important;}
+ section:has(#reference) .head h2,section:has(#compSummary) .head h2{font-size:20px!important;}
+ .seller-reference-main .ref-value{font-size:29px!important;}
+ .comps-grid{grid-template-columns:1fr!important;}
+ .seller-reading-grid{grid-template-columns:1fr!important;}
+}
 </style></body>
 </html>
