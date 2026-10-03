@@ -32,6 +32,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 <div class="pro-brand"><strong>JML Immobilier</strong><span>ESPACE PROFESSIONNEL · ARDENNES</span></div>
 <nav class="pro-nav">
 <a href="#prospects">Prospects</a>
+<a href="/api/google-calendar/auth" id="googleCalendarLink">📅 Google Calendar</a>
 <a href="/projet-vendeur" target="_blank">Formulaire vendeur ↗</a>
 <a class="secondary" href="/guide" target="_blank">Lead Magnet ↗</a>
 </nav>
@@ -164,7 +165,36 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
  $("prospectsBox")?.addEventListener("change",async e=>{const s=e.target.closest("[data-action='status']");if(!s)return;try{await api("/api/prospects/"+enc(s.dataset.id)+"/status",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:s.value})});await loadProspects()}catch(err){alert(err.message);await loadProspects()}});
  $("modalBody")?.addEventListener("click",e=>{const b=e.target.closest("[data-modal-action]");if(!b)return;const id=b.dataset.id;const a=b.dataset.modalAction;if(a==="activity")activityForm(id);if(a==="followup")followupForm(id);if(a==="edit")editProspect(id);if(a==="qualify")qualify(id)});
 
+ async function setupGoogleCalendarLink(){
+  const link=$("googleCalendarLink");
+  if(!link)return;
+  try{
+    const d=await api("/api/google-calendar/status");
+    if(d.connected){
+      link.textContent="✓ Google Calendar connecté";
+      link.classList.add("secondary");
+    }else{
+      link.textContent="📅 Connecter Google Calendar";
+    }
+  }catch(e){
+    link.textContent="📅 Google Calendar";
+  }
+  link.addEventListener("click",async e=>{
+    e.preventDefault();
+    try{
+      const d=await api("/api/google-calendar/status");
+      if(d.connected){
+        alert("Google Calendar est déjà connecté à JML.");
+        return;
+      }
+      window.location.href="/api/google-calendar/auth";
+    }catch(err){
+      alert(err.message||"Connexion professionnelle requise.");
+    }
+  });
+ }
  try{await loadProspects();$("refreshProspects")?.addEventListener("click",loadProspects)}catch(e){console.warn(e)}
+ try{await setupGoogleCalendarLink()}catch(e){console.warn(e)}
  try{
   const r=await api("/api/mandat-intelligence");const items=Array.isArray(r.priorities)?r.priorities:[];
   const box=$("priority");box.innerHTML=items.length?items.map((x,i)=>'<div class="pro-item"><div><strong>'+esc(x.name)+'</strong><small>'+esc(x.city||"")+' · '+esc(x.nextAction||"À traiter")+'</small></div><span class="pro-badge">#'+(i+1)+'</span></div>').join(""):'<div class="pro-item"><div><strong>Aucune priorité</strong><small>Le moteur n’a pas identifié d’action urgente.</small></div></div>';
