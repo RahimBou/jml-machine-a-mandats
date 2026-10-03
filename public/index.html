@@ -168,11 +168,14 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
  async function setupGoogleCalendarLink(){
   const link=$("googleCalendarLink");
   if(!link)return;
+  let connected=false;
   try{
     const d=await api("/api/google-calendar/status");
-    if(d.connected){
+    connected=!!d.connected;
+    if(connected){
       link.textContent="✓ Google Calendar connecté";
       link.classList.add("secondary");
+      link.title="Cliquer pour déconnecter puis reconnecter Google Calendar";
     }else{
       link.textContent="📅 Connecter Google Calendar";
     }
@@ -184,8 +187,9 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
     try{
       const d=await api("/api/google-calendar/status");
       if(d.connected){
-        alert("Google Calendar est déjà connecté à JML.");
-        return;
+        if(!confirm("Google Calendar est actuellement connecté à JML.\n\nVoulez-vous le déconnecter puis refaire l'autorisation Google ?"))return;
+        await api("/api/google-calendar/disconnect",{method:"POST"});
+        alert("Google Calendar a été déconnecté de JML. La page va s'ouvrir pour refaire la connexion.");
       }
       window.location.href="/api/google-calendar/auth";
     }catch(err){
