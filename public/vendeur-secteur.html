@@ -320,28 +320,10 @@ const diagnostics=[];
 function addDiag(source,code,detail){
  diagnostics.push({source,code,detail:String(detail||"")});
  const box=$("#diagRows");
- if(box) box.innerHTML=
-  '<div class="asset-intro"><b>5 repères de proximité vérifiés</b><p>La sélection retient les éléments les plus proches et les plus lisibles pour un acquéreur. Ils décrivent l\'environnement ; ils ne participent pas directement au calcul du prix.</p></div>'+
-  '<div class="highlight-list">'+highlights.map((x,i)=>
-    '<div class="highlight-item"><span class="highlight-num">'+(i+1)+'</span><div><b>'+esc(x.label)+'</b>'+(x.name?' <small>· '+esc(x.name)+'</small>':'')+'<p>'+esc(x.distance)+'</p><span class="highlight-role">Cadre de vie</span></div></div>'
-  ).join("")+'</div>'+
-  '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary>'+
-  '<div class="asset-grid">'+order.map(([key,title,desc])=>{
-    const c=cats[key]||{items:[],available:false};
-    const items=(c.items||[]).slice(0,3);
-    const body=items.length
-      ?items.map(x=>'<li><b>'+esc(x.type||x.name||"Équipement")+'</b>'+(x.name&&x.name!==x.type?' · '+esc(x.name):'')+' <span class="distance">'+esc(x.distanceLabel||((Number(x.distanceKm)||0).toFixed(2)+" km"))+'</span></li>').join("")
-      :(c.available===false?'<li><b>Source indisponible</b></li>':'<li>Aucun repère pertinent identifié.</li>');
-    return '<article class="asset"><h3>'+title+'</h3><p>'+desc+'</p><ul>'+body+'</ul><small class="asset-source">'+esc(c.source||"Source officielle")+'</small></article>';
-  }).join("")+'</div></details>';
- const proof=highlights.slice(0,4);
- $("#proof").innerHTML=proof.length
-   ?proof.map(x=>'<div><b>'+esc(x.label)+'</b><strong>'+esc(x.distance)+'</strong></div>').join("")
-   :'<div><b>Proximité</b><strong>À compléter</strong></div>';
- const sellingPitchNode=$("#sellingPitch"); if(sellingPitchNode) sellingPitchNode.textContent=highlights.length
-   ?"L'adresse bénéficie de plusieurs services accessibles à proximité : "+highlights.slice(0,4).map(x=>x.label.toLowerCase()+" à "+x.distance).join(", ")+" . Ces éléments peuvent être utilisés pour décrire concrètement le quotidien d'un acquéreur, sans les présenter comme une majoration automatique du prix."
-   :"Aucun repère de proximité suffisamment pertinent n'a pu être identifié automatiquement dans le rayon retenu.";
- renderSellerPost();
+ if(!box)return;
+ box.innerHTML=diagnostics.map(x=>
+  '<div class="diag-row"><span>'+esc(x.source)+'</span><b class="diag-code">'+esc(x.code)+'</b><small>'+esc(x.detail)+'</small></div>'
+ ).join("");
 }
 function renderMarket(data){
  const market=data||{};
@@ -610,10 +592,9 @@ function normalizeAssetCategories(data){
     commerces:["commerces","commerce","shops","shopping","daily"],
     health:["health","sante","santé","medical","pharmacies"],
     transport:["transport","mobility","mobilite","mobilité"],
-    roads:["roads","road","grands_axes","grands-axes","axes_routiers"],
     parks:["parks","loisirs","leisure","sport"],
     services:["services","service"],
-    roads:["roads","majorRoads","grandsAxes"],
+    roads:["roads","road","majorRoads","grandsAxes","grands_axes","grands-axes","axes_routiers"],
     center:["center","centre","cityCenter","city_centre"],
     heritage:["heritage","patrimoine","monuments"],
     culture:["culture","attractions","landmarks"],
@@ -916,28 +897,28 @@ async function run(){
  if(d.rooms)base.set("rooms",d.rooms);
  if(d.terrain)base.set("landSurface",d.terrain);
 
- // 1. Marché communal indépendant : lancé en parallèle des atouts géolocalisés et du moteur de comparables.
- try{
-  const market=await getData("/api/commune-market?"+new URLSearchParams({city:d.city}).toString(),12000,"Marché communal");
-  renderMarket(market);
-  renderSales(market.recentSales||[]);
-  $("#status").textContent="Marché communal chargé";
-  // IMPORTANT : le marché communal est un contexte, pas le prix final.
-  // Ne rien afficher ici dans "Repère vendeur" : sinon le vendeur voit
-  // un premier prix puis un second lorsque les comparables DVF arrivent.
-  // Le repère vendeur n'est rendu qu'une seule fois, après le moteur DVF.
-  renderSellerPost();
- }catch(e){
-  addDiag("Marché communal",e.code||"JML-MARKET-CLIENT",e.message||"Erreur");
-  $("#status").textContent="Marché partiellement indisponible";
-  $("#marketMessage").className="message bad";
-  $("#marketMessage").textContent="Les données communales n'ont pas répondu : "+(e.message||"erreur temporaire")+". Les autres blocs continuent indépendamment.";
-  $("#sales").innerHTML='<div class="error">Les transactions communales n’ont pas pu être chargées. Cela n’empêche pas la recherche des comparables.</div>';
- }
+ // 1. Marché communal et atouts géolocalisés : lancés immédiatement en parallèle.
+ // Un ralentissement du marché ne bloque donc plus les équipements de proximité.
+ const marketPromise=(async()=>{
+  try{
+   const market=await getData("/api/commune-market?"+new URLSearchParams({city:d.city}).toString(),9000,"Marché communal");
+   renderMarket(market);
+   renderSales(market.recentSales||[]);
+   pageData.market=market;
+   $("#status").textContent="Marché communal chargé";
+   renderSellerPost();
+   return market;
+  }catch(e){
+   addDiag("Marché communal",e.code||"JML-MARKET-CLIENT",e.message||"Erreur");
+   $("#status").textContent="Marché partiellement indisponible";
+   $("#marketMessage").className="message bad";
+   $("#marketMessage").textContent="Les données communales n'ont pas répondu : "+(e.message||"erreur temporaire")+". Les autres blocs continuent indépendamment.";
+   $("#sales").innerHTML='<div class="error">Les transactions communales n’ont pas pu être chargées. Cela n’empêche pas la recherche des comparables.</div>';
+   pageData.market=null;
+   return null;
+  }
+ })();
 
- // 1bis. Atouts géolocalisés : lancé en parallèle du marché communal.
- // Cela évite qu'un blocage du marché empêche la micro-application vendeur
- // et les équipements de proximité de démarrer.
  const assetsPromise=(async()=>{
   try{
    const assetParams=new URLSearchParams();
@@ -953,7 +934,7 @@ async function run(){
   }
  })();
 
- // Rendu des atouts dès que leur requête parallèle est terminée.
+ await marketPromise;
  const assets=await assetsPromise;
  if(assets?.available===false){
   addDiag("Équipements / géocodage",assets.code||"JML-ASSET-CLIENT",assets.message||"Source indisponible");
@@ -1072,11 +1053,6 @@ if(copyPost)copyPost.addEventListener("click",async()=>{
  }
 });
 document.getElementById("printSellerPoster")?.addEventListener("click",()=>window.print());
-document.getElementById("copySellerArguments")?.addEventListener("click",async()=>{
- const stories=window.jmlSellerStories||[];
- const txt=stories.map(s=>s.title+" — "+s.text+" "+(s.proof||"")).join("\n\n");
- try{await navigator.clipboard.writeText(txt);const b=document.getElementById("copySellerArguments");b.textContent="✓ Argumentaire copié";setTimeout(()=>b.textContent="Copier l’argumentaire",1800);}catch(_e){}
-});
 run();
 })();
 </script>
