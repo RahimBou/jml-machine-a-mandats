@@ -31,4 +31,11 @@ document.getElementById("prepare").addEventListener("click",async()=>{
  if(c){try{const response=await fetch("/api/commune-market?city="+encodeURIComponent(c),{cache:"no-store"}),data=await response.json();if(data.found){market.innerHTML="<b>📍 Repère de "+esc(data.city)+"</b><div style='margin:6px 0'><strong>"+Number(data.price).toLocaleString("fr-FR")+" €/m²</strong></div><small>"+esc(data.source)+" · "+esc(data.period)+"</small><p style='font-size:11px;line-height:1.5;margin:8px 0 0'>"+esc(data.message)+" "+esc(data.caution)+"</p>"}else{market.innerHTML="<b>📍 Repère local</b><p style='font-size:11px;line-height:1.5;margin:7px 0'>"+esc(data.message||"Aucun repère communal disponible actuellement.")+"</p>"}}catch(e){market.innerHTML="<b>📍 Repère local</b><p style='font-size:11px;margin:7px 0'>Le repère communal n’est pas disponible actuellement. La préparation reste complète.</p>"}}else market.innerHTML="<b>📍 Repère local</b><p style='font-size:11px;margin:7px 0'>Indiquez votre commune pour ajouter les données locales disponibles.</p>";
  result.scrollIntoView({behavior:"smooth",block:"start"});
 });
-</script></body></html>
+</script><div class="jml-social-links jml-follow-block" aria-label="Réseaux sociaux d'Abderrahim Boujnikh">
+  <span class="jml-follow-name">Suivez Abderrahim BOUJNIKH<br><small>AGENT COMMERCIAL IMMOBILIER</small></span>
+  <a href="https://www.facebook.com/share/18xHx2awES/" target="_blank" rel="noopener noreferrer" aria-label="Facebook Abderrahim Boujnikh">f&nbsp; Facebook</a>
+  <a href="https://www.instagram.com/abderrahimboujnikh/" target="_blank" rel="noopener noreferrer" aria-label="Instagram Abderrahim Boujnikh">◎&nbsp; Instagram</a>
+  <a href="https://fr.linkedin.com/in/abderrahim-boujnikh-7a401b104" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Abderrahim Boujnikh">in&nbsp; LinkedIn</a>
+  <div class="jml-agency-link"><span>Site de l'agence</span><a href="https://www.jml-immobilier.fr/" target="_blank" rel="noopener noreferrer">JML Immobilier</a></div>
+</div>
+</body></html>
