@@ -56,7 +56,8 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 </div></section>
 </div>
 <section id="prospects" class="pro-card" style="margin-top:14px"><h2>👥 Mes prospects vendeurs</h2><p>Retrouver ici les propriétaires captés par le formulaire et piloter chaque contact jusqu'au mandat.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button id="refreshProspects" type="button" class="prospect-btn primary">↻ Actualiser</button><a class="prospect-btn" href="/projet-vendeur">＋ Nouveau prospect</a></div><div id="prospectsBox" class="pro-list"><div class="pro-item">Chargement des prospects…</div></div></section>
-<div id="prospectModal" class="jml-modal" aria-hidden="true"><div class="jml-modal-card"><div class="jml-modal-head"><div><div class="eyebrow">JML · FICHE PROSPECT</div><h3 id="modalTitle">Prospect</h3></div><button type="button" class="jml-close" id="closeModal">✕</button></div><div id="modalBody"></div></div></div><section class="pro-card" style="margin-top:14px"><h2>📋 Parcours JML</h2><p>Attirer → capter → qualifier → relancer → rendez-vous → mandat.</p>
+<div id="prospectModal" class="jml-modal" aria-hidden="true"><div class="jml-modal-card"><div class="jml-modal-head"><div><div class="eyebrow">JML · FICHE PROSPECT</div><h3 id="modalTitle">Prospect</h3></div><button type="button" class="jml-close" id="closeModal">✕</button></div><div id="modalBody"></div></div></div><section class="pro-card" style="margin-top:14px"><h2>📅 Demandes de rendez-vous</h2><p>Les demandes envoyées depuis l’espace vendeur apparaissent ici. Confirmez un créneau pour le valider et le synchroniser avec Google Calendar.</p><div id="appointmentRequestsBox" class="pro-list"><div class="pro-item">Chargement des demandes…</div></div></section>
+<section class="pro-card" style="margin-top:14px"><h2>📋 Parcours JML</h2><p>Attirer → capter → qualifier → relancer → rendez-vous → mandat.</p>
 <div class="pro-actions">
 <a class="pro-action" href="/projet-vendeur"><strong>1 · Capter un propriétaire</strong><span>Le formulaire public crée automatiquement le lead et son espace personnel.</span></a>
 <a class="pro-action" href="/api/mandat-intelligence" target="_blank"><strong>2 · Intelligence commerciale</strong><span>Consulter les priorités calculées par le serveur.</span></a>
@@ -95,6 +96,36 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
   return d;
 }
 
+ async function loadAppointmentRequests(){
+  try{
+    const d=await api("/api/appointment-requests");
+    const requests=Array.isArray(d.requests)?d.requests:[];
+    const box=$("appointmentRequestsBox");if(!box)return;
+    if(!requests.length){box.innerHTML='<div class="prospect-empty">Aucune demande de rendez-vous.</div>';return}
+    box.innerHTML=requests.map(r=>{
+      const status=String(r.status||"");
+      const pending=status==="À traiter";
+      return '<div class="prospect-row"><div class="prospect-main"><strong>'+esc(r.name||r.prospect_name||"Sans nom")+'</strong><small>'+fmtDate(r.requested_at)+' · '+esc(r.requested_location||"Lieu non précisé")+'</small><small>'+esc(r.email||"")+(r.phone?" · "+esc(r.phone):"")+' · statut '+esc(status)+'</small></div><div class="prospect-right"><span class="pro-badge">'+esc(status||"—")+'</span>'+(pending?'<div class="prospect-buttons"><button type="button" class="prospect-btn primary" data-rdv-action="confirm" data-id="'+esc(r.id)+'">✓ Confirmer</button><button type="button" class="prospect-btn danger" data-rdv-action="reject" data-id="'+esc(r.id)+'">Refuser</button></div>':'')+'</div></div>';
+    }).join("");
+  }catch(e){
+    console.warn(e);
+    $("appointmentRequestsBox").innerHTML='<div class="prospect-empty">Impossible de charger les demandes de rendez-vous.</div>';
+  }
+ }
+ async function handleAppointmentAction(id,action){
+  try{
+    const note=action==="confirm" ? (window.prompt("Note éventuelle pour ce rendez-vous (facultatif) :")||"") : "";
+    const endpoint="/api/appointment-requests/"+enc(id)+"/"+(action==="confirm"?"confirm":"reject");
+    await api(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({note})});
+    await loadAppointmentRequests();
+    await loadProspects();
+    alert(action==="confirm" ? "Rendez-vous confirmé. Il va être synchronisé avec Google Calendar." : "Demande refusée. De nouveaux créneaux pourront être proposés.");
+  }catch(e){alert(e.message||"Traitement impossible.");}
+ }
+ $("appointmentRequestsBox")?.addEventListener("click",e=>{
+  const b=e.target.closest("[data-rdv-action]");if(!b)return;
+  handleAppointmentAction(b.dataset.id,b.dataset.rdvAction);
+ });
  async function loadProspects(){
   try{
    const d=await api("/api/prospects");prospects=Array.isArray(d.prospects)?d.prospects:[];
@@ -198,6 +229,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
   });
  }
  try{await loadProspects();$("refreshProspects")?.addEventListener("click",loadProspects)}catch(e){console.warn(e)}
+ try{await loadAppointmentRequests()}catch(e){console.warn(e)}
  try{await setupGoogleCalendarLink()}catch(e){console.warn(e)}
  try{
   const r=await api("/api/mandat-intelligence");const items=Array.isArray(r.priorities)?r.priorities:[];
