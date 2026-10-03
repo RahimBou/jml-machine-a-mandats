@@ -997,7 +997,18 @@ async function run(){
   renderSellerMicroApp(assets);
   renderSellerPost();
  }catch(e){
-  renderAssets({available:false,code:e.code||"JML-ASSET-CLIENT",message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+"."});
+  const assetError={
+    available:false,
+    code:e.code||"JML-ASSET-CLIENT",
+    message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+" ."
+  };
+  addDiag("Équipements / géocodage",assetError.code,assetError.message);
+  renderAssets(assetError);
+  // Important : même en cas d'échec du service de proximité,
+  // la micro-application doit sortir de son état "chargement".
+  // Elle affiche alors un état contrôlé sans inventer d'argument.
+  renderSellerMicroApp(assetError);
+  renderSellerPost();
  }
 
  // 2. Comparables : appel séparé.
