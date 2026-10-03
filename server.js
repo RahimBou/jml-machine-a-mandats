@@ -1854,7 +1854,7 @@ app.get("/api/territory-summary", async (req,res) => {
       type:sellerType,
       basePriceM2:Number.isFinite(referenceBase)&&referenceBase>0?referenceBase:null,
       surface:sellerHasSurface?sellerSurface:null,
-      landSurface: sellerIsLand && sellerHasSurface ? sellerSurface : (Number.isFinite(Number(landSurface))&&Number(landSurface)>0?Number(landSurface):null),
+      landSurface: isSellerLand && sellerHasSurface ? sellerSurface : (Number.isFinite(Number(landSurface))&&Number(landSurface)>0?Number(landSurface):null),
       referenceValue:sellerValue,
       range:{
         low:sellerValue!==null?Math.round(sellerValue*0.85):null,
