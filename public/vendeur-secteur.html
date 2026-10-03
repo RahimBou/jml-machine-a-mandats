@@ -145,532 +145,143 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 @media(max-width:760px){.road-list{grid-template-columns:1fr 1fr}}
 @media(max-width:470px){.road-list{grid-template-columns:1fr}}</style><style id="vendeur-clean-css">
 /* =========================================================
-   JML ESPACE VENDEUR — CSS PROPRE
-   Objectif : lecture client simple, sans modifier les données.
+   JML ESPACE VENDEUR — DISPOSITION CLIENT
+   Les données restent pilotées par le moteur JS/DVF/DPE.
+   Ce CSS ne fait que hiérarchiser ce que le propriétaire voit.
    ========================================================= */
-
 :root{
-  --jml-green:#173b32;
-  --jml-green-2:#245246;
-  --jml-gold:#c8a45d;
-  --jml-gold-soft:#f2e7cd;
-  --jml-cream:#f7f4ed;
-  --jml-white:#ffffff;
-  --jml-text:#25332d;
-  --jml-muted:#718078;
-  --jml-border:#e6e0d5;
-  --jml-shadow:0 8px 24px rgba(23,59,50,.07);
+ --jml-green:#173b32;--jml-green-2:#28594b;--jml-gold:#c8a45d;
+ --jml-gold-soft:#f3ead6;--jml-bg:#f6f3ec;--jml-card:#fff;
+ --jml-text:#26342e;--jml-muted:#77827c;--jml-line:#e7e1d6;
 }
-
 html{scroll-behavior:smooth}
+body{margin:0;background:var(--jml-bg);color:var(--jml-text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{width:min(1040px,calc(100% - 28px));margin:auto;padding:16px 0 35px}
 
-body{
-  margin:0;
-  background:var(--jml-cream);
-  color:var(--jml-text);
-  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
+/* HERO */
+.hero{min-height:0!important;padding:24px 28px!important;border-radius:20px!important;background:linear-gradient(120deg,var(--jml-green),#214b40)!important;box-shadow:0 8px 24px rgba(23,59,50,.08)!important}
+.hero:before,.hero:after,.hero.jml-architecture:before,.hero.jml-architecture:after{display:none!important}
+.hero .eyebrow{color:#dfc98e!important;font-size:8px!important;font-weight:900;letter-spacing:.14em}
+.hero h1{margin:5px 0 6px!important;color:#fff!important;font:700 31px/1.08 Georgia,"Times New Roman",serif}
+.hero p{margin:0!important;max-width:650px!important;color:#dbe7e1!important;font-size:11px!important;line-height:1.5}
+.hero .back{display:inline-block;margin-top:13px!important;padding:8px 13px!important;border-radius:999px!important;background:var(--jml-gold)!important;color:var(--jml-green)!important;font-size:9px!important;font-weight:800!important;text-decoration:none}
 
-.wrap{
-  width:min(1040px,calc(100% - 28px));
-  margin:0 auto;
-  padding:18px 0 44px;
-}
+/* COMMON */
+.section{margin-top:20px!important}
+.section>.head{margin:0 0 8px!important}
+.section>.head .eyebrow{color:#92733a!important;font-size:8px!important;font-weight:900!important;letter-spacing:.13em}
+.section>.head h2{margin:3px 0 0!important;color:var(--jml-green)!important;font:700 23px/1.15 Georgia,"Times New Roman",serif}
+.section>.head .source{color:#a0a39d!important;font-size:7px!important}
+.card{border:1px solid var(--jml-line)!important;border-radius:15px!important;background:var(--jml-card)!important;box-shadow:0 4px 16px rgba(35,52,46,.035)!important}
 
-/* ---------- En-tête ---------- */
-.hero{
-  position:relative;
-  overflow:hidden;
-  min-height:0!important;
-  padding:28px 30px!important;
-  border-radius:20px!important;
-  background:var(--jml-green)!important;
-  box-shadow:var(--jml-shadow)!important;
-}
+/* BIEN — compact, immediately readable */
+.project{margin-top:12px!important}
+.project .card{padding:16px 18px!important}
+.project-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:8px!important}
+.project-top .eyebrow{color:#92733a!important;font-size:8px!important;font-weight:900!important;letter-spacing:.12em}
+.project-top h2{margin:4px 0 2px!important;color:var(--jml-green)!important;font:700 23px/1.1 Georgia,"Times New Roman",serif}
+.project-top .address{color:var(--jml-muted)!important;font-size:9px!important}
+.project-top .status{color:#7f8a84!important;font-size:7px!important}
+.grid{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:7px!important;margin-top:9px!important}
+.box{padding:9px 11px!important;border:1px solid #eee9df!important;border-radius:9px!important;background:#fbfaf7!important}
+.box label{color:#89928d!important;font-size:7px!important;text-transform:uppercase;letter-spacing:.08em}
+.box strong{display:block;margin-top:3px;color:var(--jml-green)!important;font-size:14px!important}
+.map{display:inline-block;margin-top:8px!important;color:#80652f!important;font-size:8px!important}
 
-.hero:before,
-.hero:after,
-.hero.jml-architecture:before,
-.hero.jml-architecture:after{
-  display:none!important;
-}
-
-.hero h1{
-  margin:5px 0 7px!important;
-  color:#fff!important;
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:34px!important;
-  line-height:1.05;
-}
-
-.hero p{
-  max-width:720px!important;
-  margin:0!important;
-  color:#dce7e1!important;
-  font-size:12px!important;
-  line-height:1.55;
-}
-
-.hero .back{
-  display:inline-block;
-  margin-top:16px!important;
-  padding:9px 14px!important;
-  border-radius:999px!important;
-  background:var(--jml-gold)!important;
-  color:var(--jml-green)!important;
-  font-weight:800!important;
-  text-decoration:none;
-}
-
-/* ---------- Sections ---------- */
-.section{
-  margin-top:22px!important;
-}
-
-.section>.head{
-  margin:0 0 10px!important;
-}
-
-.section>.head .eyebrow{
-  color:#92743b!important;
-  font-size:9px!important;
-  font-weight:900!important;
-  letter-spacing:.13em!important;
-}
-
-.section>.head h2{
-  margin:3px 0 0!important;
-  color:var(--jml-green)!important;
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:25px!important;
-  line-height:1.15;
-}
-
-.section>.head .source{
-  color:#9a9d96!important;
-  font-size:8px!important;
-}
-
-/* ---------- Cartes ---------- */
-.card,
-.project .card,
-.env .card{
-  border:1px solid var(--jml-border)!important;
-  border-radius:15px!important;
-  background:var(--jml-white)!important;
-  box-shadow:none!important;
-}
-
-/* ---------- Votre bien ---------- */
-.project{
-  margin-top:14px!important;
-}
-
-.project .card{
-  padding:18px 20px!important;
-}
-
-.project-top{
-  margin-bottom:8px!important;
-}
-
-.project-top .status{
-  color:#8b7040!important;
-  font-size:8px!important;
-  font-weight:900!important;
-  letter-spacing:.1em;
-}
-
-.project h2,
-.project h3{
-  color:var(--jml-green)!important;
-}
-
-.grid{
-  display:grid!important;
-  grid-template-columns:repeat(4,minmax(0,1fr))!important;
-  gap:8px!important;
-  margin-top:10px!important;
-}
-
-.box{
-  padding:11px 12px!important;
-  border:1px solid #eee9df!important;
-  border-radius:10px!important;
-  background:#fbfaf7!important;
-}
-
-.box label{
-  color:#8b928c!important;
-  font-size:7px!important;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-}
-
-.box strong{
-  display:block;
-  margin-top:4px;
-  color:var(--jml-green)!important;
-  font-size:15px!important;
-}
-
-.map{
-  margin-top:8px!important;
-}
-
-/* ---------- On masque uniquement les blocs secondaires ---------- */
-/* IMPORTANT : aucune donnée interne n'est supprimée.
-   Le JS peut continuer à charger et calculer normalement. */
+/* Hide only secondary client sections. Their data/functions remain untouched. */
 .section:has(#metrics),
 .section:has(#sales),
 .section:has(#nearby),
 .section:has(#securityCard),
-.section:has(#environmentCard){
-  display:none!important;
-}
+.section:has(#environmentCard),
+.section:has(.method-card){display:none!important}
 
-/* ---------- Repère de valeur ---------- */
-.section:has(#reference){
-  margin-top:22px!important;
-}
+/* VALUE — the visual centre of the page */
+.section:has(#reference){margin-top:20px!important}
+#reference{display:grid!important;grid-template-columns:minmax(0,1.55fr) minmax(245px,.75fr)!important;gap:9px!important}
+#reference .ref-main{min-height:175px;padding:22px 24px!important;border-radius:15px!important;background:var(--jml-green)!important;display:flex;flex-direction:column;justify-content:center}
+#reference .ref-main:before{content:"LE CHIFFRE À RETENIR";display:block;margin-bottom:5px;color:#ddc686;font-size:8px;font-weight:900;letter-spacing:.14em}
+#reference .ref-main h3{margin:0;color:#fff!important;font:700 18px/1.1 Georgia,"Times New Roman",serif}
+#reference .ref-value{margin:9px 0 7px!important;color:#f0d48a!important;font-size:43px!important;font-weight:850!important;line-height:1}
+#reference .ref-main p{margin:0;max-width:620px;color:#dbe7e1!important;font-size:9px!important;line-height:1.5}
+#reference .ref-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+#reference .ref-row{min-height:0;padding:11px 12px!important;border:1px solid var(--jml-line)!important;border-radius:10px!important;background:#fff!important;display:flex;flex-direction:column;justify-content:center}
+#reference .ref-row:first-child{grid-column:1/-1;background:var(--jml-gold-soft)!important;border-color:#ead9b5!important}
+#reference .ref-row b{color:#8a928c!important;font-size:7px!important;text-transform:uppercase;letter-spacing:.06em}
+#reference .ref-row span{margin-top:4px;color:var(--jml-green)!important;font-size:11px!important;font-weight:850}
 
-.reference{
-  display:grid!important;
-  grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr)!important;
-  gap:10px!important;
-}
+/* READING — one calm explanation, not two technical columns */
+#sellerReading{margin-top:8px!important;padding:14px 16px!important;border:1px solid var(--jml-line)!important;border-radius:13px!important;background:#fffdf8!important}
+.seller-reading-head{display:flex!important;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px!important;padding-bottom:7px!important;border-bottom:1px solid #eee7da!important}
+.seller-reading-head span{color:#95753b!important;font-size:7px!important;font-weight:900!important;letter-spacing:.12em}
+.seller-reading-head b{color:var(--jml-green)!important;font:700 15px Georgia,"Times New Roman",serif}
+.seller-reading-grid{display:grid!important;grid-template-columns:1.2fr .8fr!important;gap:12px!important}
+.seller-reading-grid>div{padding:0!important;border:0!important;background:transparent!important}
+.seller-reading-grid .reading-title{margin:0 0 4px!important;color:var(--jml-green)!important;font-size:8px!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.06em}
+.seller-reading-grid p,.seller-reading-grid li{margin:0;color:#5d6962!important;font-size:9px!important;line-height:1.5!important}
+.seller-reading-grid ul{margin:3px 0 0!important;padding-left:15px!important}
 
-#reference .ref-main{
-  min-height:205px;
-  padding:24px!important;
-  border-radius:15px!important;
-  background:var(--jml-green)!important;
-  color:#fff!important;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-}
+/* COMPARABLES — no split grid: intro full width, then three clear cards */
+.section:has(#compSummary){margin-top:20px!important}
+#compSummary{display:block!important}
+#compSummary .ref-main{min-height:0!important;padding:16px 18px!important;border:1px solid var(--jml-line)!important;border-left:4px solid var(--jml-gold)!important;border-radius:13px!important;background:#fff!important}
+#compSummary .ref-main:before{content:"";display:none}
+#compSummary .reference-kicker{display:block;margin-bottom:3px;color:#94743a!important;font-size:7px!important;font-weight:900;letter-spacing:.12em}
+#compSummary .ref-main h3{margin:0!important;color:var(--jml-green)!important;font:700 17px/1.1 Georgia,"Times New Roman",serif}
+#compSummary .ref-value{margin:5px 0!important;color:var(--jml-green)!important;font-size:28px!important;font-weight:850}
+#compSummary .ref-main p{margin:0!important;color:var(--jml-muted)!important;font-size:8.5px!important;line-height:1.45}
+#compSummary .ref-list{display:none!important}
 
-#reference .ref-main h3{
-  margin:0;
-  color:#fff!important;
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:17px!important;
-}
+#comps{display:block!important;margin-top:8px!important}
+#comps .comps-note{margin:0 0 8px!important;padding:9px 11px!important;border:1px solid #ebe4d7!important;border-radius:9px!important;background:#faf8f3!important;color:#66716b!important;font-size:8px!important;line-height:1.45!important}
+#comps .comps-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+#comps .comp{padding:12px!important;border:1px solid var(--jml-line)!important;border-radius:12px!important;background:#fff!important;box-shadow:none!important}
+#comps .comp-top{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:5px}
+#comps .comp-top b{color:var(--jml-green)!important;font-size:10px!important}
+#comps .comp .pill{padding:3px 6px!important;border-radius:999px!important;background:var(--jml-gold-soft)!important;color:#80642e!important;font-size:6.5px!important;font-weight:850}
+#comps .comp p{margin:7px 0!important;color:#68736d!important;font-size:8px!important;line-height:1.45!important}
+#comps .comp-note{margin-top:7px!important;padding-top:7px!important;border-top:1px solid #eee9df!important;color:#87908a!important;font-size:7px!important;line-height:1.35!important}
+#comps .comps-more{margin-top:8px!important}
+#comps .comps-more summary{cursor:pointer;color:var(--jml-green)!important;font-size:8px!important;font-weight:800}
+#comps .comps-more .comps-grid{margin-top:8px}
 
-#reference .ref-value{
-  margin:9px 0!important;
-  color:#f0d58c!important;
-  font-size:42px!important;
-  font-weight:800!important;
-  line-height:1;
-}
+/* footer/social kept discreet */
+.jml-social-links{margin-top:15px!important;color:#8a918c!important;font-size:8px!important}
+.jml-social-links a{color:var(--jml-green)!important}
 
-#reference .ref-main p{
-  max-width:650px;
-  margin:0;
-  color:#dce7e1!important;
-  font-size:10px!important;
-  line-height:1.55;
-}
-
-#reference .ref-list{
-  display:flex;
-  flex-direction:column;
-  gap:7px;
-}
-
-#reference .ref-row{
-  flex:1;
-  padding:12px 14px!important;
-  border:1px solid var(--jml-border)!important;
-  border-radius:11px!important;
-  background:#fff!important;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-}
-
-#reference .ref-row b{
-  color:#858d87!important;
-  font-size:8px!important;
-  text-transform:uppercase;
-  letter-spacing:.06em;
-}
-
-#reference .ref-row span{
-  margin-top:4px;
-  color:var(--jml-green)!important;
-  font-size:12px!important;
-  font-weight:800;
-}
-
-/* ---------- Lecture vendeur ---------- */
-#sellerReading{
-  margin-top:10px!important;
-  padding:17px 18px!important;
-  border:1px solid var(--jml-border)!important;
-  border-radius:15px!important;
-  background:#fffdf8!important;
-}
-
-.seller-reading-head{
-  display:flex!important;
-  align-items:center;
-  justify-content:space-between;
-  gap:15px;
-  padding-bottom:9px!important;
-  margin-bottom:10px!important;
-  border-bottom:1px solid #ebe4d8!important;
-}
-
-.seller-reading-head span{
-  color:#95763e!important;
-  font-size:8px!important;
-  font-weight:900!important;
-  letter-spacing:.12em;
-}
-
-.seller-reading-head b{
-  color:var(--jml-green)!important;
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:16px!important;
-}
-
-.seller-reading-grid{
-  display:grid!important;
-  grid-template-columns:1fr 1fr!important;
-  gap:10px!important;
-}
-
-.seller-reading-grid>div{
-  padding:12px!important;
-  border:1px solid #eee8dc!important;
-  border-radius:11px!important;
-  background:#fff!important;
-}
-
-.seller-reading-grid .reading-title{
-  margin:0 0 5px!important;
-  color:var(--jml-green)!important;
-  font-size:9px!important;
-  font-weight:900!important;
-  text-transform:uppercase;
-  letter-spacing:.06em;
-}
-
-.seller-reading-grid p,
-.seller-reading-grid li{
-  color:#59665f!important;
-  font-size:9px!important;
-  line-height:1.55!important;
-}
-
-.seller-reading-grid ul{
-  margin:5px 0 0!important;
-  padding-left:15px!important;
-}
-
-/* ---------- Comparables ---------- */
-.section:has(#compSummary){
-  margin-top:22px!important;
-}
-
-#compSummary{
-  display:block!important;
-}
-
-#compSummary .ref-main{
-  min-height:0!important;
-  padding:20px!important;
-  border-radius:15px!important;
-  background:#fff!important;
-  border-left:5px solid var(--jml-gold)!important;
-}
-
-#compSummary .ref-main h3{
-  margin:0!important;
-  color:var(--jml-green)!important;
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:18px!important;
-}
-
-#compSummary .ref-value{
-  margin:8px 0!important;
-  color:var(--jml-green)!important;
-  font-size:30px!important;
-  font-weight:800!important;
-}
-
-#compSummary .ref-main p{
-  margin:0!important;
-  color:var(--jml-muted)!important;
-  font-size:10px!important;
-  line-height:1.5;
-}
-
-#compSummary .ref-list{
-  display:none!important;
-}
-
-#comps{
-  margin-top:10px!important;
-}
-
-.comps-note{
-  margin-bottom:10px!important;
-  padding:11px 13px!important;
-  border-left:4px solid var(--jml-gold)!important;
-  border-radius:9px!important;
-  background:#f8f5ed!important;
-  color:#626d67!important;
-  font-size:9px!important;
-  line-height:1.55!important;
-}
-
-.comps-grid{
-  display:grid!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  gap:9px!important;
-}
-
-.comp{
-  min-width:0;
-  padding:12px!important;
-  border:1px solid var(--jml-border)!important;
-  border-radius:12px!important;
-  background:#fff!important;
-}
-
-.comp-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:6px;
-}
-
-.comp-top b{
-  color:var(--jml-green)!important;
-  font-size:10px!important;
-}
-
-.comp .pill{
-  padding:3px 6px!important;
-  border-radius:999px!important;
-  background:var(--jml-gold-soft)!important;
-  color:#82662e!important;
-  font-size:7px!important;
-  font-weight:800;
-}
-
-.comp p{
-  margin:7px 0!important;
-  color:#66716b!important;
-  font-size:8px!important;
-  line-height:1.45!important;
-}
-
-.comp-note{
-  padding-top:7px!important;
-  border-top:1px solid #eee9df!important;
-  color:#7d857f!important;
-  font-size:7px!important;
-  line-height:1.4!important;
-}
-
-.comps-more{
-  margin-top:8px!important;
-}
-
-.comps-more summary{
-  cursor:pointer;
-  color:var(--jml-green)!important;
-  font-size:9px!important;
-  font-weight:800;
-}
-
-/* ---------- Pied de page ---------- */
-.method-card{
-  padding:15px!important;
-  background:#faf8f3!important;
-}
-
-.jml-social-links{
-  margin-top:18px!important;
-  color:#7b847e!important;
-  font-size:9px!important;
-}
-
-.jml-social-links a{
-  color:var(--jml-green)!important;
-}
-
-/* ---------- Responsive ---------- */
+/* responsive */
 @media(max-width:760px){
-  .wrap{
-    width:min(100% - 20px,1040px);
-    padding-top:10px;
-  }
-
-  .hero{
-    padding:21px!important;
-    border-radius:16px!important;
-  }
-
-  .hero h1{
-    font-size:29px!important;
-  }
-
-  .grid{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  }
-
-  .reference{
-    grid-template-columns:1fr!important;
-  }
-
-  .seller-reading-grid{
-    grid-template-columns:1fr!important;
-  }
-
-  .comps-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  }
+ .wrap{width:min(100% - 20px,1040px);padding-top:10px}
+ .hero{padding:20px!important;border-radius:16px!important}
+ .hero h1{font-size:28px!important}
+ .project-top{display:block}
+ .project-top .status{margin-top:5px}
+ .grid{grid-template-columns:repeat(2,1fr)!important}
+ #reference{grid-template-columns:1fr!important}
+ #reference .ref-list{grid-template-columns:1fr 1fr}
+ .seller-reading-grid{grid-template-columns:1fr!important}
+ #comps .comps-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
-
 @media(max-width:480px){
-  .hero h1{
-    font-size:26px!important;
-  }
-
-  .section>.head h2{
-    font-size:21px!important;
-  }
-
-  #reference .ref-value{
-    font-size:34px!important;
-  }
-
-  .comps-grid{
-    grid-template-columns:1fr!important;
-  }
-
-  .seller-reading-head{
-    display:block!important;
-  }
-
-  .seller-reading-head b{
-    display:block;
-    margin-top:4px;
-  }
+ .wrap{width:calc(100% - 16px)}
+ .hero{padding:18px!important}
+ .hero h1{font-size:25px!important}
+ .section>.head h2{font-size:20px!important}
+ .project-top h2{font-size:21px!important}
+ #reference .ref-value{font-size:34px!important}
+ #reference .ref-list{grid-template-columns:1fr!important}
+ #reference .ref-row:first-child{grid-column:auto}
+ #comps .comps-grid{grid-template-columns:1fr!important}
+ .seller-reading-head{display:block!important}
+ .seller-reading-head b{display:block;margin-top:3px}
 }
 </style></head>
 <body>
 <main class="wrap">
 <section class="hero jml-architecture jml-architecture ardenne-visual">
   <div class="eyebrow">JML IMMOBILIER · ESPACE VENDEUR</div>
-  <h1>Mon secteur</h1>
-  <p>Une lecture claire du marché autour de votre bien : transactions réelles, prix signés, repère indicatif et ventes comparables autour de l'adresse.</p>
+  <h1>Votre bien et son marché</h1>
+  <p>Une lecture simple des ventes autour de votre bien pour comprendre son repère de marché.</p>
   <a id="back" class="back" href="/projet-vendeur">← Retour à mon espace</a>
 </section>
 
@@ -701,7 +312,7 @@ body{
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">03 · REPÈRE VENDEUR</div><h2>Le repère de marché de votre bien</h2></div><div class="source">Indicatif · non certifié</div></div>
+ <div class="head"><div><div class="eyebrow">03 · REPÈRE VENDEUR</div><h2>Votre repère de marché</h2></div><div class="source">Indicatif · non certifié</div></div>
  <div class="card reference" id="reference">
   <div class="ref-main"><h3>Valeur de référence</h3><div class="ref-value">—</div><p>—</p></div>
   <div class="ref-list"><div class="ref-row"><b>Repère au m²</b><span>—</span></div><div class="ref-row"><b>Ventes prises en compte</b><span>—</span></div><div class="ref-row"><b>Nature du repère</b><span>—</span></div></div>
@@ -958,7 +569,7 @@ function renderComps(c){
  if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
  const renderCompRows=(list)=>list.map(s=>{
   const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
-  const dpe=s.dpe?(' · DPE '+esc(s.dpe)+(s.dpeMatch?' · '+esc(s.dpeMatch):'')):(s.dpeChecked?' · DPE non retrouvé':'');
+  const dpe="";
   return '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="pill">'+esc(proximity)+'</span></div>'+
   '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+dpe+'</p>'+
   '<div class="comp-note">'+esc(s.sameStreet?"Même rue que l’adresse étudiée.":"Retenue pour sa proximité et ses caractéristiques comparables.")+'</div></article>';
@@ -968,9 +579,7 @@ function renderComps(c){
  const moreBlock=extraRows.length
   ? '<details class="comps-more"><summary>Voir les '+extraRows.length+' autres ventes analysées</summary><div class="comps-grid">'+renderCompRows(extraRows)+'</div></details>'
   : "";
- $("#comps").innerHTML='<div class="comps-note"><b>Comment lire ces ventes :</b> '+esc(d.candidateCount??c.totalCandidates??0)+' ventes compatibles ont été analysées dans le périmètre. Les '+esc(d.top40??c.matchCount??0)+' comparables les plus pertinents sont ensuite contrôlés statistiquement, puis '+esc(d.valuationCount??(Array.isArray(c.valuationSales)?c.valuationSales.length:0))+' ventes servent au calcul final.'+
- (c.closeCount? ' <b>'+esc(c.closeCount)+'</b> vente'+(Number(c.closeCount)>1?'s':'')+' se situe'+(Number(c.closeCount)>1?'nt':'')+' au plus près de l’adresse.':'')+
- (dpeLabel?' Le DPE du bien est '+esc(dpeLabel)+'. Les DPE retrouvés sur les comparables proviennent de l’ADEME et restent une information de contexte ; ils ne modifient pas mécaniquement le calcul du prix.':'')+
+ $("#comps").innerHTML='<div class="comps-note"><b>Comment lire :</b> ces ventes ont des caractéristiques proches de votre bien et servent à situer son niveau de prix.'+
  '</div><div class="comps-grid">'+renderCompRows(visibleRows)+'</div>'+moreBlock;
 }
 function renderNearby(rows){
