@@ -276,6 +276,61 @@ body{margin:0;background:var(--jml-bg);color:var(--jml-text);font-family:Inter,s
  .seller-reading-head b{display:block;margin-top:3px}
 }
 </style>
+<style id="vendeur-polish-v6">
+/* V6 — uniquement présentation. Aucun calcul, aucune donnée ni JS modifié. */
+.project .grid{gap:6px!important}
+.project .box{padding:8px 10px!important}
+.project .box strong{font-size:13px!important}
+
+/* Colonne valeur : priorité au chiffre, détails secondaires plus discrets. */
+#reference{gap:8px!important}
+#reference .ref-main{min-height:145px!important;padding:19px 21px!important}
+#reference .ref-value{font-size:38px!important;margin:7px 0 5px!important}
+#reference .ref-main p{font-size:8.5px!important;max-width:560px!important}
+#reference .ref-list{grid-template-columns:1fr 1fr!important;gap:6px!important}
+#reference .ref-row{min-height:52px!important;padding:9px 11px!important}
+#reference .ref-row:first-child{grid-column:1/-1!important;min-height:56px!important}
+#reference .ref-row:nth-child(4),
+#reference .ref-row:nth-child(5){display:none!important}
+
+/* Lecture vendeur : un titre commun puis deux explications équilibrées. */
+#sellerReading{margin-top:7px!important;padding:13px 16px!important}
+.seller-reading-head{margin-bottom:8px!important;padding-bottom:7px!important}
+.seller-reading-head b{font-size:17px!important}
+.seller-reading-grid{grid-template-columns:1fr 1fr!important;gap:20px!important}
+.seller-reading-grid>div{padding:0 4px!important}
+.seller-reading-grid>div+div{border-left:1px solid #eee7da!important;padding-left:20px!important}
+.seller-reading-grid .reading-title{font-size:7px!important}
+.seller-reading-grid p,.seller-reading-grid li{font-size:8.5px!important;line-height:1.45!important}
+
+/* Titres : une hiérarchie plus nette. */
+.section{margin-top:17px!important}
+.section>.head{margin-bottom:7px!important}
+.section>.head h2{font-size:22px!important}
+.section>.head .source{display:none!important}
+
+/* Comparables : plus de respiration et moins d'effet tableau. */
+.section:has(#compSummary){margin-top:17px!important}
+#compSummary .ref-main{padding:14px 17px!important}
+#compSummary .ref-value{font-size:26px!important}
+#comps{margin-top:7px!important}
+#comps .comps-note{font-size:7.5px!important;padding:8px 10px!important}
+#comps .comps-grid{gap:7px!important}
+#comps .comp{min-height:112px!important;padding:11px!important}
+#comps .comp p{font-size:8px!important}
+
+/* Sur mobile, on conserve toute l'information utile. */
+@media(max-width:760px){
+ #reference .ref-list{grid-template-columns:1fr 1fr!important}
+ .seller-reading-grid{grid-template-columns:1fr!important;gap:9px!important}
+ .seller-reading-grid>div+div{border-left:0!important;border-top:1px solid #eee7da!important;padding:9px 4px 0!important}
+}
+@media(max-width:480px){
+ #reference .ref-list{grid-template-columns:1fr!important}
+ #reference .ref-row:first-child{grid-column:auto!important}
+}
+</style>
+
 /* Dernier niveau de hiérarchie : les 3 premiers comparables sont prioritaires. */
 #comps .comps-grid>.comp:nth-child(n+4){background:#fbfaf7!important}
 #comps .comps-grid>.comp:nth-child(n+4) .comp-note{color:#a0a6a1!important}
