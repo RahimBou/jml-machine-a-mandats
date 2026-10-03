@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="jml-version" content="2026-10-02-mon-secteur-roads-v1">
+<meta name="jml-version" content="2026-10-03-mon-secteur-vendeur-v2">
 <title>JML Immobilier — Mon secteur</title>
 <style>
 :root{--g:#173b32;--g2:#245346;--gold:#c9a85b;--cream:#f5f0e6;--paper:#fffdf8;--line:#e4dccd;--ink:#173b32;--muted:#68736c;--bad:#8a5147}
@@ -147,7 +147,23 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 #sellerMicroApp .micro-story strong{font-size:14px}
 @media(max-width:760px){.seller-proof-heading{display:block}.seller-proof-heading b{display:block;margin-top:3px}.seller-microapp .micro-stories{grid-template-columns:1fr 1fr}}
 @media(max-width:470px){.seller-microapp .micro-stories{grid-template-columns:1fr}}
-</style></head>
+.seller-focus{display:grid;grid-template-columns:1.35fr .65fr;gap:10px;margin:12px 0}
+.seller-focus-main{background:linear-gradient(135deg,#173b32,#285848);color:#fff;border-radius:16px;padding:17px 18px;box-shadow:0 10px 25px rgba(23,59,50,.12)}
+.seller-focus-main h3{font-size:18px;margin:5px 0 7px;color:#fff}
+.seller-focus-main p{font-size:10px;line-height:1.65;color:#e3eee8;margin:0}
+.seller-focus-note{margin-top:10px;padding:9px 10px;border:1px solid rgba(201,168,91,.38);border-radius:10px;background:rgba(201,168,91,.10);font-size:8px;color:#f2e8cf}
+.seller-focus-side{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px}
+.seller-focus-side .proof{margin-top:9px}
+.seller-focus-side .proof div{background:#f7f2e8}
+.seller-proof-heading{margin-top:17px}
+.road-strip{margin:10px 0 12px!important;border-radius:16px!important;padding:15px 16px!important;background:linear-gradient(135deg,#eef3ee,#fbf7ee)!important;border:1px solid #d7dfd7!important}
+.road-head b{font-family:Georgia,"Times New Roman",serif;font-size:17px!important;color:var(--g)}
+.road-intro{font-size:9px!important;line-height:1.55!important;max-width:760px}
+.road-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.road-card{background:#fff!important;border:1px solid #e5dfd2!important;border-radius:12px!important;padding:10px!important}
+.highlight-list{margin-top:8px}
+@media(max-width:760px){.seller-focus{grid-template-columns:1fr}.road-list{grid-template-columns:1fr 1fr}}
+@media(max-width:470px){.road-list{grid-template-columns:1fr}}</style></head>
 <body>
 <main class="wrap">
 <section class="hero jml-architecture jml-architecture ardenne-visual">
@@ -177,12 +193,12 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   <div class="value-intro location-reading">
    <div class="location-kicker">LECTURE DE L'EMPLACEMENT</div>
    <h2>Les atouts concrets autour du bien</h2>
-   <p>Ces informations décrivent le cadre de vie autour de l'adresse. Elles servent à préparer la présentation du bien et à expliquer son environnement ; <strong>elles ne sont pas converties automatiquement en €/m² et ne gonflent pas la valeur de référence.</strong></p>
+   <p>Ici, on cherche surtout les éléments qu’un vendeur peut facilement retenir et raconter. Ces informations décrivent le cadre de vie autour de l'adresse ; <strong>elles ne sont pas converties automatiquement en €/m² et ne gonflent pas la valeur de référence.</strong></p>
   </div>
   <section class="seller-microapp" id="sellerMicroApp">
   <div class="micro-kicker">MICRO-APPLICATION VENDEUR · LECTURE PREMIUM</div>
   <h3>✨ Ce que vous pouvez raconter à un acquéreur</h3>
-  <p class="micro-intro">L’analyse sélectionne d’abord les éléments les plus utiles autour de l’adresse, puis les contrôle avant de les transformer en arguments simples à reprendre en rendez-vous.</p>
+  <p class="micro-intro">L’analyse sélectionne les repères les plus parlants, les vérifie, puis les transforme en arguments courts et concrets pour le rendez-vous.</p>
   <div class="micro-signature" id="microSignature"><b>Analyse de l’adresse en cours…</b><span>Les arguments seront construits après vérification des données de proximité.</span></div>
   <div class="micro-stories" id="microStories"><article class="micro-story"><span class="story-icon">⏳</span><span class="story-kicker">Vérification</span><strong>Recherche des meilleurs arguments…</strong><p>Les données locales sont en cours de contrôle.</p></article></div>
   <div class="micro-actions">
@@ -191,14 +207,22 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   </div>
   <div class="seller-poster" id="sellerPoster"></div>
 </section>
-<div class="seller-proof-heading"><span>LES PREUVES DERRIÈRE CES ARGUMENTS</span><b>Repères vérifiés autour de l’adresse</b></div>
+  <div class="seller-focus">
+   <div class="seller-focus-main">
+    <div class="benefit-kicker">💬 POUR LE RENDEZ-VOUS</div>
+    <h3>Pourquoi cet emplacement est facile à présenter</h3>
+    <p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs, concrets et vérifiables.</p>
+    <div class="seller-focus-note">Objectif : donner au vendeur des arguments simples à mémoriser et faciles à reprendre face à un acquéreur.</div>
+   </div>
+   <div class="seller-focus-side">
+    <div class="benefit-kicker">📍 LES REPÈRES À RETENIR</div>
+    <div class="proof" id="proof"><div><b>École</b><strong>—</strong></div><div><b>Commerces</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Santé</b><strong>—</strong></div></div>
+   </div>
+  </div>
+<div class="seller-proof-heading"><span>LES PREUVES DERRIÈRE LES ARGUMENTS</span><b>Les 5 repères vérifiés autour de l’adresse</b></div>
 <div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
 
   <details class="diag" id="diagnostics"><summary>🔎 Diagnostic des sources</summary><div id="diagRows"><div class="diag-row"><span>Initialisation</span><b class="diag-code">JML-D000</b></div></div></details>
-  <div class="benefit-grid">
-   <div class="benefit benefit-main"><div class="benefit-kicker">💬 POUR LE RENDEZ-VOUS</div><h3>Comment présenter l'emplacement</h3><p id="sellingPitch">Les arguments seront construits à partir des équipements réellement identifiés autour de l'adresse. Ils restent descriptifs, concrets et vérifiables.</p></div>
-   <div class="benefit"><div class="benefit-kicker">📍 REPÈRES DE PROXIMITÉ</div><div class="proof" id="proof"><div><b>Proximité</b><strong>—</strong></div><div><b>Vie quotidienne</b><strong>—</strong></div><div><b>Mobilité</b><strong>—</strong></div><div><b>Famille / loisirs</b><strong>—</strong></div></div></div>
-  </div>
   <div class="post-card">
    <div class="post-head"><div><div class="eyebrow">ARGUMENTAIRE VENDEUR</div><h3>📣 Un texte prêt à reprendre en rendez-vous</h3></div><button id="copyPost" type="button">Copier le texte</button></div>
    <div class="post-text" id="sellerPost">Le texte de présentation sera généré à partir des données réelles du bien, du marché et de son environnement.</div>
@@ -790,6 +814,7 @@ function renderAssets(data){
   }
   root.innerHTML=
     '<div class="asset-intro"><b>'+selected.length+' repères de proximité vérifiés</b><p>La sélection privilégie les écoles, commerces, transports, santé et loisirs. Les grands axes routiers sont présentés séparément pour distinguer clairement l’accessibilité du cadre de vie. La proximité départage les équipements d\'une même catégorie. Ils servent à décrire le cadre de vie, pas à ajouter automatiquement de la valeur au bien.</p></div>'+
+    renderMajorRoads(cats.roads,data)+
     '<div class="highlight-list">'+selected.map((x,i)=>{
       const icons={schools:"🎓",commerces:"🛍️",transport:"🚆",health:"💊",parks:"⚽",services:"🏛️"};
       const roles={schools:"Pour les familles",commerces:"Pour le quotidien",transport:"Pour se déplacer",health:"Pour les services",parks:"Pour profiter du secteur",services:"Pour les démarches"};
@@ -798,7 +823,6 @@ function renderAssets(data){
       const walk=walkingTime(x.distanceKm);
       return '<article class="highlight-item seller-asset-card"><div class="highlight-top"><span class="highlight-icon">'+icon+'</span><span class="highlight-role">'+esc(role)+'</span></div><div class="highlight-body"><b>'+esc(x.label)+'</b><strong>'+esc(x.name||"Repère à proximité")+'</strong><div class="highlight-distance"><span>'+esc(x.distance)+'</span>'+(walk?'<small>'+esc(walk)+'</small>':'')+'</div></div></article>';
     }).join("")+'</div>'+
-    renderMajorRoads(cats.roads,data)+
     renderSellerAttractiveness(data)+
     '<details class="asset-details"><summary>Voir le détail des équipements par catégorie</summary><div class="asset-grid">'+order.map(([key,title,desc])=>{
       const cat=cats[key]||{items:[],available:false};
