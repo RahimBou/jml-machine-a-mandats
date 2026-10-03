@@ -1285,8 +1285,14 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
     }catch(fallbackError){
       console.warn("JML seller dashboard market fallback:",fallbackError);
     }
-    if(marketCards)marketCards.innerHTML='<div class="seller-metric"><span>Repère local</span><strong>Données indisponibles</strong><small>Le service DVF sera réessayé</small></div><div class="seller-metric"><span>Type de bien</span><strong>'+escHtml(d.propertyType||"Votre bien")+'</strong><small>Informations enregistrées</small></div><div class="seller-metric"><span>Transactions</span><strong>Données indisponibles</strong><small>Pas de valeur inventée</small></div>';
-    if(marketSource)marketSource.textContent="Les données DVF/comparables ne sont pas disponibles pour le moment. Aucune valeur n’est inventée.";
+    /* Ne jamais effacer un repère déjà affiché à cause d'une seconde requête
+       concurrente ou d'un rafraîchissement de page. */
+    const currentText=marketCards?String(marketCards.innerText||""):"";
+    const hasUsableMarket=currentText && !/Chargement|Données indisponibles/i.test(currentText);
+    if(!hasUsableMarket){
+      if(marketCards)marketCards.innerHTML='<div class="seller-metric"><span>Repère local</span><strong>Données temporairement indisponibles</strong><small>Les données seront réessayées automatiquement</small></div><div class="seller-metric"><span>Type de bien</span><strong>'+escHtml(d.propertyType||"Votre bien")+'</strong><small>Informations enregistrées</small></div><div class="seller-metric"><span>Transactions</span><strong>Données temporairement indisponibles</strong><small>Réessai automatique</small></div>';
+      if(marketSource)marketSource.textContent="Le marché est en cours de récupération. Aucun prix n’est inventé.";
+    }
   }
   try{
     const er=await fetch("/api/public-events?city="+encodeURIComponent(city)+"&propertyType="+encodeURIComponent(d.propertyType||""));
@@ -1374,8 +1380,16 @@ function updateSellerProjectSummary(d){
      sector.href="/vendeur-secteur.html?"+q.toString();
    }
  }
- restoreSellerSubmittedView().then(refreshSellerSpaceUI);
- window.addEventListener("pageshow",function(){restoreSellerSubmittedView().then(refreshSellerSpaceUI)});
+ let jmlSellerPageLoadPromise=null;
+ async function jmlRestoreSellerOnce(){
+   if(jmlSellerPageLoadPromise)return jmlSellerPageLoadPromise;
+   jmlSellerPageLoadPromise=restoreSellerSubmittedView().then(refreshSellerSpaceUI).finally(()=>{jmlSellerPageLoadPromise=null;});
+   return jmlSellerPageLoadPromise;
+ }
+ jmlRestoreSellerOnce();
+ window.addEventListener("pageshow",function(){
+   if(document.visibilityState==="visible")jmlRestoreSellerOnce();
+ });
 
  const prepareLink=document.getElementById("fbPrepareLink");if(prepareLink){prepareLink.addEventListener("click",function(){const d=getSellerSpace()||{};const q=new URLSearchParams({type:d.propertyType||"",horizon:d.horizon||"unknown",city:d.city||""});prepareLink.href="/preparer-rdv.html?"+q.toString();});}const newRequest=document.getElementById("fbNewRequest");if(newRequest)newRequest.addEventListener("click",function(){sellerSubmissionClear();try{localStorage.removeItem(sellerSpaceKey)}catch(_e){};window.location.href="/projet-vendeur";});
 })();
