@@ -6,7 +6,7 @@ const FREEBUSY_ENDPOINT = "https://www.googleapis.com/calendar/v3/freeBusy";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.events.freebusy",
-  "https://www.googleapis.com/auth/calendar.events.owned"
+  "https://www.googleapis.com/auth/calendar.events"
 ];
 
 const pendingStates = new Map();
@@ -185,6 +185,43 @@ function requireConfigured(res) {
   return config;
 }
 
+async function createGoogleCalendarEvent(pool, { start, end, summary, description, location }) {
+  const token = await getAccessToken(pool);
+  const calendarId = encodeURIComponent(token.calendarId || "primary");
+  const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/" + calendarId + "/events", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + token.accessToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      summary: String(summary || "Rendez-vous vendeur JML"),
+      description: String(description || ""),
+      location: String(location || ""),
+      start: { dateTime: new Date(start).toISOString(), timeZone: "Europe/Paris" },
+      end: { dateTime: new Date(end).toISOString(), timeZone: "Europe/Paris" },
+      status: "tentative"
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error("Google Calendar event HTTP " + response.status + ": " + (payload.error?.message || "unknown"));
+  return payload;
+}
+
+async function deleteGoogleCalendarEvent(pool, eventId) {
+  if (!eventId) return;
+  const token = await getAccessToken(pool);
+  const calendarId = encodeURIComponent(token.calendarId || "primary");
+  const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/" + calendarId + "/events/" + encodeURIComponent(eventId), {
+    method: "DELETE",
+    headers: { "Authorization": "Bearer " + token.accessToken }
+  });
+  if (!response.ok && response.status !== 404) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error("Google Calendar event delete HTTP " + response.status + ": " + (payload.error?.message || "unknown"));
+  }
+}
+
 async function registerGoogleCalendarRoutes(app, options) {
   const pool = options?.pool || null;
   const isAdminAuthenticated = options?.isAdminAuthenticated || (() => false);
@@ -309,4 +346,4 @@ async function registerGoogleCalendarRoutes(app, options) {
   }
 }
 
-module.exports = { registerGoogleCalendarRoutes, getGoogleCalendarBusy, SCOPES };
+module.exports = { registerGoogleCalendarRoutes, getGoogleCalendarBusy, createGoogleCalendarEvent, deleteGoogleCalendarEvent, SCOPES };
