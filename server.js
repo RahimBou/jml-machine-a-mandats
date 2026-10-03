@@ -1662,8 +1662,11 @@ async function buildComparableSales(market,property){
     else{const margin=confidence==="Faible"?.15:confidence==="Intermédiaire"?.12:.10;rangeLow=centralPriceM2*(1-margin);rangeHigh=centralPriceM2*(1+margin);}
   }
 
+  const recentSales12m=candidates.filter(s=>s.fresh12m).sort((a,b)=>a.ageMonths-b.ageMonths);
+  const exactRecentSale=recentSales12m.find(s=>s.sameAddress&&s.surfaceGap!==null&&s.surfaceGap<=0.15)||null;
   return {
     sales:top40,valuationSales,sameStreet:top40.filter(s=>s.sameStreet),
+    recentSales12m,exactRecentSale,
     median:median!=null?Math.round(median):null,
     weightedPriceM2:centralPriceM2!=null?Math.round(centralPriceM2):null,
     weightedMedianPriceM2:weightedMedianPriceM2!=null?Math.round(weightedMedianPriceM2):null,
@@ -1824,12 +1827,26 @@ app.get("/api/territory-summary", async (req,res) => {
     const sellerHasSurface=Number.isFinite(sellerSurface)&&sellerSurface>0;
     const comparableBase=Number(comparable?.weightedPriceM2);
     const comparableCount=Number(comparable?.valuationSales?.length || comparable?.matchCount || 0);
+    const exactRecentSale=comparable?.exactRecentSale||null;
+    const exactRecentSurface=Number(exactRecentSale?.surface);
+    const exactRecentPrice=Number(exactRecentSale?.price);
+    const exactRecentUsable=!!exactRecentSale&&Number.isFinite(exactRecentSurface)&&exactRecentSurface>0&&Number.isFinite(exactRecentPrice)&&exactRecentPrice>0&&sellerHasSurface&&Math.abs(exactRecentSurface-sellerSurface)/sellerSurface<=0.15;
     const useComparableReference=Number.isFinite(comparableBase)&&comparableBase>0&&comparableCount>=5;
-    const referenceBase=useComparableReference?comparableBase:sellerBase;
-    const referenceSource=useComparableReference?"Ventes DVF comparables":"Référence communale";
-    const sellerValue=sellerHasSurface&&Number.isFinite(referenceBase)&&referenceBase>0
-      ? Math.round(referenceBase*sellerSurface)
-      : null;
+    const referenceBase=exactRecentUsable
+      ? exactRecentPrice/exactRecentSurface
+      : useComparableReference
+        ? comparableBase
+        : sellerBase;
+    const referenceSource=exactRecentUsable
+      ?"Vente DVF+ récente du bien"
+      : useComparableReference
+        ?"Ventes DVF comparables"
+        :"Référence communale";
+    const sellerValue=exactRecentUsable
+      ? Math.round(exactRecentPrice)
+      : sellerHasSurface&&Number.isFinite(referenceBase)&&referenceBase>0
+        ? Math.round(referenceBase*sellerSurface)
+        : null;
     const sellerReference={
       available:Number.isFinite(referenceBase)&&referenceBase>0,
       type:sellerType,
@@ -1846,6 +1863,12 @@ app.get("/api/territory-summary", async (req,res) => {
       communalTransactions:Number.isFinite(Number(market?.transactions))?Number(market.transactions):null,
       communalBasePriceM2:sellerBase,
       comparableBasePriceM2:Number.isFinite(comparableBase)&&comparableBase>0?comparableBase:null,
+      latestKnownSale:exactRecentUsable?{
+        price:Math.round(exactRecentPrice),
+        surface:Math.round(exactRecentSurface),
+        date:exactRecentSale.date,
+        source:"DVF+ Cerema"
+      }:null,
       referenceSource,
       history:Array.isArray(market?.history)?market.history:[],
       comparables:comparable,
