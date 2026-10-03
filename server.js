@@ -121,13 +121,21 @@ function getCookie(req,name){
   const part=raw.split(";").map(x=>x.trim()).find(x=>x.startsWith(name+"="));
   return part ? decodeURIComponent(part.slice(name.length+1)) : "";
 }
+function createAdminSessionToken(){
+  const expiresAt=Date.now()+ADMIN_SESSION_TTL_MS;
+  const payload=String(expiresAt);
+  const sig=crypto.createHmac("sha256",ADMIN_PASSWORD).update(payload).digest("hex");
+  return payload+"."+sig;
+}
 function isAdminAuthenticated(req){
   const token=getCookie(req,"jml_admin_session");
-  if(!token)return false;
-  const expiresAt=adminSessions.get(token);
-  if(!expiresAt)return false;
-  if(expiresAt<=Date.now()){adminSessions.delete(token);return false;}
-  return true;
+  if(!token||!ADMIN_PASSWORD)return false;
+  const parts=String(token).split(".");
+  if(parts.length!==2)return false;
+  const expiresAt=Number(parts[0]), sig=String(parts[1]||"");
+  if(!Number.isFinite(expiresAt)||expiresAt<=Date.now()||!/^[a-f0-9]{64}$/i.test(sig))return false;
+  const expected=crypto.createHmac("sha256",ADMIN_PASSWORD).update(String(expiresAt)).digest("hex");
+  try{return crypto.timingSafeEqual(Buffer.from(sig,"hex"),Buffer.from(expected,"hex"));}catch{return false;}
 }
 function requireAdminOr401(req,res){
   if(!ADMIN_PASSWORD) return apiError(res,503,"JML-AUTH-001","Accès professionnel non configuré. Ajoutez JML_ADMIN_PASSWORD dans Render.");
@@ -2754,11 +2762,10 @@ app.post("/api/admin/login", async (req,res)=>{
     return apiError(res,401,"JML-AUTH-003","Mot de passe incorrect.");
   }
   adminLoginAttempts.delete(clientKey);
-  const token=crypto.randomBytes(32).toString("hex");
-  adminSessions.set(token,Date.now()+ADMIN_SESSION_TTL_MS);
+  const token=createAdminSessionToken();
   const secure=req.secure||String(req.headers["x-forwarded-proto"]||"").split(",")[0].trim()==="https";
   res.setHeader("Set-Cookie","jml_admin_session="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Max-Age="+Math.floor(ADMIN_SESSION_TTL_MS/1000)+(secure?"; Secure":""));
-  res.json({ok:true});
+  res.json({ok:true,expiresIn:ADMIN_SESSION_TTL_MS});
 });
 app.post("/api/admin/logout", async (req,res)=>{
   const token=getCookie(req,"jml_admin_session");
