@@ -180,16 +180,23 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">03 · REPÈRE VENDEUR</div><h2>Un repère de valeur pour votre bien</h2></div><div class="source">Indicatif · non certifié</div></div>
+ <div class="head"><div><div class="eyebrow">03 · REPÈRE VENDEUR</div><h2>Le repère de marché de votre bien</h2></div><div class="source">Indicatif · non certifié</div></div>
  <div class="card reference" id="reference">
   <div class="ref-main"><h3>Valeur de référence</h3><div class="ref-value">—</div><p>—</p></div>
   <div class="ref-list"><div class="ref-row"><b>Repère au m²</b><span>—</span></div><div class="ref-row"><b>Ventes prises en compte</b><span>—</span></div><div class="ref-row"><b>Nature du repère</b><span>—</span></div></div>
  </div>
  <div class="seller-reading" id="sellerReading">
-  <h3>Ce que cela signifie pour votre vente</h3>
-  <p class="reading-title">Lecture vendeur</p>
-  <p>Cette synthèse sera construite à partir des ventes réellement disponibles autour du bien.</p>
-  <ul><li>Le repère de prix est une valeur centrale observée, accompagnée d’une fourchette et d’un niveau de fiabilité. Il ne constitue pas une expertise certifiée.</li><li>Les caractéristiques du bien et son environnement doivent compléter la lecture du marché.</li></ul>
+  <div class="seller-reading-head"><span>LECTURE VENDEUR</span><b>Ce que cela signifie pour votre vente</b></div>
+  <div class="seller-reading-grid">
+   <div>
+    <p class="reading-title">En clair</p>
+    <p>Le montant affiché est un <b>repère de marché</b> construit à partir des transactions disponibles et, lorsque les données le permettent, des ventes les plus comparables autour de votre adresse.</p>
+   </div>
+   <div>
+    <p class="reading-title">À garder en tête</p>
+    <p>Ce repère permet de situer le bien dans le marché. La valeur finale doit ensuite tenir compte de l'état réel du logement, de ses prestations, de ses éventuels travaux et de la stratégie de mise en vente.</p>
+   </div>
+  </div>
  </div>
 </section>
 
@@ -199,7 +206,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 </section>
 
 <section class="section">
- <div class="head"><div><div class="eyebrow">05 · AUTOUR DE L'ADRESSE</div><h2>Ventes comparables</h2></div><div class="source">Moteur JML</div></div>
+ <div class="head"><div><div class="eyebrow">05 · AUTOUR DE L'ADRESSE</div><h2>Les ventes qui ressemblent à votre bien</h2></div><div class="source">Moteur JML</div></div>
  <div class="card">
   <div class="reference" id="compSummary"><div class="ref-main"><h3>Recherche locale</h3><div class="ref-value">—</div><p>Le moteur recherche d'abord les ventes proches, puis élargit progressivement si nécessaire.</p></div><div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>—</span></div><div class="ref-row"><b>Périmètre</b><span>—</span></div><div class="ref-row"><b>Ventes retenues</b><span>—</span></div></div></div>
   <div style="margin-top:10px"><div class="comps" id="comps"><div class="loading">Recherche des comparables…</div></div></div>
@@ -354,14 +361,21 @@ function renderReference(ref){
  const nature=comparable?"Ventes DVF comparables":"Repère communal de secours";
  const range=r.rangeLow!=null&&r.rangeHigh!=null
    ?eur(r.rangeLow)+" à "+eur(r.rangeHigh)
-   :"—";
+   :"Fourchette non disponible";
  $("#reference").innerHTML=
- '<div class="ref-main"><h3>Valeur centrale observée</h3><div class="ref-value">'+esc(eur(value))+'</div><p>'+esc(r.explanation||"Repère indicatif disponible lorsque les données nécessaires sont présentes.")+'</p></div>'+
- '<div class="ref-list"><div class="ref-row"><b>Fourchette observée</b><span>'+esc(range)+'</span></div>'+
- '<div class="ref-row"><b>Repère au m²</b><span>'+esc(m2(r.basePriceM2))+'</span></div>'+
- '<div class="ref-row"><b>Ventes prises en compte</b><span>'+esc(txLabel)+'</span></div>'+
- '<div class="ref-row"><b>Fiabilité du repère</b><span>'+esc(r.confidence||"Faible")+'</span></div>'+
- '<div class="ref-row"><b>Nature du repère</b><span>'+esc(nature)+'</span></div></div>';
+ '<div class="ref-main seller-reference-main">'+
+   '<span class="reference-kicker">REPÈRE DE VALEUR</span>'+
+   '<h3>Valeur centrale observée</h3>'+
+   '<div class="ref-value">'+esc(eur(value))+'</div>'+
+   '<p>'+esc(r.explanation||"Repère indicatif disponible lorsque les données nécessaires sont présentes.")+'</p>'+
+ '</div>'+
+ '<div class="ref-list seller-reference-details">'+
+   '<div class="ref-row reference-range"><b>Fourchette observée</b><span>'+esc(range)+'</span></div>'+
+   '<div class="ref-row"><b>Repère au m²</b><span>'+esc(m2(r.basePriceM2))+'</span></div>'+
+   '<div class="ref-row"><b>Ventes utilisées</b><span>'+esc(txLabel)+'</span></div>'+
+   '<div class="ref-row"><b>Fiabilité du repère</b><span>'+esc(r.confidence||"Faible")+'</span></div>'+
+   '<div class="ref-row"><b>Nature du repère</b><span>'+esc(nature)+'</span></div>'+
+ '</div>';
  renderSellerReading(r);
 }
 function renderSellerReading(r){
@@ -370,7 +384,6 @@ function renderSellerReading(r){
  const d=pageData.space||{};
  const c=pageData.comparables||{};
  const m=pageData.market||{};
- const assets=sellerAssetHighlights();
  const comparable=!!r.fromComparables;
  const type=d.propertyType||"bien";
  const commune=d.city||"la commune";
@@ -382,27 +395,27 @@ function renderSellerReading(r){
  const gap=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?((Number(base)/communalM2-1)*100):null;
  const gapText=gap!=null?(gap>=0?"+":"")+gap.toFixed(1).replace(".",",")+" %":"";
  const gapM2Text=gapM2!=null?(gapM2>=0?"+":"")+gapM2.toLocaleString("fr-FR")+" €/m²":"";
- const dpeValue=String(d.dpe||"").trim().toUpperCase();
  const count=Number(c.matchCount||0);
  const strict=Number(c.strictCount||0);
  const radius=Number(c.radiusKm||0);
+ const assets=sellerAssetHighlights();
  const bullets=[];
- if(dpeValue) bullets.push("Le DPE du bien est "+dpeValue+". Cette donnée décrit la performance énergétique du logement ; elle est présentée séparément des critères utilisés pour calculer le repère de prix.");
  if(comparable){
-   bullets.push("Le "+baseText+" n'est pas une moyenne générale : il est calculé à partir des ventes retenues comme comparables à votre "+type+" selon le type de bien, la surface, le nombre de pièces, la distance et la récence.");
-   bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" ont été retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+(radius.toLocaleString("fr-FR")+" km"):"")+"."+(strict?" Parmi elles, "+strict+" correspondent au premier niveau de proximité.":""));
-   if(gap!=null) bullets.push("À titre de comparaison, le repère des maisons dans la commune est de "+communalText+". Votre bien ressort à "+baseText+", soit "+gapM2Text+" ("+gapText+") par rapport à cette référence communale.");
-   if(dpeValue) bullets.push("Le DPE du bien est "+dpeValue+". Il s'agit d'un élément de contexte et il ne modifie pas mécaniquement le prix issu des ventes comparables.");
-   bullets.push("La valeur affichée correspond à un repère de départ : elle ne tient pas encore compte de l'état précis du bien, de ses prestations, des travaux à prévoir ou de la stratégie de mise en vente.");
+   bullets.push("Le "+baseText+" est construit à partir des ventes retenues comme comparables à votre "+type+" : type de bien, surface, nombre de pièces, distance et récence sont pris en compte par le moteur.");
+   if(count) bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+radius.toLocaleString("fr-FR")+" km":"")+"."+(strict?" "+strict+" sont au premier niveau de proximité.":""));
+   if(gap!=null) bullets.push("Le repère communal des maisons est de "+communalText+". Le repère issu des comparables est de "+baseText+", soit "+gapM2Text+" ("+gapText+") par rapport à cette référence.");
  }else{
-   bullets.push("Le repère repose sur le marché communal disponible ; il ne remplace pas une analyse des ventes réellement comparables.");
-   bullets.push("Les caractéristiques du bien, son état, ses prestations et son environnement doivent compléter cette première lecture.");
+   bullets.push("Le repère repose sur le marché communal disponible. Il sert de contexte lorsque les ventes comparables ne sont pas suffisamment exploitables.");
  }
- if(assets.length) bullets.push("Le secteur présente aussi des éléments concrets à proximité, comme "+assets.slice(0,3).map(x=>x.label.toLowerCase()+" "+x.distance).join(", ")+".");
- el.innerHTML='<h3>Ce que cela signifie pour votre vente</h3>'+
-   '<p class="reading-title">Pourquoi ce prix ressort</p>'+
-   '<p>Pour '+esc(commune)+', le chiffre affiché est un <b>repère de valeur indicatif</b> construit à partir des ventes comparables disponibles autour de l\'adresse.</p>'+
-   '<ul>'+bullets.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
+ bullets.push("Ce chiffre est un point de départ : l'état réel du bien, ses prestations, les travaux éventuels et la stratégie de mise en vente peuvent ensuite faire évoluer la valeur retenue.");
+ if(assets.length) bullets.push("L'environnement peut aussi être décrit avec des éléments concrets disponibles autour de l'adresse.");
+ el.querySelector(".seller-reading-grid").innerHTML=
+   '<div><p class="reading-title">En clair</p>'+
+   '<p>Pour '+esc(commune)+', <b>'+esc(eur(r.referenceValue))+'</b> constitue le repère de valeur affiché à partir des données disponibles.</p>'+
+   '<ul>'+bullets.slice(0,2).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>'+
+   '<div><p class="reading-title">Ce qu’il reste à apprécier</p>'+
+   '<ul>'+bullets.slice(2).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>'+
+   '<p class="seller-reading-foot">Le DPE est présenté comme une information énergétique distincte ; il n’est pas appliqué mécaniquement au prix des ventes comparables.</p></div>';
 }
 function renderComps(c){
  c=c||{};
@@ -410,7 +423,7 @@ function renderComps(c){
  const d=c.diagnostics||{}, dpeLabel=c.dpe?.label||"";
  const dpeChecked=Number(d.dpeCheckedCount||0), dpeFound=Number(d.dpeFoundCount||0);
  $("#compSummary").innerHTML=
- '<div class="ref-main"><h3>Repère des ventes proches</h3><div class="ref-value">'+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"—")+'</div><p>'+esc(c.message||c.method||"Recherche des ventes compatibles autour de l'adresse.")+'</p></div>'+
+ '<div class="ref-main seller-comps-main"><span class="reference-kicker">VENTES COMPARABLES</span><h3>Repère des ventes proches</h3><div class="ref-value">'+esc(c.weightedPriceM2!=null?m2(c.weightedPriceM2):"—")+'</div><p>'+esc(c.message||c.method||"Les ventes les plus pertinentes autour de l'adresse servent de base au repère.")+'</p></div>'+
  '<div class="ref-list"><div class="ref-row"><b>Adresse géolocalisée</b><span>'+esc(c.origin?.lat!=null?"Oui":"Non")+'</span></div>'+
  '<div class="ref-row"><b>Périmètre retenu</b><span>'+esc(c.searchScope||"—")+'</span></div>'+
  '<div class="ref-row"><b>Ventes compatibles analysées</b><span>'+esc(d.candidateCount??c.totalCandidates??"—")+'</span></div>'+
@@ -434,8 +447,9 @@ function renderComps(c){
  const moreBlock=extraRows.length
   ? '<details class="comps-more"><summary>Voir les '+extraRows.length+' autres ventes analysées</summary><div class="comps-grid">'+renderCompRows(extraRows)+'</div></details>'
   : "";
- $("#comps").innerHTML='<div class="comps-note"><b>Lecture vendeur :</b> '+esc(d.candidateCount??c.totalCandidates??0)+' ventes compatibles ont été analysées dans le périmètre. Les '+esc(d.top40??c.matchCount??0)+' comparables les plus pertinents sont contrôlés statistiquement, puis '+esc(d.valuationCount??(Array.isArray(c.valuationSales)?c.valuationSales.length:0))+' ventes servent au calcul final. La surface de terrain reste secondaire et ne peut pas exclure à elle seule une maison comparable.'+
- (dpeLabel?' Le DPE du bien est '+esc(dpeLabel)+'. Les DPE retrouvés sur les comparables proviennent de l’ADEME et sont affichés comme information de contexte ; ils ne modifient pas le calcul du prix.':'')+
+ $("#comps").innerHTML='<div class="comps-note"><b>Comment lire ces ventes :</b> '+esc(d.candidateCount??c.totalCandidates??0)+' ventes compatibles ont été analysées dans le périmètre. Les '+esc(d.top40??c.matchCount??0)+' comparables les plus pertinents sont ensuite contrôlés statistiquement, puis '+esc(d.valuationCount??(Array.isArray(c.valuationSales)?c.valuationSales.length:0))+' ventes servent au calcul final.'+
+ (c.closeCount? ' <b>'+esc(c.closeCount)+'</b> vente'+(Number(c.closeCount)>1?'s':'')+' se situe'+(Number(c.closeCount)>1?'nt':'')+' au plus près de l’adresse.':'')+
+ (dpeLabel?' Le DPE du bien est '+esc(dpeLabel)+'. Les DPE retrouvés sur les comparables proviennent de l’ADEME et restent une information de contexte ; ils ne modifient pas mécaniquement le calcul du prix.':'')+
  '</div><div class="comps-grid">'+renderCompRows(visibleRows)+'</div>'+moreBlock;
 }
 function renderNearby(rows){
@@ -1081,5 +1095,41 @@ run();
 .attract-label{margin-top:9px;font-size:7px;font-weight:800;letter-spacing:.08em;color:#7a827d}.attract-card strong{margin-top:4px;font-family:Georgia,"Times New Roman",serif;font-size:12px;line-height:1.2;color:var(--g)}.attract-distance{margin-top:auto;padding-top:8px;font-size:12px;font-weight:900;color:#8a6c2e}
 @media(max-width:900px){.attract-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){.attract-grid{grid-template-columns:1fr 1fr}.attract-card{min-height:115px}.attract-card strong{font-size:11px}}
+</style>
+<style id="seller-presentation-v4">
+/* V4 — lecture vendeur : hiérarchie visuelle, valeur centrale et comparables. */
+.seller-reference-main{position:relative;overflow:hidden;min-height:205px!important;padding:20px!important;border-left:5px solid var(--gold)!important;display:flex;flex-direction:column;justify-content:center;}
+.seller-reference-main:after{content:"";position:absolute;right:-45px;top:-55px;width:180px;height:180px;border:1px solid rgba(201,168,91,.22);border-radius:50%;pointer-events:none;}
+.reference-kicker{display:block;font-size:8px;font-weight:900;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:4px;}
+.seller-reference-main h3{font-size:16px!important;margin:0!important;}
+.seller-reference-main .ref-value{font-size:38px!important;line-height:1.05!important;margin:9px 0 7px!important;position:relative;z-index:1;}
+.seller-reference-main p{max-width:620px;font-size:9.5px!important;line-height:1.6!important;position:relative;z-index:1;}
+.seller-reference-details{gap:7px!important;}
+.seller-reference-details .ref-row{min-height:48px;display:flex;flex-direction:column;justify-content:center;}
+.seller-reference-details .ref-row b{font-size:9px!important;}
+.seller-reference-details .ref-row span{font-size:11px!important;margin-top:3px!important;font-weight:700;color:var(--g)!important;}
+.seller-reference-details .reference-range{background:#f4ead3!important;border-color:#e1d1ad!important;}
+.seller-reference-details .reference-range span{font-size:13px!important;color:#8a6c2e!important;}
+.seller-reading{padding:17px 18px!important;background:linear-gradient(135deg,#fffdf8,#f7f2e8)!important;border-color:#dfd4c0!important;}
+.seller-reading-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:1px solid #e5dccd;padding-bottom:9px;margin-bottom:11px;}
+.seller-reading-head span{font-size:7px;font-weight:900;letter-spacing:.14em;color:#8a6c2e;}
+.seller-reading-head b{font-family:Georgia,"Times New Roman",serif;font-size:16px;color:var(--g);}
+.seller-reading-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.seller-reading-grid>div{background:#fff;border:1px solid #e8dfd0;border-radius:12px;padding:12px;}
+.seller-reading-grid .reading-title{margin:0 0 5px!important;font-size:9px!important;font-weight:900;color:var(--g)!important;text-transform:uppercase;letter-spacing:.06em;}
+.seller-reading-grid p{font-size:9.5px!important;line-height:1.6!important;margin:0 0 7px!important;}
+.seller-reading-grid ul{margin:5px 0 0;padding-left:15px;}
+.seller-reading-grid li{font-size:8.8px;line-height:1.55;margin:4px 0;color:#56625b;}
+.seller-reading-foot{padding-top:8px!important;border-top:1px solid #eee6d9;margin-top:8px!important;color:#69736d!important;font-size:8px!important;}
+.seller-comps-main{background:linear-gradient(135deg,#173b32,#285848)!important;}
+.seller-comps-main .reference-kicker{color:#e5cc8d;}
+.seller-comps-main h3{color:#fff!important;}
+.seller-comps-main .ref-value{color:#f0d68e!important;}
+.seller-comps-main p{color:#dbe7e0!important;}
+.comps-note{padding:12px 14px!important;background:linear-gradient(135deg,#f3f6f1,#fbf7ee)!important;border-left:4px solid var(--gold)!important;font-size:9.5px!important;line-height:1.6!important;}
+.comps-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.comps-grid .comp{height:100%;}
+@media(max-width:760px){.seller-reading-grid{grid-template-columns:1fr}.seller-reading-head{display:block}.seller-reading-head b{display:block;margin-top:4px}.comps-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.seller-reference-main .ref-value{font-size:31px!important}.seller-reference-main{min-height:180px!important}.seller-reading{padding:14px!important}}
 </style></body>
 </html>
