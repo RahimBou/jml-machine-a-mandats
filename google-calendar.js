@@ -225,6 +225,15 @@ async function deleteGoogleCalendarEvent(pool, eventId) {
   }
 }
 
+async function sendResendMail(to, subject, text, html) {
+  const apiKey=String(process.env.RESEND_API_KEY||"").trim();
+  const from=String(process.env.RESEND_FROM||"").trim();
+  if(!to||!apiKey||!from) return false;
+  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},body:JSON.stringify({from,to:[to],subject,text,html})});
+  if(!response.ok) throw new Error("Resend "+response.status);
+  return true;
+}
+
 async function syncConfirmedAppointments(pool) {
   if (!pool) return;
   try {
