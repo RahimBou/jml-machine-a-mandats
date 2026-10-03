@@ -142,3 +142,13 @@
   background-image:linear-gradient(90deg,rgba(23,59,50,.20),rgba(23,59,50,.04)),url("https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Charlemont_citadelle_de_Givet.jpg/1280px-Charlemont_citadelle_de_Givet.jpg")!important;
   background-position:center 50%!important;
 }
+
+
+/* Identité Abderrahim Boujnikh — bloc réseaux commun à toutes les pages */
+.jml-follow-block{flex-wrap:wrap!important;align-items:center!important;justify-content:center!important;row-gap:8px!important}
+.jml-follow-name{line-height:1.25!important;text-align:center}
+.jml-follow-name small{display:inline-block;margin-top:3px;font-size:8px;letter-spacing:.08em;color:#68746f}
+.jml-agency-link{flex-basis:100%;display:flex;justify-content:center;align-items:center;gap:8px;margin-top:3px;padding-top:9px;border-top:1px solid rgba(184,148,78,.35)}
+.jml-agency-link span{font-size:9px;color:#68746f}
+.jml-agency-link a{font-weight:900!important;color:#173b32!important;text-decoration:none!important}
+@media(max-width:520px){.jml-follow-name{flex-basis:100%}.jml-agency-link{margin-top:4px}}
