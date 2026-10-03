@@ -143,7 +143,528 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .road-empty{background:linear-gradient(135deg,#f1f4ef,#fbf7ee)!important}
 .road-empty-note{display:inline-block;margin-top:5px;padding:8px 10px;border-radius:9px;background:#fff;border:1px solid #e6dfd2;font-size:8px;color:#68736c}
 @media(max-width:760px){.road-list{grid-template-columns:1fr 1fr}}
-@media(max-width:470px){.road-list{grid-template-columns:1fr}}</style></head>
+@media(max-width:470px){.road-list{grid-template-columns:1fr}}</style><style id="vendeur-clean-css">
+/* =========================================================
+   JML ESPACE VENDEUR — CSS PROPRE
+   Objectif : lecture client simple, sans modifier les données.
+   ========================================================= */
+
+:root{
+  --jml-green:#173b32;
+  --jml-green-2:#245246;
+  --jml-gold:#c8a45d;
+  --jml-gold-soft:#f2e7cd;
+  --jml-cream:#f7f4ed;
+  --jml-white:#ffffff;
+  --jml-text:#25332d;
+  --jml-muted:#718078;
+  --jml-border:#e6e0d5;
+  --jml-shadow:0 8px 24px rgba(23,59,50,.07);
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  margin:0;
+  background:var(--jml-cream);
+  color:var(--jml-text);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+.wrap{
+  width:min(1040px,calc(100% - 28px));
+  margin:0 auto;
+  padding:18px 0 44px;
+}
+
+/* ---------- En-tête ---------- */
+.hero{
+  position:relative;
+  overflow:hidden;
+  min-height:0!important;
+  padding:28px 30px!important;
+  border-radius:20px!important;
+  background:var(--jml-green)!important;
+  box-shadow:var(--jml-shadow)!important;
+}
+
+.hero:before,
+.hero:after,
+.hero.jml-architecture:before,
+.hero.jml-architecture:after{
+  display:none!important;
+}
+
+.hero h1{
+  margin:5px 0 7px!important;
+  color:#fff!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:34px!important;
+  line-height:1.05;
+}
+
+.hero p{
+  max-width:720px!important;
+  margin:0!important;
+  color:#dce7e1!important;
+  font-size:12px!important;
+  line-height:1.55;
+}
+
+.hero .back{
+  display:inline-block;
+  margin-top:16px!important;
+  padding:9px 14px!important;
+  border-radius:999px!important;
+  background:var(--jml-gold)!important;
+  color:var(--jml-green)!important;
+  font-weight:800!important;
+  text-decoration:none;
+}
+
+/* ---------- Sections ---------- */
+.section{
+  margin-top:22px!important;
+}
+
+.section>.head{
+  margin:0 0 10px!important;
+}
+
+.section>.head .eyebrow{
+  color:#92743b!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  letter-spacing:.13em!important;
+}
+
+.section>.head h2{
+  margin:3px 0 0!important;
+  color:var(--jml-green)!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:25px!important;
+  line-height:1.15;
+}
+
+.section>.head .source{
+  color:#9a9d96!important;
+  font-size:8px!important;
+}
+
+/* ---------- Cartes ---------- */
+.card,
+.project .card,
+.env .card{
+  border:1px solid var(--jml-border)!important;
+  border-radius:15px!important;
+  background:var(--jml-white)!important;
+  box-shadow:none!important;
+}
+
+/* ---------- Votre bien ---------- */
+.project{
+  margin-top:14px!important;
+}
+
+.project .card{
+  padding:18px 20px!important;
+}
+
+.project-top{
+  margin-bottom:8px!important;
+}
+
+.project-top .status{
+  color:#8b7040!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:.1em;
+}
+
+.project h2,
+.project h3{
+  color:var(--jml-green)!important;
+}
+
+.grid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+  margin-top:10px!important;
+}
+
+.box{
+  padding:11px 12px!important;
+  border:1px solid #eee9df!important;
+  border-radius:10px!important;
+  background:#fbfaf7!important;
+}
+
+.box label{
+  color:#8b928c!important;
+  font-size:7px!important;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.box strong{
+  display:block;
+  margin-top:4px;
+  color:var(--jml-green)!important;
+  font-size:15px!important;
+}
+
+.map{
+  margin-top:8px!important;
+}
+
+/* ---------- On masque uniquement les blocs secondaires ---------- */
+/* IMPORTANT : aucune donnée interne n'est supprimée.
+   Le JS peut continuer à charger et calculer normalement. */
+.section:has(#metrics),
+.section:has(#sales),
+.section:has(#nearby),
+.section:has(#securityCard),
+.section:has(#environmentCard){
+  display:none!important;
+}
+
+/* ---------- Repère de valeur ---------- */
+.section:has(#reference){
+  margin-top:22px!important;
+}
+
+.reference{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr)!important;
+  gap:10px!important;
+}
+
+#reference .ref-main{
+  min-height:205px;
+  padding:24px!important;
+  border-radius:15px!important;
+  background:var(--jml-green)!important;
+  color:#fff!important;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+#reference .ref-main h3{
+  margin:0;
+  color:#fff!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:17px!important;
+}
+
+#reference .ref-value{
+  margin:9px 0!important;
+  color:#f0d58c!important;
+  font-size:42px!important;
+  font-weight:800!important;
+  line-height:1;
+}
+
+#reference .ref-main p{
+  max-width:650px;
+  margin:0;
+  color:#dce7e1!important;
+  font-size:10px!important;
+  line-height:1.55;
+}
+
+#reference .ref-list{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+#reference .ref-row{
+  flex:1;
+  padding:12px 14px!important;
+  border:1px solid var(--jml-border)!important;
+  border-radius:11px!important;
+  background:#fff!important;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+#reference .ref-row b{
+  color:#858d87!important;
+  font-size:8px!important;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+#reference .ref-row span{
+  margin-top:4px;
+  color:var(--jml-green)!important;
+  font-size:12px!important;
+  font-weight:800;
+}
+
+/* ---------- Lecture vendeur ---------- */
+#sellerReading{
+  margin-top:10px!important;
+  padding:17px 18px!important;
+  border:1px solid var(--jml-border)!important;
+  border-radius:15px!important;
+  background:#fffdf8!important;
+}
+
+.seller-reading-head{
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  padding-bottom:9px!important;
+  margin-bottom:10px!important;
+  border-bottom:1px solid #ebe4d8!important;
+}
+
+.seller-reading-head span{
+  color:#95763e!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:.12em;
+}
+
+.seller-reading-head b{
+  color:var(--jml-green)!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:16px!important;
+}
+
+.seller-reading-grid{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:10px!important;
+}
+
+.seller-reading-grid>div{
+  padding:12px!important;
+  border:1px solid #eee8dc!important;
+  border-radius:11px!important;
+  background:#fff!important;
+}
+
+.seller-reading-grid .reading-title{
+  margin:0 0 5px!important;
+  color:var(--jml-green)!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.seller-reading-grid p,
+.seller-reading-grid li{
+  color:#59665f!important;
+  font-size:9px!important;
+  line-height:1.55!important;
+}
+
+.seller-reading-grid ul{
+  margin:5px 0 0!important;
+  padding-left:15px!important;
+}
+
+/* ---------- Comparables ---------- */
+.section:has(#compSummary){
+  margin-top:22px!important;
+}
+
+#compSummary{
+  display:block!important;
+}
+
+#compSummary .ref-main{
+  min-height:0!important;
+  padding:20px!important;
+  border-radius:15px!important;
+  background:#fff!important;
+  border-left:5px solid var(--jml-gold)!important;
+}
+
+#compSummary .ref-main h3{
+  margin:0!important;
+  color:var(--jml-green)!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:18px!important;
+}
+
+#compSummary .ref-value{
+  margin:8px 0!important;
+  color:var(--jml-green)!important;
+  font-size:30px!important;
+  font-weight:800!important;
+}
+
+#compSummary .ref-main p{
+  margin:0!important;
+  color:var(--jml-muted)!important;
+  font-size:10px!important;
+  line-height:1.5;
+}
+
+#compSummary .ref-list{
+  display:none!important;
+}
+
+#comps{
+  margin-top:10px!important;
+}
+
+.comps-note{
+  margin-bottom:10px!important;
+  padding:11px 13px!important;
+  border-left:4px solid var(--jml-gold)!important;
+  border-radius:9px!important;
+  background:#f8f5ed!important;
+  color:#626d67!important;
+  font-size:9px!important;
+  line-height:1.55!important;
+}
+
+.comps-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:9px!important;
+}
+
+.comp{
+  min-width:0;
+  padding:12px!important;
+  border:1px solid var(--jml-border)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+}
+
+.comp-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+}
+
+.comp-top b{
+  color:var(--jml-green)!important;
+  font-size:10px!important;
+}
+
+.comp .pill{
+  padding:3px 6px!important;
+  border-radius:999px!important;
+  background:var(--jml-gold-soft)!important;
+  color:#82662e!important;
+  font-size:7px!important;
+  font-weight:800;
+}
+
+.comp p{
+  margin:7px 0!important;
+  color:#66716b!important;
+  font-size:8px!important;
+  line-height:1.45!important;
+}
+
+.comp-note{
+  padding-top:7px!important;
+  border-top:1px solid #eee9df!important;
+  color:#7d857f!important;
+  font-size:7px!important;
+  line-height:1.4!important;
+}
+
+.comps-more{
+  margin-top:8px!important;
+}
+
+.comps-more summary{
+  cursor:pointer;
+  color:var(--jml-green)!important;
+  font-size:9px!important;
+  font-weight:800;
+}
+
+/* ---------- Pied de page ---------- */
+.method-card{
+  padding:15px!important;
+  background:#faf8f3!important;
+}
+
+.jml-social-links{
+  margin-top:18px!important;
+  color:#7b847e!important;
+  font-size:9px!important;
+}
+
+.jml-social-links a{
+  color:var(--jml-green)!important;
+}
+
+/* ---------- Responsive ---------- */
+@media(max-width:760px){
+  .wrap{
+    width:min(100% - 20px,1040px);
+    padding-top:10px;
+  }
+
+  .hero{
+    padding:21px!important;
+    border-radius:16px!important;
+  }
+
+  .hero h1{
+    font-size:29px!important;
+  }
+
+  .grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+
+  .reference{
+    grid-template-columns:1fr!important;
+  }
+
+  .seller-reading-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .comps-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+
+@media(max-width:480px){
+  .hero h1{
+    font-size:26px!important;
+  }
+
+  .section>.head h2{
+    font-size:21px!important;
+  }
+
+  #reference .ref-value{
+    font-size:34px!important;
+  }
+
+  .comps-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .seller-reading-head{
+    display:block!important;
+  }
+
+  .seller-reading-head b{
+    display:block;
+    margin-top:4px;
+  }
+}
+</style></head>
 <body>
 <main class="wrap">
 <section class="hero jml-architecture jml-architecture ardenne-visual">
@@ -1095,123 +1616,5 @@ run();
 .attract-label{margin-top:9px;font-size:7px;font-weight:800;letter-spacing:.08em;color:#7a827d}.attract-card strong{margin-top:4px;font-family:Georgia,"Times New Roman",serif;font-size:12px;line-height:1.2;color:var(--g)}.attract-distance{margin-top:auto;padding-top:8px;font-size:12px;font-weight:900;color:#8a6c2e}
 @media(max-width:900px){.attract-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){.attract-grid{grid-template-columns:1fr 1fr}.attract-card{min-height:115px}.attract-card strong{font-size:11px}}
-</style>
-<style id="seller-presentation-v4">
-/* V4 — lecture vendeur : hiérarchie visuelle, valeur centrale et comparables. */
-.seller-reference-main{position:relative;overflow:hidden;min-height:205px!important;padding:20px!important;border-left:5px solid var(--gold)!important;display:flex;flex-direction:column;justify-content:center;}
-.seller-reference-main:after{content:"";position:absolute;right:-45px;top:-55px;width:180px;height:180px;border:1px solid rgba(201,168,91,.22);border-radius:50%;pointer-events:none;}
-.reference-kicker{display:block;font-size:8px;font-weight:900;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:4px;}
-.seller-reference-main h3{font-size:16px!important;margin:0!important;}
-.seller-reference-main .ref-value{font-size:38px!important;line-height:1.05!important;margin:9px 0 7px!important;position:relative;z-index:1;}
-.seller-reference-main p{max-width:620px;font-size:9.5px!important;line-height:1.6!important;position:relative;z-index:1;}
-.seller-reference-details{gap:7px!important;}
-.seller-reference-details .ref-row{min-height:48px;display:flex;flex-direction:column;justify-content:center;}
-.seller-reference-details .ref-row b{font-size:9px!important;}
-.seller-reference-details .ref-row span{font-size:11px!important;margin-top:3px!important;font-weight:700;color:var(--g)!important;}
-.seller-reference-details .reference-range{background:#f4ead3!important;border-color:#e1d1ad!important;}
-.seller-reference-details .reference-range span{font-size:13px!important;color:#8a6c2e!important;}
-.seller-reading{padding:17px 18px!important;background:linear-gradient(135deg,#fffdf8,#f7f2e8)!important;border-color:#dfd4c0!important;}
-.seller-reading-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:1px solid #e5dccd;padding-bottom:9px;margin-bottom:11px;}
-.seller-reading-head span{font-size:7px;font-weight:900;letter-spacing:.14em;color:#8a6c2e;}
-.seller-reading-head b{font-family:Georgia,"Times New Roman",serif;font-size:16px;color:var(--g);}
-.seller-reading-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.seller-reading-grid>div{background:#fff;border:1px solid #e8dfd0;border-radius:12px;padding:12px;}
-.seller-reading-grid .reading-title{margin:0 0 5px!important;font-size:9px!important;font-weight:900;color:var(--g)!important;text-transform:uppercase;letter-spacing:.06em;}
-.seller-reading-grid p{font-size:9.5px!important;line-height:1.6!important;margin:0 0 7px!important;}
-.seller-reading-grid ul{margin:5px 0 0;padding-left:15px;}
-.seller-reading-grid li{font-size:8.8px;line-height:1.55;margin:4px 0;color:#56625b;}
-.seller-reading-foot{padding-top:8px!important;border-top:1px solid #eee6d9;margin-top:8px!important;color:#69736d!important;font-size:8px!important;}
-.seller-comps-main{background:linear-gradient(135deg,#173b32,#285848)!important;}
-.seller-comps-main .reference-kicker{color:#e5cc8d;}
-.seller-comps-main h3{color:#fff!important;}
-.seller-comps-main .ref-value{color:#f0d68e!important;}
-.seller-comps-main p{color:#dbe7e0!important;}
-.comps-note{padding:12px 14px!important;background:linear-gradient(135deg,#f3f6f1,#fbf7ee)!important;border-left:4px solid var(--gold)!important;font-size:9.5px!important;line-height:1.6!important;}
-.comps-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
-.comps-grid .comp{height:100%;}
-@media(max-width:760px){.seller-reading-grid{grid-template-columns:1fr}.seller-reading-head{display:block}.seller-reading-head b{display:block;margin-top:4px}.comps-grid{grid-template-columns:1fr}}
-@media(max-width:520px){.seller-reference-main .ref-value{font-size:31px!important}.seller-reference-main{min-height:180px!important}.seller-reading{padding:14px!important}}
-</style>
-<style id="seller-client-minimal-v5">
-/* V5 — interface vendeur simplifiée : seules les informations utiles au propriétaire restent visibles. */
-body{background:#f7f5ef!important;}
-.wrap{max-width:980px!important;padding:12px 14px 42px!important;}
-.hero{background:#173b32!important;border-radius:18px!important;padding:22px 22px 20px!important;box-shadow:0 8px 22px rgba(23,59,50,.10)!important;min-height:0!important;}
-.hero:before,.hero:after{display:none!important;}
-.hero.jml-architecture{background-image:none!important;}
-.hero h1{font-size:31px!important;margin:5px 0 6px!important;}
-.hero p{font-size:11px!important;max-width:680px!important;color:#dfe9e4!important;}
-.hero .back{margin-top:13px!important;background:#d7b45b!important;padding:8px 12px!important;}
-.card{box-shadow:none!important;border-color:#e5dfd3!important;}
-/* Le client n'a pas besoin des tableaux techniques communaux, transactions brutes,
-   communes voisines ni des données sécurité/risques dans cette première lecture. */
-body>.wrap>section:nth-of-type(2),
-body>.wrap>section:nth-of-type(4),
-body>.wrap>section:nth-of-type(6),
-body>.wrap>section:nth-of-type(7){display:none!important;}
-/* Si le DOM change, les identifiants restent le filet de sécurité. */
-#metrics,#types,#history,#sales,#nearby,#securityCard,#risksCard,#environmentCard{display:none!important;}
-/* La fiche du bien devient très courte. */
-.project{margin-top:10px!important;}
-.project .card{padding:14px 16px!important;}
-.project-top .status{font-size:8px!important;}
-.grid{grid-template-columns:repeat(4,1fr)!important;margin-top:8px!important;}
-.box{background:#faf8f3!important;padding:10px!important;border:1px solid #eee8dc!important;}
-.box strong{font-size:14px!important;}
-.map{margin-top:8px!important;}
-/* Le repère est le coeur de la page. */
-section:has(#reference){margin-top:14px!important;}
-section:has(#reference) .head{margin-bottom:7px!important;}
-section:has(#reference) .head h2{font-size:23px!important;}
-.reference{grid-template-columns:1.25fr .75fr!important;gap:9px!important;}
-.seller-reference-main{min-height:190px!important;padding:18px!important;}
-.seller-reference-main .ref-value{font-size:36px!important;}
-.seller-reference-details .ref-row{min-height:43px!important;padding:9px 10px!important;}
-.seller-reading{margin-top:9px!important;padding:14px!important;}
-.seller-reading-head{margin-bottom:8px!important;padding-bottom:7px!important;}
-.seller-reading-head b{font-size:15px!important;}
-.seller-reading-grid{gap:9px!important;}
-.seller-reading-grid>div{padding:11px!important;}
-.seller-reading-grid li{font-size:8.5px!important;}
-/* Les comparables deviennent une preuve simple, pas un tableau d'expert. */
-section:has(#compSummary){margin-top:14px!important;}
-section:has(#compSummary) .head h2{font-size:23px!important;}
-section:has(#compSummary) .head .source{display:none!important;}
-#compSummary{grid-template-columns:1fr!important;}
-.seller-comps-main{min-height:125px!important;padding:16px!important;}
-.seller-comps-main .ref-value{font-size:28px!important;}
-#compSummary .ref-list{display:none!important;}
-.comps-note{font-size:9px!important;margin-bottom:9px!important;padding:10px 12px!important;}
-.comps-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;}
-.comps-grid .comp{padding:10px!important;}
-.comps-grid .comp p{font-size:8px!important;line-height:1.45!important;}
-.comps-grid .comp-note{font-size:7px!important;}
-.comps-more{margin-top:8px!important;}
-.comps-more summary{font-size:8px!important;}
-/* On cache les détails techniques même lorsqu'ils sont générés par le moteur. */
-.diag,.source{font-size:7px!important;}
-footer,.footer{font-size:8px!important;}
-@media(max-width:760px){
- .grid{grid-template-columns:repeat(2,1fr)!important;}
- .reference{grid-template-columns:1fr!important;}
- .seller-reference-main{min-height:165px!important;}
- .seller-reference-main .ref-value{font-size:32px!important;}
- .comps-grid{grid-template-columns:1fr 1fr!important;}
-}
-@media(max-width:480px){
- .wrap{padding:9px 10px 30px!important;}
- .hero{padding:17px!important;border-radius:16px!important;}
- .hero h1{font-size:27px!important;}
- .hero p{font-size:10px!important;}
- .project .card{padding:12px!important;}
- .grid{gap:6px!important;}
- .box{padding:9px!important;}
- .box strong{font-size:13px!important;}
- .section{margin-top:11px!important;}
- section:has(#reference) .head h2,section:has(#compSummary) .head h2{font-size:20px!important;}
- .seller-reference-main .ref-value{font-size:29px!important;}
- .comps-grid{grid-template-columns:1fr!important;}
- .seller-reading-grid{grid-template-columns:1fr!important;}
-}
 </style></body>
 </html>
