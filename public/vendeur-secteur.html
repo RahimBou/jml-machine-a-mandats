@@ -720,7 +720,10 @@ function renderSellerReading(r){
  const commune=d.city||"la commune";
  const base=r.basePriceM2;
  const baseText=base!=null?Math.round(Number(base)).toLocaleString("fr-FR")+" €/m²":"un repère de marché";
- const communalM2=type==="Maison"?Number(m.housePrice||m.communalPrice):type==="Appartement"?Number(m.apartmentPrice||m.communalPrice):Number(m.communalPrice);
+ const isMaison=/maison/i.test(type);
+ const isAppartement=/appartement|studio|duplex|loft/i.test(type);
+ const communalM2=isMaison?Number(m.housePrice||m.communalPrice):isAppartement?Number(m.apartmentPrice||m.communalPrice):Number(m.communalPrice);
+ const communalTypeLabel=isMaison?"maisons":isAppartement?"appartements":"biens";
  const communalText=Number.isFinite(communalM2)&&communalM2>0?Math.round(communalM2).toLocaleString("fr-FR")+" €/m²":"non disponible";
  const gapM2=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?Math.round(Number(base)-communalM2):null;
  const gap=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?((Number(base)/communalM2-1)*100):null;
@@ -734,7 +737,7 @@ function renderSellerReading(r){
  if(comparable){
    bullets.push("Le "+baseText+" est construit à partir des ventes retenues comme comparables à votre "+type+" : type de bien, surface, nombre de pièces, distance et récence sont pris en compte par le moteur.");
    if(count) bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+radius.toLocaleString("fr-FR")+" km":"")+"."+(strict?" "+strict+" sont au premier niveau de proximité.":""));
-   if(gap!=null) bullets.push("Le repère communal des maisons est de "+communalText+". Le repère issu des comparables est de "+baseText+", soit "+gapM2Text+" ("+gapText+") par rapport à cette référence.");
+   if(gap!=null) bullets.push("Le repère communal des "+communalTypeLabel+" est de "+communalText+". Le repère issu des comparables est de "+baseText+", soit "+gapM2Text+" ("+gapText+") par rapport à cette référence.");
  }else{
    bullets.push("Le repère repose sur le marché communal disponible. Il sert de contexte lorsque les ventes comparables ne sont pas suffisamment exploitables.");
  }
@@ -1262,9 +1265,11 @@ async function run(){
   // que le seul prix médian communal.
   const surf=n(d.surface);
   const isHouse=/maison/i.test(d.propertyType||"");
+  const isApt=/appartement|studio|duplex|loft/i.test(d.propertyType||"");
   const compM2=n(comps.weightedPriceM2);
   const houseM2=n(pageData.market?.housePrice);
-  const selectedM2=compM2!=null?compM2:(isHouse?houseM2:n(pageData.market?.communalPrice));
+  const apartmentM2=n(pageData.market?.apartmentPrice);
+  const selectedM2=compM2!=null?compM2:(isHouse?houseM2:isApt?apartmentM2:n(pageData.market?.communalPrice));
   renderReference({
     basePriceM2:selectedM2,
     surface:surf,
@@ -1277,7 +1282,7 @@ async function run(){
     fromComparables:compM2!=null,
     explanation:compM2!=null
       ?"Valeur centrale construite à partir des transactions DVF réellement comparables retenues autour de l'adresse. La médiane pondérée limite l'influence d'une vente atypique."
-      :"Aucun repère comparable suffisamment exploitable : le prix maison communal reste utilisé comme contexte de secours."
+      :"Aucun repère comparable suffisamment exploitable : le prix communal du même type de bien reste utilisé comme contexte de secours."
   });
   if(territory.ok!==false) $("#status").textContent="Données marché + comparables chargés";
   else $("#status").textContent="Marché communal chargé · comparables en mode dégradé";
