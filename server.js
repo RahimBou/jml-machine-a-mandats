@@ -39,8 +39,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.9.5";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15-ai-v16-google-calendar";
+const VERSION = "3.9.6";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15-ai-v16-google-calendar-v17-temporal-revaluation";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -1178,6 +1178,69 @@ function comparableConfidence(rows,stats){
   return "Insuffisante";
 }
 
+function buildTemporalMarketIndex(rows){
+  const byYear=new Map();
+  for(const row of Array.isArray(rows)?rows:[]){
+    const date=parseSaleDate(row?.date);
+    const value=Number(row?.pricePerM2);
+    if(!date||!Number.isFinite(value)||value<=0) continue;
+    const year=date.getFullYear();
+    if(!byYear.has(year)) byYear.set(year,[]);
+    byYear.get(year).push(value);
+  }
+  const annual=[];
+  for(const [year,values] of byYear.entries()){
+    if(values.length<3) continue;
+    values.sort((a,b)=>a-b);
+    const median=values.length%2
+      ? values[(values.length-1)/2]
+      : (values[values.length/2-1]+values[values.length/2])/2;
+    annual.push({year,count:values.length,median:Number(median)});
+  }
+  annual.sort((a,b)=>a.year-b.year);
+  const reference=annual.slice().reverse().find(x=>x.count>=5)||annual.at(-1)||null;
+  if(!reference) return {available:false,years:annual,referenceYear:null,referenceMedian:null};
+  return {
+    available:true,
+    years:annual,
+    referenceYear:reference.year,
+    referenceMedian:Number(reference.median),
+    method:"Médiane annuelle locale des ventes comparables, dernière année suffisamment fournie"
+  };
+}
+
+function applyTemporalRevaluation(rows){
+  const index=buildTemporalMarketIndex(rows);
+  if(!index.available) return {rows,index};
+  const referenceMedian=Number(index.referenceMedian);
+  for(const row of rows){
+    const date=parseSaleDate(row?.date);
+    const year=date?.getFullYear();
+    const annual=index.years.find(x=>x.year===year);
+    const original=Number(row?.pricePerM2);
+    if(!annual||!Number.isFinite(original)||original<=0){
+      row.originalPricePerM2=Number.isFinite(original)?Number(original.toFixed(2)):null;
+      row.temporalFactor=1;
+      row.temporalRevalued=false;
+      continue;
+    }
+    const rawFactor=referenceMedian/Number(annual.median);
+    const factor=Math.max(0.85,Math.min(1.15,rawFactor));
+    row.originalPricePerM2=Number(original.toFixed(2));
+    row.temporalFactor=Number(factor.toFixed(4));
+    row.pricePerM2=Number((original*factor).toFixed(2));
+    row.temporalRevalued=year!==index.referenceYear;
+    row.temporalReferenceYear=index.referenceYear;
+    row.temporalReferenceMedian=Number(referenceMedian.toFixed(2));
+    row.temporalYearMedian=Number(Number(annual.median).toFixed(2));
+    row.temporalAdjustmentPct=Number(((factor-1)*100).toFixed(1));
+    row.influenceReason=row.temporalRevalued
+      ? (row.influenceReason||"")+" — valeur actualisée temporellement"
+      : (row.influenceReason||"");
+  }
+  return {rows,index};
+}
+
 function parsePositiveNumber(value){
   if(value===null||value===undefined||value==="") return null;
   const n=Number(String(value).replace(/[^0-9,.-]/g,"").replace(/\s/g,"").replace(",","."));
@@ -1643,6 +1706,11 @@ async function buildComparableSales(market,property){
 
   if(!candidates.length) return {sales:[],valuationSales:[],sameStreet:[],median:null,weightedPriceM2:null,weightedMedianPriceM2:null,matchCount:0,totalCandidates:0,radiusKm:null,searchScope:"Aucune transaction comparable",origin,originSource,source:"DVF local JML / PostgreSQL",engineVersion:"8.4.0-PG-DVF-VALUATION-COMPARE"};
 
+  // Revalorisation temporelle : chaque vente est ramenée au niveau de la
+  // dernière année locale suffisamment documentée. Le facteur est plafonné à
+  // +/-15 % pour éviter qu'une petite série locale déforme brutalement la valeur.
+  const temporal=applyTemporalRevaluation(candidates);
+  const temporalIndex=temporal.index;
   const rawValues=candidates.map(x=>x.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);
   const medianRaw=rawValues.length%2?rawValues[(rawValues.length-1)/2]:(rawValues[rawValues.length/2-1]+rawValues[rawValues.length/2])/2;
   const q1Raw=rawValues[Math.floor((rawValues.length-1)*0.25)]??medianRaw;
@@ -1725,6 +1793,16 @@ async function buildComparableSales(market,property){
     median:median!=null?Math.round(median):null,
     weightedPriceM2:centralPriceM2!=null?Math.round(centralPriceM2):null,
     weightedMedianPriceM2:weightedMedianPriceM2!=null?Math.round(weightedMedianPriceM2):null,
+    temporalRevaluation:{
+      available:Boolean(temporalIndex?.available),
+      referenceYear:temporalIndex?.referenceYear||null,
+      referenceMedian:temporalIndex?.referenceMedian!=null?Math.round(Number(temporalIndex.referenceMedian)):null,
+      years:Array.isArray(temporalIndex?.years)?temporalIndex.years.map(x=>({
+        year:x.year,count:x.count,median:Math.round(Number(x.median))
+      })):[],
+      method:temporalIndex?.method||"Pas assez de ventes pour calculer une revalorisation temporelle locale.",
+      capPct:15
+    },
     matchCount:top40.length,totalCandidates:candidates.length,radiusKm,closeCount,minPriceM2,maxPriceM2,
     q1:q1!=null?Math.round(q1):null,q3:q3!=null?Math.round(q3):null,spreadPct,strictCount,
     confidence,rangeLow:rangeLow!=null?Math.round(rangeLow):null,rangeHigh:rangeHigh!=null?Math.round(rangeHigh):null,
