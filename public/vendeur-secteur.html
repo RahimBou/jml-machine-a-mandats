@@ -277,8 +277,131 @@ h1,h2,h3{
   background:#f7f2e8;
   border:1px solid #e8dfcf;
   border-radius:12px;
-  padding:12px;
+  padding:16px;
 }
+.reading-panel{
+  position:relative;
+  overflow:hidden;
+}
+.reading-panel-how{background:linear-gradient(135deg,#f3f8f5,#fbfaf5)!important}
+.reading-panel-why{background:linear-gradient(135deg,#fbf7ee,#fffdf8)!important}
+.reading-number{
+  float:left;
+  width:30px;height:30px;
+  margin:0 10px 8px 0;
+  border-radius:50%;
+  display:grid;place-items:center;
+  background:#1d6b61;
+  color:#fff;
+  font-weight:900;
+  font-size:14px;
+}
+.reading-number.gold{background:#c79a35}
+.reading-panel h3{
+  margin:2px 0 7px;
+  color:var(--g);
+  font:700 20px Georgia,"Times New Roman",serif;
+}
+.reading-panel>p:not(.reading-title):not(.seller-reading-foot){
+  clear:both;
+  margin:0 0 12px;
+  color:#56625b;
+  font-size:10px;
+  line-height:1.55;
+}
+.reading-steps{clear:both}
+.reading-step{
+  display:flex;
+  gap:9px;
+  padding:9px 0;
+  border-top:1px solid rgba(35,70,63,.12);
+}
+.reading-step>b{
+  flex:0 0 25px;
+  height:25px;
+  border-radius:50%;
+  display:grid;place-items:center;
+  background:#e6f0eb;
+  color:#27675d;
+  font-size:10px;
+}
+.reading-step span{display:block}
+.reading-step strong{
+  display:block;
+  color:#243a34;
+  font-size:10px;
+}
+.reading-step small{
+  display:block;
+  margin-top:2px;
+  color:#65716b;
+  font-size:8.5px;
+  line-height:1.45;
+}
+.reading-result{
+  margin-top:8px;
+  padding:11px 12px;
+  border-radius:11px;
+  background:#fff2cc;
+  border:1px solid #ead49a;
+}
+.reading-result span{
+  display:block;
+  color:#765b22;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.reading-result strong{
+  display:block;
+  margin-top:4px;
+  color:#5e4619;
+  font-size:11px;
+}
+.reading-result em{
+  display:block;
+  margin-top:4px;
+  color:#98742a;
+  font-size:9px;
+  font-style:normal;
+  font-weight:800;
+}
+.reading-range{
+  margin:10px 0;
+  padding:10px 11px;
+  border:1px solid #eadfca;
+  border-radius:10px;
+  background:#f8f1e2;
+}
+.reading-range strong{display:block;color:#34483f;font-size:10px}
+.reading-range span{display:block;margin-top:3px;color:#68736d;font-size:8.5px}
+.reading-factors{
+  list-style:none;
+  margin:8px 0 0;
+  padding:0;
+}
+.reading-factors li{
+  padding:8px 0 8px 18px;
+  border-bottom:1px solid rgba(35,70,63,.1);
+  position:relative;
+}
+.reading-factors li:before{
+  content:"•";
+  position:absolute;left:2px;top:7px;
+  color:#c39532;font-size:16px;font-weight:900;
+}
+.reading-factors strong{display:block;color:#263c35;font-size:9.5px}
+.reading-factors span{display:block;margin-top:2px;color:#69736e;font-size:8.5px;line-height:1.4}
+.reading-communal{
+  margin-top:9px;
+  padding:9px 10px;
+  border-radius:9px;
+  background:#eef3ef;
+  color:#53625b;
+  font-size:8.5px;
+  line-height:1.45;
+}
+
 .reading-title{
   margin:0 0 5px;
   color:var(--g);
@@ -770,38 +893,70 @@ function renderSellerReading(r){
  const comparable=!!r.fromComparables;
  const type=d.propertyType||"bien";
  const commune=d.city||"la commune";
- const base=r.basePriceM2;
- const baseText=base!=null?Math.round(Number(base)).toLocaleString("fr-FR")+" €/m²":"un repère de marché";
+ const surface=Number(d.surface);
+ const base=Number(r.basePriceM2);
+ const baseText=Number.isFinite(base)&&base>0?Math.round(base).toLocaleString("fr-FR")+" €/m²":"un repère de marché";
  const isMaison=/maison/i.test(type);
  const isAppartement=/appartement|studio|duplex|loft/i.test(type);
  const communalM2=isMaison?Number(m.housePrice||m.communalPrice):isAppartement?Number(m.apartmentPrice||m.communalPrice):Number(m.communalPrice);
  const communalTypeLabel=isMaison?"maisons":isAppartement?"appartements":"biens";
  const communalText=Number.isFinite(communalM2)&&communalM2>0?Math.round(communalM2).toLocaleString("fr-FR")+" €/m²":"non disponible";
- const gapM2=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?Math.round(Number(base)-communalM2):null;
- const gap=Number.isFinite(Number(base))&&Number.isFinite(communalM2)&&communalM2>0?((Number(base)/communalM2-1)*100):null;
+ const gapM2=Number.isFinite(base)&&Number.isFinite(communalM2)&&communalM2>0?Math.round(base-communalM2):null;
+ const gap=Number.isFinite(base)&&Number.isFinite(communalM2)&&communalM2>0?((base/communalM2-1)*100):null;
  const gapText=gap!=null?(gap>=0?"+":"")+gap.toFixed(1).replace(".",",")+" %":"";
  const gapM2Text=gapM2!=null?(gapM2>=0?"+":"")+gapM2.toLocaleString("fr-FR")+" €/m²":"";
  const count=Number(c.matchCount||0);
  const strict=Number(c.strictCount||0);
  const radius=Number(c.radiusKm||0);
- const assets=sellerAssetHighlights();
+ const temporal=c.temporalRevaluation||null;
  const bullets=[];
  if(comparable){
-   bullets.push("Le "+baseText+" est construit à partir des ventes retenues comme comparables à votre "+type+" : type de bien, surface, nombre de pièces, distance et récence sont pris en compte par le moteur.");
-   if(count) bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" retenue"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+radius.toLocaleString("fr-FR")+" km":"")+"."+(strict?" "+strict+" sont au premier niveau de proximité.":""));
-   if(gap!=null) bullets.push("Le repère communal des "+communalTypeLabel+" est de "+communalText+". Le repère issu des comparables est de "+baseText+", soit "+gapM2Text+" ("+gapText+") par rapport à cette référence.");
+   bullets.push("Le moteur commence par rechercher des ventes de maisons autour de votre adresse, puis retient celles qui ressemblent le plus à votre bien.");
+   if(count) bullets.push(count+" vente"+(count>1?"s":"")+" comparable"+(count>1?"s":"")+" analysée"+(count>1?"s":"")+" autour de l'adresse"+(radius?" dans un périmètre allant jusqu'à "+radius.toLocaleString("fr-FR")+" km":"")+"."+(strict?" "+strict+" sont au premier niveau de proximité.":""));
+   bullets.push("Chaque vente est pondérée selon plusieurs critères : type de bien, surface, nombre de pièces, distance et date de vente. Les ventes les plus proches et les plus comparables ont davantage de poids.");
+   if(temporal?.available) bullets.push("Les ventes plus anciennes sont également revalorisées pour tenir compte du niveau de marché local de référence avant le calcul du prix au m².");
+   if(Number.isFinite(base)&&base>0) bullets.push("Le moteur obtient ainsi un repère de "+baseText+" à partir des ventes retenues.");
  }else{
    bullets.push("Le repère repose sur le marché communal disponible. Il sert de contexte lorsque les ventes comparables ne sont pas suffisamment exploitables.");
  }
- bullets.push("Ce chiffre est un point de départ : l'état réel du bien, ses prestations, les travaux éventuels et la stratégie de mise en vente peuvent ensuite faire évoluer la valeur retenue.");
- if(assets.length) bullets.push("L'environnement peut aussi être décrit avec des éléments concrets disponibles autour de l'adresse.");
+ const calc=Number.isFinite(surface)&&surface>0&&Number.isFinite(base)&&base>0?Math.round(surface*base):null;
+ const calcText=calc!=null?surface.toLocaleString("fr-FR")+" m² × "+Math.round(base).toLocaleString("fr-FR")+" €/m² = "+calc.toLocaleString("fr-FR")+" €":"Le calcul personnalisé sera affiché dès que la surface et le repère au m² seront disponibles.";
+ const evolution=[];
+ if(Number.isFinite(communalM2)&&communalM2>0&&Number.isFinite(base)&&base>0){
+   evolution.push("Le repère communal des "+communalTypeLabel+" est de "+communalText+". Le repère issu des comparables est de "+baseText+", soit "+gapM2Text+" ("+gapText+") par rapport à cette référence.");
+ }
+ const valueRange=r.rangeLow!=null&&r.rangeHigh!=null?eur(r.rangeLow)+" à "+eur(r.rangeHigh):"la fourchette observée";
  el.querySelector(".seller-reading-grid").innerHTML=
-   '<div><p class="reading-title">En clair</p>'+
-   '<p>Pour '+esc(commune)+', <b>'+esc(eur(r.referenceValue))+'</b> constitue le repère de valeur affiché à partir des données disponibles.</p>'+
-   '<ul>'+bullets.slice(0,2).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>'+
-   '<div><p class="reading-title">Ce qu’il reste à apprécier</p>'+
-   '<ul>'+bullets.slice(2).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>'+
-   '<p class="seller-reading-foot">Le DPE est présenté comme une information énergétique distincte ; il n’est pas appliqué mécaniquement au prix des ventes comparables.</p></div>';
+   '<div class="reading-panel reading-panel-how">'+
+     '<div class="reading-number">1</div>'+
+     '<p class="reading-title">COMMENT LE REPÈRE DE '+esc(eur(r.referenceValue))+' EST CONSTRUIT</p>'+
+     '<h3>Une analyse basée sur des ventes réelles</h3>'+
+     '<p>Le moteur analyse les ventes autour de votre adresse et recherche celles qui sont les plus comparables à votre bien.</p>'+
+     '<div class="reading-steps">'+
+       '<div class="reading-step"><b>1</b><span><strong>Recherche des ventes comparables</strong><small>'+(count?esc(count+" ventes analysées"):"Ventes disponibles")+" autour de votre bien."+'</small></span></div>'+
+       '<div class="reading-step"><b>2</b><span><strong>Sélection selon plusieurs critères</strong><small>Type, surface, pièces, distance et date de vente.</small></span></div>'+
+       '<div class="reading-step"><b>3</b><span><strong>Pondération des ventes</strong><small>Les ventes les plus proches et les plus similaires pèsent davantage dans le calcul.</small></span></div>'+
+       (temporal?.available?'<div class="reading-step"><b>4</b><span><strong>Actualisation dans le temps</strong><small>Les ventes anciennes sont revalorisées selon le niveau de marché local de référence.</small></span></div>': '')+
+       '<div class="reading-step"><b>'+(temporal?.available?"5":"4")+'</b><span><strong>Repère au m²</strong><small>Le moteur obtient <b>'+esc(baseText)+'</b> à partir des ventes retenues.</small></span></div>'+
+       '<div class="reading-result"><span>Application à votre surface</span><strong>'+esc(calcText)+'</strong><em>Valeur centrale : '+esc(eur(r.referenceValue))+'</em></div>'+
+     '</div>'+
+   '</div>'+
+   '<div class="reading-panel reading-panel-why">'+
+     '<div class="reading-number gold">2</div>'+
+     '<p class="reading-title">CE QUI PEUT FAIRE ÉVOLUER LA VALEUR DE VOTRE BIEN</p>'+
+     '<h3>Chaque bien est unique</h3>'+
+     '<p>Les ventes comparables permettent de construire un repère de marché. Elles ne remplacent pas l’analyse concrète du bien.</p>'+
+     '<div class="reading-range"><strong>Fourchette observée : '+esc(valueRange)+'</strong><span>Elle permet de situer la zone de marché autour du repère.</span></div>'+
+     '<ul class="reading-factors">'+
+       '<li><strong>État général du bien</strong><span>Entretien, travaux à prévoir, rénovation récente…</span></li>'+
+       '<li><strong>Qualité des prestations</strong><span>Cuisine, salles de bains, isolation, matériaux, équipements…</span></li>'+
+       '<li><strong>Terrain et dépendances</strong><span>Surface, orientation, jardin, garage, dépendances…</span></li>'+
+       '<li><strong>Situation exacte</strong><span>Rue, environnement, nuisances, proximité des services, commerces et transports.</span></li>'+
+       '<li><strong>Caractéristiques particulières</strong><span>Vue, piscine, stationnement, agencement ou éléments qui ne peuvent pas être déduits des seules données DVF.</span></li>'+
+     '</ul>'+
+     '<div class="reading-communal">'+(evolution.length?esc(evolution[0]):"Le repère communal sert de benchmark général et ne remplace pas les ventes comparables.")+'</div>'+
+     '<p class="seller-reading-foot">Le DPE reste une information énergétique distincte ; il n’est pas appliqué mécaniquement au prix des ventes comparables.</p>'+
+   '</div>';
 }
 function renderComps(c){
  c=c||{};
