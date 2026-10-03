@@ -78,7 +78,21 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
  function set(id,v){const e=$(id);if(e)e.textContent=String(v)}
  function statusOptions(current){return STATUS.map(s=>'<option value="'+esc(s)+'"'+(current===s?" selected":"")+'>'+esc(s)+'</option>').join("")}
- async function api(url,options={}){const r=await fetch(url,{cache:"no-store",...options});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||"Erreur serveur");return d}
+ async function api(url,options={},retry=true){
+  const r=await fetch(url,{cache:"no-store",credentials:"same-origin",...options});
+  let d={};try{d=await r.json()}catch{}
+  if(r.status===401 && retry){
+    const password=window.prompt("Accès professionnel JML\\n\\nEntrez votre mot de passe :");
+    if(password){
+      const login=await fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({password})});
+      let ld={};try{ld=await login.json()}catch{}
+      if(login.ok) return api(url,options,false);
+      throw new Error(ld.error||"Authentification refusée.");
+    }
+  }
+  if(!r.ok)throw new Error(d.error||"Erreur serveur");
+  return d;
+}
 
  async function loadProspects(){
   try{
