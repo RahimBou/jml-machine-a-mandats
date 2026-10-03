@@ -61,6 +61,9 @@ function decrypt(value) {
 
 async function ensureTable(pool) {
   if (!pool) return;
+  await pool.query("ALTER TABLE jml_appointment_requests ADD COLUMN IF NOT EXISTS calendar_event_id TEXT");
+  await pool.query("ALTER TABLE jml_appointment_requests ADD COLUMN IF NOT EXISTS response_token TEXT");
+  await pool.query("ALTER TABLE jml_appointment_requests ADD COLUMN IF NOT EXISTS proposed_slots JSONB");
   await pool.query(`
     CREATE TABLE IF NOT EXISTS jml_google_calendar_tokens (
       id INTEGER PRIMARY KEY DEFAULT 1,
