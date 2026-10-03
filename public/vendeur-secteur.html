@@ -33,7 +33,14 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 .history{margin-top:17px}.history h3{font-size:13px;margin:0}.bars{height:145px;display:flex;align-items:flex-end;gap:6px;border-bottom:1px solid #d9d0c0;padding:0 3px;margin-top:10px}.bar{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;text-align:center}.bar i{display:block;background:#a9894d;border-radius:5px 5px 0 0;min-height:3px}.bar em{font-size:7px;color:var(--muted);font-style:normal;margin-bottom:3px}.bar b{font-size:7px;color:#5b574e;margin-top:4px}
 .reference{display:grid;grid-template-columns:1.05fr .95fr;gap:10px}.ref-main{background:var(--g);color:#fff;border-radius:15px;padding:17px}.ref-main h3{font-size:13px;margin:0}.ref-value{font:700 29px Georgia,serif;color:var(--gold);margin:9px 0 4px}.ref-main p{font-size:9px;line-height:1.55;color:#dbe7e0;margin:0}.ref-list{display:grid;gap:8px}.ref-row{background:#faf6ee;border:1px solid var(--line);border-radius:12px;padding:11px}.ref-row b{font-size:10px}.ref-row span{display:block;color:var(--muted);font-size:9px;margin-top:4px}
 .sales{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.sale{background:#faf6ee;border:1px solid var(--line);border-radius:13px;padding:12px}.sale-top{display:flex;justify-content:space-between;gap:7px}.sale-top b{font-size:10px}.price{font-size:10px;font-weight:900;color:#8a6c2e}.sale p{font-size:8.5px;line-height:1.55;color:var(--muted);margin:7px 0}.tag{display:inline-block;background:#eaf0e9;color:#52635a;border-radius:999px;padding:5px 7px;font-size:7px;font-weight:900}
-.comps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.comp{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px}.comp-top{display:flex;justify-content:space-between;gap:6px}.comp b{font-size:10px}.score{font-size:9px;color:#8a6c2e;font-weight:900}.comp p{font-size:8.5px;line-height:1.5;color:var(--muted);margin:7px 0}.pill{font-size:7px;font-weight:900;background:#eef2ed;color:#52635a;border-radius:999px;padding:5px 7px;display:inline-block}
+.comps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.comp{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px}
+.comps-more{margin-top:14px;border:1px solid rgba(25,55,50,.12);border-radius:14px;background:rgba(255,255,255,.72);overflow:hidden}
+.comps-more summary{cursor:pointer;padding:12px 16px;font-weight:700;color:#23463f;list-style:none}
+.comps-more summary::-webkit-details-marker{display:none}
+.comps-more summary::after{content:"＋";float:right}
+.comps-more[open] summary::after{content:"−"}
+.comps-more .comps-grid{padding:0 12px 12px}
+.comp-top{display:flex;justify-content:space-between;gap:6px}.comp b{font-size:10px}.score{font-size:9px;color:#8a6c2e;font-weight:900}.comp p{font-size:8.5px;line-height:1.5;color:var(--muted);margin:7px 0}.pill{font-size:7px;font-weight:900;background:#eef2ed;color:#52635a;border-radius:999px;padding:5px 7px;display:inline-block}
 .nearby{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.near{background:#faf6ee;border:1px solid var(--line);border-radius:13px;padding:12px}.near b{font-size:10px}.near p{font-size:8.5px;color:var(--muted);margin:6px 0 0}
 .env{display:grid;grid-template-columns:1fr 1fr;gap:9px}.env h3{font-size:13px;margin:0 0 7px}.env p{font-size:8.5px;color:var(--muted);line-height:1.5}.rows{display:grid}.row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eee6d9;padding:8px 0;font-size:8.5px}.row b{font-size:9px}.service-summary{margin-top:10px}.service-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.service-box{background:#fffdf7;border:1px solid rgba(24,63,50,.12);border-radius:12px;padding:10px;text-align:center}.service-box span{display:block;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.service-box strong{display:block;font-size:18px;color:#173f32;margin:4px 0}.service-box small{display:block;font-size:7px;color:#8b6e31}.service-reading{margin:10px 0 0;padding:10px 12px;background:#f8f4ea;border-radius:10px;font-size:8.5px;line-height:1.55}.service-source{margin-top:7px;font-size:7px;color:var(--muted)}@media(max-width:760px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .loading,.empty{font-size:9px;color:var(--muted);padding:7px 0}.error{background:#f6e9e5;border:1px solid #e4cec7;color:var(--bad);border-radius:12px;padding:12px;font-size:9px;line-height:1.55}
@@ -415,15 +422,21 @@ function renderComps(c){
  '<div class="ref-row"><b>Très proches</b><span>'+esc(c.closeCount??"0")+'</span></div></div>';
  const rows=Array.isArray(c.sales)?c.sales:[];
  if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
- $("#comps").innerHTML='<div class="comps-note"><b>Lecture vendeur :</b> '+esc(d.candidateCount??c.totalCandidates??0)+' ventes compatibles ont été analysées dans le périmètre. Les '+esc(d.top40??c.matchCount??0)+' comparables les plus pertinents sont contrôlés statistiquement, puis '+esc(d.valuationCount??(Array.isArray(c.valuationSales)?c.valuationSales.length:0))+' ventes servent au calcul final. La surface de terrain reste secondaire et ne peut pas exclure à elle seule une maison comparable.'+
- (dpeLabel?' Le DPE du bien est '+esc(dpeLabel)+'. Les DPE retrouvés sur les comparables proviennent de l’ADEME et sont affichés comme information de contexte ; ils ne modifient pas le calcul du prix.':'')+
- '</div>'+rows.map(s=>{
+ const renderCompRows=(list)=>list.map(s=>{
   const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
   const dpe=s.dpe?(' · DPE '+esc(s.dpe)+(s.dpeMatch?' · '+esc(s.dpeMatch):'')):(s.dpeChecked?' · DPE non retrouvé':'');
   return '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="pill">'+esc(proximity)+'</span></div>'+
   '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+dpe+'</p>'+
   '<div class="comp-note">'+esc(s.sameStreet?"Même rue que l’adresse étudiée.":"Retenue pour sa proximité et ses caractéristiques comparables.")+'</div></article>';
  }).join("");
+ const visibleRows=rows.slice(0,6);
+ const extraRows=rows.slice(6);
+ const moreBlock=extraRows.length
+  ? '<details class="comps-more"><summary>Voir les '+extraRows.length+' autres ventes analysées</summary><div class="comps-grid">'+renderCompRows(extraRows)+'</div></details>'
+  : "";
+ $("#comps").innerHTML='<div class="comps-note"><b>Lecture vendeur :</b> '+esc(d.candidateCount??c.totalCandidates??0)+' ventes compatibles ont été analysées dans le périmètre. Les '+esc(d.top40??c.matchCount??0)+' comparables les plus pertinents sont contrôlés statistiquement, puis '+esc(d.valuationCount??(Array.isArray(c.valuationSales)?c.valuationSales.length:0))+' ventes servent au calcul final. La surface de terrain reste secondaire et ne peut pas exclure à elle seule une maison comparable.'+
+ (dpeLabel?' Le DPE du bien est '+esc(dpeLabel)+'. Les DPE retrouvés sur les comparables proviennent de l’ADEME et sont affichés comme information de contexte ; ils ne modifient pas le calcul du prix.':'')+
+ '</div><div class="comps-grid">'+renderCompRows(visibleRows)+'</div>'+moreBlock;
 }
 function renderNearby(rows){
  if(!Array.isArray(rows)||!rows.length){$("#nearby").innerHTML='<div class="empty">Communes proches indisponibles.</div>';return}
