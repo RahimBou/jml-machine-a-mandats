@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="jml-version" content="2026-10-03-mon-secteur-vendeur-v2">
+<meta name="jml-version" content="2026-10-03-mon-secteur-vendeur-v3-sans-atouts">
 <title>JML Immobilier — Mon secteur</title>
 <style>
 :root{--g:#173b32;--g2:#245346;--gold:#c9a85b;--cream:#f5f0e6;--paper:#fffdf8;--line:#e4dccd;--ink:#173b32;--muted:#68736c;--bad:#8a5147}
@@ -160,29 +160,7 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   <a id="map" class="map" target="_blank" rel="noopener">Voir la localisation ↗</a>
 </section>
 
-<section class="section">
- <div class="head"><div><div class="eyebrow">01 · LES ATOUTS DE L'ADRESSE</div><h2>Ce qui compte autour de votre adresse</h2></div><div class="source">Données publiques officielles · rayon 1,5 km</div></div>
- <div class="card">
-  <div class="value-intro location-reading">
-   <div class="location-kicker">LECTURE DE L'EMPLACEMENT</div>
-   <h2>Les atouts concrets autour du bien</h2>
-   <p>Ici, on cherche surtout les éléments qu’un vendeur peut facilement retenir et raconter. Ces informations décrivent le cadre de vie autour de l'adresse ; <strong>elles ne sont pas converties automatiquement en €/m² et ne gonflent pas la valeur de référence.</strong></p>
-  </div>
-<div class="seller-proof-heading"><span>LES PREUVES DERRIÈRE LES ARGUMENTS</span><b>5 repères vérifiés autour de l’adresse</b></div>
-<div class="asset-grid" id="assets"><div class="loading">Analyse des équipements autour de l'adresse…</div></div>
-
-  <details class="diag" id="diagnostics"><summary>🔎 Diagnostic des sources</summary><div id="diagRows"><div class="diag-row"><span>Initialisation</span><b class="diag-code">JML-D000</b></div></div></details>
-  <div class="post-card">
-   <div class="post-head"><div><div class="eyebrow">ARGUMENTAIRE VENDEUR</div><h3>📣 Un texte prêt à reprendre en rendez-vous</h3></div><button id="copyPost" type="button">Copier le texte</button></div>
-   <div class="post-text" id="sellerPost">Le texte de présentation sera généré à partir des données réelles du bien, du marché et de son environnement.</div>
-   <div class="post-note">Le texte sépare clairement <strong>le repère de prix</strong> issu des ventes et <strong>les qualités d'emplacement</strong>. Aucun équipement n'est transformé artificiellement en supplément de prix.</div>
-  </div>
-  <div class="method-separation" style="margin-top:10px">
-   <div><strong>📊 Ce qui sert à établir le prix</strong><span>Ventes DVF comparables · type de bien · surface · pièces · distance · récence.</span></div>
-   <div><strong>📍 Ce qui sert à présenter le secteur</strong><span>Écoles · commerces · mobilité · grands axes routiers · santé · loisirs et autres services vérifiés autour de l'adresse.</span></div>
-  </div>
- </div>
-</section>
+<!-- Section 01 — atouts de l’adresse temporairement retirée pour refonte ultérieure. -->
 
 <section class="section">
  <div class="head"><div><div class="eyebrow">02 · MARCHÉ LOCAL</div><h2>Les chiffres de votre commune</h2></div><div class="source">DVF+ / Cerema / DGFiP</div></div>
@@ -899,7 +877,6 @@ async function run(){
    renderSales(market.recentSales||[]);
    pageData.market=market;
    $("#status").textContent="Marché communal chargé";
-   renderSellerPost();
    return market;
   }catch(e){
    addDiag("Marché communal",e.code||"JML-MARKET-CLIENT",e.message||"Erreur");
@@ -912,28 +889,7 @@ async function run(){
   }
  })();
 
- const assetsPromise=(async()=>{
-  try{
-   const assetParams=new URLSearchParams();
-   if(d.address) assetParams.set("address",d.address);
-   if(d.city) assetParams.set("city",d.city);
-   return await getData("/api/territory-assets?"+assetParams.toString(),13500,"Équipements / géocodage");
-  }catch(e){
-   return {
-    available:false,
-    code:e.code||"JML-ASSET-CLIENT",
-    message:"Les équipements autour de l'adresse n'ont pas pu être chargés : "+(e.message||"erreur temporaire")+" ."
-   };
-  }
- })();
-
  await marketPromise;
- const assets=await assetsPromise;
- if(assets?.available===false){
-  addDiag("Équipements / géocodage",assets.code||"JML-ASSET-CLIENT",assets.message||"Source indisponible");
- }
- renderAssets(assets);
- renderSellerPost();
 
  // 2. Comparables : appel séparé.
  try{
@@ -967,7 +923,6 @@ async function run(){
       ?"Valeur centrale construite à partir des transactions DVF réellement comparables retenues autour de l'adresse. La médiane pondérée limite l'influence d'une vente atypique."
       :"Aucun repère comparable suffisamment exploitable : le prix maison communal reste utilisé comme contexte de secours."
   });
-  renderSellerPost();
   if(territory.ok!==false) $("#status").textContent="Données marché + comparables chargés";
   else $("#status").textContent="Marché communal chargé · comparables en mode dégradé";
   try{
@@ -998,7 +953,6 @@ async function run(){
     fromComparables:false,
     explanation:"Le moteur de comparables n'a pas pu fournir de repère. Le prix communal est présenté uniquement comme contexte de secours."
   });
-  renderSellerPost();
   $("#nearby").innerHTML='<div class="empty">Communes proches indisponibles pour cette session.</div>';
  }
 
