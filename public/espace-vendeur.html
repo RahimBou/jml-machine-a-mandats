@@ -1042,10 +1042,12 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offs
 <p>Les créneaux proposés sont synchronisés avec l'agenda JML. <strong>Les rendez-vous déjà occupés ne sont pas proposés.</strong></p>
 <form id="fbAppointmentForm">
 <div class="fb-appointment-grid">
+<div><label for="fbApptName">Nom et prénom</label><input id="fbApptName" type="text" maxlength="120" autocomplete="name" required placeholder="Votre nom et prénom"></div>
+<div><label for="fbApptEmail">E-mail</label><input id="fbApptEmail" type="email" maxlength="180" autocomplete="email" placeholder="Votre adresse e-mail"></div>
+<div><label for="fbApptPhone">Téléphone</label><input id="fbApptPhone" type="tel" maxlength="40" autocomplete="tel" required placeholder="Votre numéro de téléphone"></div>
 <div><label for="fbApptDate">Date</label><select id="fbApptDate" required><option value="">Choisir une date</option></select></div>
 <div><label for="fbApptTime">Créneau</label><select id="fbApptTime" required><option value="">Choisir un créneau</option></select></div>
 <div><label for="fbApptLocation">Lieu souhaité</label><select id="fbApptLocation"><option>À votre domicile</option><option>Chez JML Immobilier</option><option>À définir ensemble</option></select></div>
-<div><label for="fbApptPhone">Téléphone</label><input id="fbApptPhone" type="tel" maxlength="40"></div>
 <div class="full"><label for="fbApptMessage">Message (facultatif)</label><textarea id="fbApptMessage" maxlength="1000" placeholder="Une précision concernant votre projet…"></textarea></div>
 <div class="full"><button class="primary" type="submit">Demander ce créneau</button></div>
 </div>
@@ -1088,7 +1090,7 @@ if(appointmentForm){
  appointmentForm.addEventListener("submit",async function(e){
   e.preventDefault();const msg=document.getElementById("fbAppointmentMessage"),requestedAt=document.getElementById("fbApptTime").value;
   if(!requestedAt){msg.style.display="block";msg.textContent="Choisissez un créneau.";return;}
-  const payload={prospectId:window.jmlProspectId||"",name:publicLead.name,email:publicLead.email,phone:document.getElementById("fbApptPhone").value.trim()||publicLead.phone,city:publicLead.city,requestedAt,requestedLocation:document.getElementById("fbApptLocation").value,message:document.getElementById("fbApptMessage").value.trim()};
+  const payload={prospectId:window.jmlProspectId||"",name:document.getElementById("fbApptName").value.trim(),email:document.getElementById("fbApptEmail").value.trim(),phone:document.getElementById("fbApptPhone").value.trim(),city:publicLead.city,requestedAt,requestedLocation:document.getElementById("fbApptLocation").value,message:document.getElementById("fbApptMessage").value.trim()};
   try{const rr=await fetch("/api/public-appointment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||"Impossible d'envoyer la demande.");msg.style.display="block";msg.textContent="Votre demande a bien été transmise. Nous allons confirmer ce créneau avec vous.";appointmentForm.reset();document.getElementById("fbApptDate").innerHTML='<option value="">Choisir une date</option>';document.getElementById("fbApptTime").innerHTML='<option value="">Choisir un créneau</option>';await loadAppointmentSlots();}catch(err){msg.style.display="block";msg.textContent=err.message;}
  });
  loadAppointmentSlots();
@@ -1196,6 +1198,10 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
    success.style.display="block";
    const lead=saved.lead||{};
    publicLead={name:lead.name||"",city:lead.city||"",phone:lead.phone||"",email:lead.email||""};
+   const apptName=document.getElementById("fbApptName"),apptEmail=document.getElementById("fbApptEmail"),apptPhone=document.getElementById("fbApptPhone");
+   if(apptName)apptName.value=publicLead.name;
+   if(apptEmail)apptEmail.value=publicLead.email;
+   if(apptPhone)apptPhone.value=publicLead.phone;
    window.jmlProspectId=saved.prospectId||"";
    d=getSellerSpace();
    const h=d.horizon||"unknown";
