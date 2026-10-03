@@ -2376,6 +2376,17 @@ async function initDb() {
     created_at:"TIMESTAMPTZ NOT NULL DEFAULT NOW()",
     updated_at:"TIMESTAMPTZ NOT NULL DEFAULT NOW()"
   };
+  // Compatibilité avec les anciennes bases : le formulaire /api/leads doit fonctionner même si jml_leads existait avant les dernières colonnes.
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS name TEXT`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS email TEXT`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS phone TEXT`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS city TEXT`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS property_type TEXT`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS horizon TEXT`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'Lead Magnet'`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS consent BOOLEAN NOT NULL DEFAULT FALSE`);
+  await db(`ALTER TABLE jml_leads ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+
   await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS owner_data JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS expected_price TEXT`);
   await db(`ALTER TABLE jml_seller_spaces ADD COLUMN IF NOT EXISTS sale_reason TEXT`);
