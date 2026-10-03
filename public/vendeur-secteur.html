@@ -312,9 +312,14 @@ h1,h2,h3{
   gap:9px;
 }
 .comps{
+  display:block;
+  width:100%;
+}
+.comps-grid{
+  width:100%;
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:9px;
+  gap:10px;
 }
 .comp{
   background:#fff;
@@ -450,7 +455,6 @@ section:has(.method-card){
   }
   .grid,
   #reference,
-  .comps,
   .comps-grid{
     grid-template-columns:1fr;
   }
