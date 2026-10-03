@@ -7,7 +7,7 @@ const { Readable } = require("stream");
 const { Pool } = require("pg");
 const crypto = require("crypto");
 const registerPublicEventsRoute = require("./events");
-const { registerGoogleCalendarRoutes } = require("./google-calendar");
+const { registerGoogleCalendarRoutes, getGoogleCalendarBusy } = require("./google-calendar");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -3027,38 +3027,80 @@ app.post("/api/appointment-requests/:id/reject", async (req,res) => {
   }catch(e){return unexpected(res,"JML-A020","Traitement de la demande indisponible.",e);}
 });
 
-function buildAppointmentSlots(days=21){
-  const slots=[]; const nowMs=Date.now(); const blocked=[];
-  return {slots,blocked,nowMs,days};
+function parisParts(date=new Date()){
+  const parts=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date);
+  const get=name=>Number(parts.find(p=>p.type===name)?.value||0);
+  return {year:get("year"),month:get("month"),day:get("day")};
+}
+function parisOffsetMinutes(date){
+  const part=new Intl.DateTimeFormat("en-US",{timeZone:"Europe/Paris",timeZoneName:"shortOffset",hour:"2-digit"}).formatToParts(date).find(p=>p.type==="timeZoneName");
+  const m=String(part?.value||"GMT+1").match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
+  if(!m) return 60;
+  return (m[1]==="-"?-1:1)*(Number(m[2])*60+Number(m[3]||0));
+}
+function parisDateAt(daysFromToday,hour){
+  const p=parisParts();
+  const guess=Date.UTC(p.year,p.month-1,p.day+daysFromToday,hour,0,0);
+  const first=new Date(guess);
+  const offset=parisOffsetMinutes(first);
+  return new Date(guess-offset*60000);
 }
 async function getBookedAppointmentTimes(){
   if(!pool) return [];
   const q=await db("SELECT requested_at FROM jml_appointment_requests WHERE status='À traiter' UNION ALL SELECT appointment_at AS requested_at FROM jml_activities WHERE outcome='RDV pris' AND appointment_at IS NOT NULL");
   return q.rows.map(r=>new Date(r.requested_at).getTime()).filter(Number.isFinite);
 }
-function availableSlotList(booked=[]){
+function availableSlotList(booked=[],busy=[]){
   const out=[], set=new Set(booked);
-  const start=new Date(); start.setHours(0,0,0,0);
   for(let d=1;d<=21;d++){
-    const day=new Date(start); day.setDate(start.getDate()+d);
-    const dow=day.getDay();
+    const day=parisDateAt(d,9);
+    const parisDayNumber=new Date(day.toLocaleString("en-US",{timeZone:"Europe/Paris"})).getDay();
+    const dow=parisDayNumber;
     if(dow===0) continue;
     const endHour=dow===6?13:18;
     for(let h=9;h<endHour;h++){
-      const dt=new Date(day); dt.setHours(h,0,0,0);
+      const dt=parisDateAt(d,h);
+      const end=new Date(dt.getTime()+60*60*1000);
       if(dt.getTime()<=Date.now()) continue;
-      if(!set.has(dt.getTime())) out.push(dt.toISOString());
+      const locallyBooked=set.has(dt.getTime());
+      const calendarBusy=busy.some(b=>{
+        const bs=new Date(b.start).getTime(), be=new Date(b.end).getTime();
+        return Number.isFinite(bs)&&Number.isFinite(be)&&bs<end.getTime()&&be>dt.getTime();
+      });
+      if(!locallyBooked&&!calendarBusy) out.push(dt.toISOString());
     }
   }
   return out;
 }
+let appointmentCalendarCache={until:0,busy:[]};
+async function getLiveAppointmentSlots(){
+  const booked=await getBookedAppointmentTimes();
+  const now=Date.now();
+  let busy=[];
+  if(appointmentCalendarCache.until>now){
+    busy=appointmentCalendarCache.busy;
+  }else{
+    const start=parisDateAt(0,0);
+    const end=parisDateAt(22,0);
+    busy=await getGoogleCalendarBusy(pool,start,end);
+    appointmentCalendarCache={until:now+60*1000,busy};
+  }
+  return availableSlotList(booked,busy);
+}
 
 app.get("/api/appointment-slots", async (_req,res) => {
   try{
-    const booked=await getBookedAppointmentTimes();
-    const slots=availableSlotList(booked);
-    return res.json({ok:true,slots,timezone:"Europe/Paris",rules:"Du lundi au vendredi de 9h à 18h, samedi de 9h à 13h. Les créneaux déjà demandés ou confirmés sont masqués."});
-  }catch(e){return unexpected(res,"JML-A021","Lecture des créneaux disponibles indisponible.",e);}
+    const slots=await getLiveAppointmentSlots();
+    return res.json({
+      ok:true,
+      slots,
+      timezone:"Europe/Paris",
+      source:"Google Calendar",
+      rules:"Du lundi au vendredi de 9h à 18h, samedi de 9h à 13h. Les créneaux occupés dans Google Calendar, déjà demandés ou confirmés sont masqués."
+    });
+  }catch(e){
+    return unexpected(res,"JML-A021","Lecture des créneaux Google Calendar indisponible.",e);
+  }
 });
 
 app.post("/api/public-appointment", async (req,res) => {
@@ -3078,7 +3120,12 @@ app.post("/api/public-appointment", async (req,res) => {
   const requestedAt=new Date(requestedAtRaw);
   if(Number.isNaN(requestedAt.getTime())) return apiError(res,400,"JML-A005","Date du rendez-vous invalide.");
   if(requestedAt.getTime()<Date.now()-5*60*1000) return apiError(res,400,"JML-A006","Le créneau demandé est déjà passé.");
-  const requestedSlots=availableSlotList(await getBookedAppointmentTimes());
+  let requestedSlots;
+  try{
+    requestedSlots=await getLiveAppointmentSlots();
+  }catch(calendarError){
+    return apiError(res,503,"JML-A008","Le calendrier Google est momentanément indisponible. Merci de réessayer dans quelques instants.");
+  }
   if(!requestedSlots.includes(requestedAt.toISOString())) return apiError(res,409,"JML-A007","Ce créneau n’est plus disponible. Choisissez-en un autre.");
   try{
     if(pool){
