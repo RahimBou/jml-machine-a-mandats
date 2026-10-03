@@ -1405,7 +1405,9 @@ function normalizeDvfPlusRow(row, fallbackCity=""){
   const surface=parsePositiveNumber(x.sbati??x.surface_reelle_bati??x.surface);
   const land=parsePositiveNumber(x.sterr??x.surface_terrain??x.land_surface);
   const rooms=parsePositiveNumber(x.nblocapt??x.nbpiece??x.nombre_pieces_principales??x.rooms);
-  const type=classifyDvfType(x.codtypbien??x.code_type_local??x.type_local??x.libtypbien??x.type,"");
+  const rawType=x.libtypbien??x.type_local??x.type??"";
+  const rawTypeCode=String(x.codtypbien??x.code_type_local??"");
+  const type=classifyDvfType(rawType,rawTypeCode==="111"?"1":rawTypeCode==="121"?"2":rawTypeCode);
   if(!date||price===null||price<=0||surface===null||surface<=0||!Number.isFinite(lat)||!Number.isFinite(lon)||!type)return null;
   const address=[
     x.adresse_numero??x.numero_voie,
