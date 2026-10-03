@@ -242,17 +242,21 @@ async function syncConfirmedAppointments(pool) {
       const start=new Date(r.requested_at), end=new Date(start.getTime()+60*60*1000);
       if(!Number.isFinite(start.getTime())) continue;
       const busy=await getGoogleCalendarBusy(pool,start,end);
-      if(busy.some(x=>new Date(x.start)<end&&new Date(x.end)>start)) {
-        console.warn("JML Calendar: créneau confirmé mais déjà occupé",r.id);
-        continue;
-      }
-      const event=await createGoogleCalendarEvent(pool,{
-        start,end,
-        summary:"Rendez-vous vendeur — "+String(r.name||"Prospect"),
-        description:"Rendez-vous confirmé avec JML Immobilier."+(r.email?"\nE-mail : "+r.email:"")+(r.phone?"\nTéléphone : "+r.phone:""),
-        location:r.requested_location||""
-      });
+      if(busy.some(x=>new Date(x.start)<end&&new Date(x.end)>start)) continue;
+      const event=await createGoogleCalendarEvent(pool,{start,end,summary:"Rendez-vous vendeur — "+String(r.name||"Prospect"),description:"Rendez-vous confirmé avec JML Immobilier."+(r.email?"\nE-mail : "+r.email:"")+(r.phone?"\nTéléphone : "+r.phone:""),location:r.requested_location||""});
       if(event?.id) await pool.query("UPDATE jml_appointment_requests SET calendar_event_id=$2 WHERE id=$1",[r.id,event.id]);
+    }
+
+    const rejected=await pool.query("SELECT id,name,email,response_token FROM jml_appointment_requests WHERE status='À revoir' AND email IS NOT NULL AND response_token IS NOT NULL AND (proposed_slots IS NULL OR jsonb_array_length(proposed_slots)=0) ORDER BY created_at LIMIT 5");
+    for(const r of rejected.rows){
+      const slots=availableSlotList(await getBookedAppointmentTimes(),await getGoogleCalendarBusy(pool,new Date(),new Date(Date.now()+31*24*60*60*1000))).slice(0,4);
+      if(!slots.length) continue;
+      await pool.query("UPDATE jml_appointment_requests SET status='Proposée',proposed_slots=$2 WHERE id=$1",[r.id,JSON.stringify(slots)]);
+      const base=(process.env.PUBLIC_APP_URL||"").replace(/\/$/,"");
+      const links=slots.map((x,i)=>base+"/api/appointment-requests/"+encodeURIComponent(r.id)+"/accept?token="+encodeURIComponent(r.response_token)+"&slot="+encodeURIComponent(x));
+      const text="Bonjour "+String(r.name||"").split(/\s+/)[0]+",\n\nLe créneau demandé n'est plus disponible. Voici mes possibilités :\n\n"+slots.map((x,i)=>(i+1)+". "+new Date(x).toLocaleString("fr-FR",{dateStyle:"full",timeStyle:"short",timeZone:"Europe/Paris"})).join("\n")+"\n\nChoisissez directement le créneau qui vous convient :\n"+links.map((x,i)=>(i+1)+". "+x).join("\n")+"\n\nJML Immobilier";
+      const html="<p>Bonjour "+String(r.name||"").split(/\s+/)[0]+",</p><p>Le créneau demandé n'est plus disponible. Voici mes possibilités :</p><ol>"+slots.map((x,i)=>"<li><a href=\""+links[i]+"\">"+new Date(x).toLocaleString("fr-FR",{dateStyle:"full",timeStyle:"short",timeZone:"Europe/Paris"})+"</a></li>").join("")+"</ol><p>JML Immobilier</p>";
+      await sendResendMail(r.email,"Choisissez votre nouveau créneau — JML Immobilier",text,html);
     }
   } catch(error) {
     console.warn("JML Calendar sync:",error?.message||error);
