@@ -203,7 +203,7 @@ async function createGoogleCalendarEvent(pool, { start, end, summary, descriptio
       location: String(location || ""),
       start: { dateTime: new Date(start).toISOString(), timeZone: "Europe/Paris" },
       end: { dateTime: new Date(end).toISOString(), timeZone: "Europe/Paris" },
-      status: "tentative"
+      status: "confirmed"
     })
   });
   const payload = await response.json().catch(() => ({}));
