@@ -5,6 +5,7 @@ const zlib = require("zlib");
 const readline = require("readline");
 const { Readable } = require("stream");
 const { Pool } = require("pg");
+const crypto = require("crypto");
 const registerPublicEventsRoute = require("./events");
 
 const app = express();
