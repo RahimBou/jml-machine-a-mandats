@@ -45,6 +45,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
 <div class="pro-stat"><span>RDV</span><strong id="nRdv">—</strong></div>
 <div class="pro-stat"><span>MANDATS</span><strong id="nMandats">—</strong></div>
 </section>
+<section class="pro-card" style="margin-top:14px"><h2>📌 Suivi à faire</h2><p>Les prochaines actions commerciales à ne pas laisser passer.</p><div id="followupsBox" class="pro-list"><div class="pro-item">Chargement…</div></div></section>
 <div class="pro-grid">
 <section class="pro-card"><h2>🧠 Priorités commerciales</h2><p>Les opportunités que le moteur JML signale pour les prochaines actions.</p><div id="priority" class="pro-list"><div class="pro-item">Chargement…</div></div></section>
 <section class="pro-card"><h2>⚡ Accès rapides</h2><p>Les entrées de travail principales.</p>
@@ -126,10 +127,22 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
   const b=e.target.closest("[data-rdv-action]");if(!b)return;
   handleAppointmentAction(b.dataset.id,b.dataset.rdvAction);
  });
+ function renderFollowups(){
+  const box=$("followupsBox");if(!box)return;
+  const now=Date.now();
+  const items=prospects.filter(p=>p.nextActionAt).map(p=>({...p,_t:new Date(p.nextActionAt).getTime()})).filter(p=>Number.isFinite(p._t)&&p._t<=now+7*86400000).sort((a,b)=>a._t-b._t).slice(0,8);
+  if(!items.length){box.innerHTML='<div class="prospect-empty">Aucune relance programmée dans les 7 prochains jours.</div>';return;}
+  box.innerHTML=items.map(p=>{
+    const overdue=p._t<now;
+    return '<div class="prospect-row"><div class="prospect-main"><strong>'+esc(p.name||"Sans nom")+'</strong><small>'+esc(p.nextAction||"Action à définir")+' · '+fmtDate(p.nextActionAt)+'</small><small>'+esc(p.city||"Ville non renseignée")+' · statut '+esc(p.status||"—")+'</small></div><div class="prospect-right"><span class="pro-badge" style="'+(overdue?'background:#f5d8d3;color:#8f332b;':'')+'">'+(overdue?"EN RETARD":"À VENIR")+'</span><button type="button" class="prospect-btn primary" data-follow-detail="'+esc(p.id)+'">Ouvrir</button></div></div>';
+  }).join("");
+ }
+
  async function loadProspects(){
   try{
    const d=await api("/api/prospects");prospects=Array.isArray(d.prospects)?d.prospects:[];
    set("nProspects",prospects.length);set("nHot",prospects.filter(x=>x.horizon==="0-3"||x.horizon==="3-6").length);set("nRdv",prospects.filter(x=>x.status==="RDV pris").length);set("nMandats",prospects.filter(x=>x.status==="Mandat").length);
+   renderFollowups();
    const box=$("prospectsBox");if(!box)return;
    if(!prospects.length){box.innerHTML='<div class="prospect-empty">Aucun prospect enregistré.<br>Les nouveaux propriétaires apparaîtront ici.</div>';return}
    box.innerHTML=prospects.map(p=>`
@@ -191,6 +204,8 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
  }
  async function qualify(id){try{await api("/api/prospects/"+enc(id)+"/qualify",{method:"POST"});await loadProspects();await showDetail(id)}catch(e){alert(e.message)}}
  async function removeProspect(id){const p=findProspect(id);if(!p)return;if(!confirm("Supprimer définitivement le prospect « "+(p.name||"Sans nom")+" » ?\nCette action supprime aussi son historique d'activités associé."))return;try{await api("/api/prospects/"+enc(id),{method:"DELETE"});closeModal();await loadProspects()}catch(e){alert(e.message)}}
+
+ $("followupsBox")?.addEventListener("click",e=>{const b=e.target.closest("[data-follow-detail]");if(!b)return;showDetail(b.dataset.followDetail)});
 
  $("prospectsBox")?.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b)return;const id=b.dataset.id;const a=b.dataset.action;if(a==="detail")showDetail(id);if(a==="edit")editProspect(id);if(a==="activity")activityForm(id);if(a==="delete")removeProspect(id)});
  $("prospectsBox")?.addEventListener("change",async e=>{const s=e.target.closest("[data-action='status']");if(!s)return;try{await api("/api/prospects/"+enc(s.dataset.id)+"/status",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:s.value})});await loadProspects()}catch(err){alert(err.message);await loadProspects()}});
