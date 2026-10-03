@@ -1129,15 +1129,6 @@ function parsePositiveNumber(value){
   const n=Number(String(value).replace(/[^0-9,.-]/g,"").replace(/\s/g,"").replace(",","."));
   return Number.isFinite(n)&&n>0?n:null;
 }
-function weightedMedian(rows){
-  const valid=rows.filter(x=>Number.isFinite(Number(x.pricePerM2))&&Number(x.pricePerM2)>0).sort((a,b)=>Number(a.pricePerM2)-Number(b.pricePerM2));
-  if(!valid.length)return null;
-  const total=valid.reduce((s,x)=>s+Math.max(1,Number(x.score)||0),0);
-  let acc=0;
-  for(const x of valid){acc+=Math.max(1,Number(x.score)||0);if(acc>=total/2)return Number(x.pricePerM2);}
-  return Number(valid[valid.length-1].pricePerM2);
-}
-
 const dpeCache=new Map();
 const dpeStreetRowsCache=new Map();
 const localDpeCache=new Map();
