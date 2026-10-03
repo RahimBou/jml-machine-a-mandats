@@ -1138,8 +1138,16 @@ const timelineSteps=[...document.querySelectorAll(".seller-step")];
 
 function updateSellerProjectSummary(d){
    d=d||getSellerSpace()||{};
-   const set=(id,v,empty)=>{const e=document.getElementById(id);if(e)e.textContent=v||empty||"Non renseigné";};
-   set("summaryCity",d.city,"Non renseignée");set("summaryType",d.propertyType,"Non renseigné");set("summarySurface",d.surface,"Non renseignée");set("summaryDpe",d.dpe,"Non renseigné");
+   const set=(id,v,empty)=>{
+     const e=document.getElementById(id);
+     if(!e)return;
+     const value=String(v??"").trim();
+     e.textContent=value||empty||"Non renseigné";
+   };
+   set("summaryCity",d.city,"Non renseignée");
+   set("summaryType",d.propertyType,"Non renseigné");
+   set("summarySurface",d.surface?String(d.surface).replace(".",",")+" m²":"", "Non renseignée");
+   set("summaryDpe",d.dpe,"Non renseigné");
  }
  function updateSellerNextAction(list){
    const done=Array.isArray(list)?list.map(Number):[];
