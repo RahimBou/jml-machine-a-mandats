@@ -309,27 +309,6 @@ async function registerGoogleCalendarRoutes(app, options) {
     }
   });
 
-  app.post("/api/public-appointment", async (req,res)=>{
-    if(!pool) return res.status(503).json({ok:false,error:"Calendrier indisponible."});
-    const b=req.body||{}, name=String(b.name||"").trim(), email=String(b.email||"").trim().toLowerCase();
-    const requestedAt=new Date(String(b.requestedAt||""));
-    if(!name) return res.status(400).json({ok:false,error:"Nom requis."});
-    if(!email && !String(b.phone||"").trim()) return res.status(400).json({ok:false,error:"Email ou téléphone requis."});
-    if(!Number.isFinite(requestedAt.getTime())) return res.status(400).json({ok:false,error:"Date du rendez-vous invalide."});
-    const end=new Date(requestedAt.getTime()+60*60*1000);
-    try{
-      const busy=await getGoogleCalendarBusy(pool,requestedAt,end);
-      if(busy.some(x=>new Date(x.start)<end&&new Date(x.end)>requestedAt)) return res.status(409).json({ok:false,error:"Ce créneau n’est plus disponible."});
-      const event=await createGoogleCalendarEvent(pool,{start:requestedAt,end,summary:"Demande RDV vendeur — "+name,description:"Demande reçue depuis l’espace vendeur JML. Statut : à confirmer.",location:String(b.requestedLocation||"")});
-      const id=crypto.randomUUID();
-      await pool.query("INSERT INTO jml_appointment_requests (id,prospect_id,name,email,phone,city,requested_at,requested_location,message,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'À traiter')",[id,String(b.prospectId||"").trim()||null,name,email||null,String(b.phone||"").trim()||null,String(b.city||"").trim()||null,requestedAt,String(b.requestedLocation||"").trim()||null,String(b.message||"").trim()||null]);
-      return res.status(201).json({ok:true,id,status:"À traiter",calendarEventId:event.id});
-    }catch(error){
-      console.error("JML public appointment:",error);
-      return res.status(503).json({ok:false,error:"Impossible d’enregistrer la demande pour le moment."});
-    }
-  });
-
   app.get("/api/google-calendar/availability", async (req, res) => {
     try {
       const config = requireConfigured(res);
