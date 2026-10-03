@@ -158,12 +158,8 @@ async function registerGoogleCalendarRoutes(app, options) {
   const pool = options?.pool || null;
   const isAdminAuthenticated = options?.isAdminAuthenticated || (() => false);
 
-  try {
-    await ensureTable(pool);
-  } catch (error) {
-    console.warn("JML Google Calendar table:", error.message);
-  }
-
+  // Enregistrer les routes immédiatement. Ne pas attendre PostgreSQL ici :
+  // Render doit pouvoir exposer /api/google-calendar/auth dès le démarrage.
   app.get("/api/google-calendar/auth", (req, res) => {
     if (!isAdminAuthenticated(req)) {
       return res.status(401).json({ ok: false, code: "JML-CAL-002", error: "Authentification professionnelle requise." });
@@ -290,6 +286,14 @@ async function registerGoogleCalendarRoutes(app, options) {
       res.status(status).json({ ok: false, code: "JML-CAL-006", error: message });
     }
   });
+
+  // Initialiser la table en arrière-plan après l'enregistrement des routes.
+  // Les routes qui utilisent PostgreSQL appellent déjà ensureTable() au besoin.
+  try {
+    await ensureTable(pool);
+  } catch (error) {
+    console.warn("JML Google Calendar table:", error.message);
+  }
 }
 
 module.exports = { registerGoogleCalendarRoutes, SCOPES };
