@@ -18,3 +18,7 @@ services:
         sync: false
       - key: RESEND_FROM
         sync: false
+      - key: JML_ADMIN_PASSWORD
+        sync: false
+      - key: PUBLIC_APP_URL
+        sync: false
