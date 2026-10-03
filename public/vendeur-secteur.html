@@ -335,6 +335,54 @@ h1,h2,h3{
   align-items:start;
 }
 .comp b{font-size:10px}
+.comp-price{
+  margin:9px 0 7px;
+  padding:8px 9px;
+  border-radius:10px;
+  background:#f5f0e6;
+  border-left:3px solid var(--gold);
+}
+.comp-price span{
+  display:block;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.08em;
+  color:#7b806f;
+}
+.comp-price strong{
+  display:block;
+  margin-top:2px;
+  font:700 19px Georgia,"Times New Roman",serif;
+  color:var(--g);
+}
+.comp-address{
+  font-size:9px;
+  font-weight:800;
+  line-height:1.35;
+}
+.comp-meta{
+  display:flex;
+  justify-content:space-between;
+  gap:6px;
+  margin-top:5px;
+  font-size:8px;
+  color:var(--muted);
+}
+.comp-characteristics{
+  margin-top:7px;
+  padding:7px 8px;
+  border-radius:8px;
+  background:#faf7f0;
+  color:#43524a;
+  font-size:8.5px;
+  font-weight:700;
+}
+.comp-m2{
+  margin-top:6px;
+  font-size:9px;
+  font-weight:900;
+  color:#95753b;
+}
 .comp-note{
   margin-top:7px;
   font-size:8.5px;
@@ -776,8 +824,16 @@ function renderComps(c){
  const renderCompRows=(list)=>list.map(s=>{
   const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
   const dpe="";
+  const finalPrice=Number.isFinite(Number(s.price))&&Number(s.price)>0?eur(s.price):"Prix non disponible";
+  const roomsText=Number.isFinite(Number(s.rooms))&&Number(s.rooms)>0?String(Math.round(Number(s.rooms)))+" pièces":"";
+  const dpeText=s.dpe?String(s.dpe).toUpperCase():"";
+  const characteristics=[s.surface?String(Math.round(Number(s.surface)))+" m²":"",roomsText,dpeText?"DPE "+dpeText:""].filter(Boolean).join(" · ");
   return '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="pill">'+esc(proximity)+'</span></div>'+
-  '<p>'+esc(s.address||"Adresse non renseignée")+'<br>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+' · '+esc(fmtDate(s.date))+'<br>'+esc(s.surface?s.surface+" m²":"surface —")+' · '+esc(m2(s.pricePerM2))+dpe+'</p>'+
+  '<div class="comp-price"><span>PRIX VENDU</span><strong>'+esc(finalPrice)+'</strong></div>'+
+  '<div class="comp-address">'+esc(s.address||"Adresse non renseignée")+'</div>'+
+  '<div class="comp-meta"><span>'+esc(fmtDate(s.date))+'</span><span>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+'</span></div>'+
+  '<div class="comp-characteristics">'+esc(characteristics||"Caractéristiques non disponibles")+'</div>'+
+  '<div class="comp-m2">'+esc(m2(s.pricePerM2))+'</div>'+
   '<div class="comp-note">'+esc(s.sameStreet?"Même rue que l’adresse étudiée.":"Retenue pour sa proximité et ses caractéristiques comparables.")+'</div></article>';
  }).join("");
  const visibleRows=rows.slice(0,6);
