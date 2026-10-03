@@ -267,6 +267,54 @@ async function syncConfirmedAppointments(pool) {
 async function registerGoogleCalendarRoutes(app, options) {
   const pool = options?.pool || null;
   const isAdminAuthenticated = options?.isAdminAuthenticated || (() => false);
+  app.get("/api/appointment-requests/:id/accept", async (req, res) => {
+    if (!pool) return res.status(503).send("Calendrier indisponible.");
+    try {
+      const q = await pool.query(
+        "SELECT * FROM jml_appointment_requests WHERE id=$1 AND response_token=$2 LIMIT 1",
+        [String(req.params.id || ""), String(req.query.token || "")]
+      );
+      if (!q.rowCount) return res.status(404).send("Lien invalide.");
+      const r = q.rows[0];
+      const slot = new Date(String(req.query.slot || ""));
+      if (r.status !== "Proposée" || !Array.isArray(r.proposed_slots) || !r.proposed_slots.includes(slot.toISOString())) {
+        return res.status(409).send("Ce créneau n'est plus disponible.");
+      }
+      const end = new Date(slot.getTime() + 60 * 60 * 1000);
+      const busy = await getGoogleCalendarBusy(pool, slot, end);
+      if (busy.some(x => new Date(x.start) < end && new Date(x.end) > slot)) {
+        return res.status(409).send("Ce créneau vient d'être pris.");
+      }
+      const event = await createGoogleCalendarEvent(pool, {
+        start: slot,
+        end,
+        summary: "Rendez-vous vendeur — " + String(r.name || "Prospect"),
+        location: r.requested_location || "",
+        description: "Rendez-vous confirmé avec JML Immobilier."
+      });
+      await pool.query(
+        "UPDATE jml_appointment_requests SET status='Confirmée',requested_at=$2,calendar_event_id=$3 WHERE id=$1",
+        [r.id, slot, event.id]
+      );
+      if (r.prospect_id) {
+        await pool.query(
+          "INSERT INTO jml_activities (id,prospect_id,type,note,outcome,appointment_at,appointment_location,created_at) VALUES ($1,$2,'RDV',$3,'RDV pris',$4,$5,NOW())",
+          [crypto.randomUUID(), r.prospect_id, "Rendez-vous confirmé par le vendeur.", slot, r.requested_location || null]
+        );
+      }
+      await sendResendMail(
+        r.email,
+        "Rendez-vous confirmé — JML Immobilier",
+        "Votre rendez-vous est confirmé le " + slot.toLocaleString("fr-FR", {dateStyle:"full",timeStyle:"short",timeZone:"Europe/Paris"}) + ".",
+        "<p>Votre rendez-vous est confirmé.</p><p>" + slot.toLocaleString("fr-FR", {dateStyle:"full",timeStyle:"short",timeZone:"Europe/Paris"}) + "</p><p>JML Immobilier</p>"
+      );
+      return res.send("Rendez-vous confirmé avec JML Immobilier.");
+    } catch (error) {
+      console.error("JML appointment acceptance:", error);
+      return res.status(500).send("Impossible de confirmer ce rendez-vous.");
+    }
+  });
+
 
   // Enregistrer les routes immédiatement. Ne pas attendre PostgreSQL ici :
   // Render doit pouvoir exposer /api/google-calendar/auth dès le démarrage.
