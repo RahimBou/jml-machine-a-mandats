@@ -1027,18 +1027,24 @@ function renderComps(c){
  if(!rows.length){$("#comps").innerHTML='<div class="empty">Aucun comparable exploitable dans le délai disponible. Les chiffres communaux restent affichés séparément.</div>';return}
  const renderCompRows=(list)=>list.map(s=>{
   const proximity=s.sameStreet?"Même rue":(Number(s.distanceKm)<=0.5?"Très proche":"Secteur proche");
-  const dpe="";
   const finalPrice=Number.isFinite(Number(s.price))&&Number(s.price)>0?eur(s.price):"Prix non disponible";
   const roomsText=Number.isFinite(Number(s.rooms))&&Number(s.rooms)>0?String(Math.round(Number(s.rooms)))+" pièces":"";
   const dpeText=s.dpe?String(s.dpe).toUpperCase():"";
   const characteristics=[s.surface?String(Math.round(Number(s.surface)))+" m²":"",roomsText,dpeText?"DPE "+dpeText:""].filter(Boolean).join(" · ");
-  return '<article class="comp"><div class="comp-top"><b>'+esc(s.type||"Bien")+'</b><span class="pill">'+esc(proximity)+'</span></div>'+
-  '<div class="comp-price"><span>PRIX VENDU</span><strong>'+esc(finalPrice)+'</strong></div>'+
-  '<div class="comp-address">'+esc(s.address||"Adresse non renseignée")+'</div>'+
-  '<div class="comp-meta"><span>'+esc(fmtDate(s.date))+'</span><span>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+'</span></div>'+
-  '<div class="comp-characteristics">'+esc(characteristics||"Caractéristiques non disponibles")+'</div>'+
-  '<div class="comp-m2">'+esc(m2(s.pricePerM2))+'</div>'+
-  '<div class="comp-note">'+esc(s.sameStreet?"Même rue que l’adresse étudiée.":"Retenue pour sa proximité et ses caractéristiques comparables.")+'</div></article>';
+  const adjusted=Number.isFinite(Number(s.pricePerM2))?m2(s.pricePerM2):"—";
+  const original=Number.isFinite(Number(s.originalPricePerM2))?m2(s.originalPricePerM2):"";
+  const temporalNote=s.temporalRevalued&&original
+    ?"Prix/m² de vente : "+original+" · repère actualisé : "+adjusted
+    :"Prix/m² de vente : "+adjusted;
+  return '<article class="comp">'+
+    '<div class="comp-top"><div><b>'+esc(s.type||"Bien")+'</b><span class="comp-source">VENTE RÉELLE</span></div><span class="pill">'+esc(proximity)+'</span></div>'+
+    '<div class="comp-price"><span>PRIX DE VENTE FINAL</span><strong>'+esc(finalPrice)+'</strong></div>'+
+    '<div class="comp-address">'+esc(s.address||"Adresse non renseignée")+'</div>'+
+    '<div class="comp-meta"><span>'+esc(fmtDate(s.date))+'</span><span>'+esc(s.distanceKm!=null?s.distanceKm+" km":"distance —")+'</span></div>'+
+    '<div class="comp-characteristics">'+esc(characteristics||"Caractéristiques non disponibles")+'</div>'+
+    '<div class="comp-m2">'+esc(temporalNote)+'</div>'+
+    '<div class="comp-note"><b>'+esc(s.sameStreet?"Même rue":"Pourquoi cette vente ?")+'</b><span>'+esc(s.sameStreet?"Une vente située dans la même rue constitue un repère géographique direct.":"Sa proximité et ses caractéristiques permettent de la comparer à votre bien.")+'</span></div>'+
+    '</article>';
  }).join("");
  const visibleRows=rows.slice(0,6);
  const extraRows=rows.slice(6);
