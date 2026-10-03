@@ -120,8 +120,7 @@ body{margin:0;background:#f5f1e8;color:#173b31}.pro-app{min-height:100vh}.pro-to
     await loadProspects();
     alert(action==="confirm" ? "Rendez-vous confirmé. Il va être synchronisé avec Google Calendar." : "Demande refusée. De nouveaux créneaux pourront être proposés.");
   }catch(e){alert(e.message||"Traitement impossible.");}
- }
- }
+ 
  $("appointmentRequestsBox")?.addEventListener("click",e=>{
   const b=e.target.closest("[data-rdv-action]");if(!b)return;
   handleAppointmentAction(b.dataset.id,b.dataset.rdvAction);
