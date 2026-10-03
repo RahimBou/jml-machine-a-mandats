@@ -39,8 +39,8 @@ process.on("unhandledRejection",(reason)=>{
 });
 
 const PORT = Number(process.env.PORT || 10000);
-const VERSION = "3.9.6";
-const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15-ai-v16-google-calendar-v17-temporal-revaluation";
+const VERSION = "3.9.7";
+const BUILD_MARKER = "dvf-postgres-comparables-robust-v12-dpe03existant-multifulltext-v14-roads-v15-ai-v16-google-calendar-v17-temporal-revaluation-v18-independent-control";
 const DVF_LATEST_YEAR = Number(process.env.CURRENT_DATA_YEAR || 2025);
 
 app.disable("x-powered-by");
@@ -1241,6 +1241,65 @@ function applyTemporalRevaluation(rows){
   return {rows,index};
 }
 
+async function buildIndependentTemporalControl(property,communeCode){
+  const type=classifyDvfType(property?.propertyType,"");
+  const surface=parsePositiveNumber(property?.surface);
+  if(!pool||!communeCode||!["Maison","Appartement"].includes(type)){
+    return {available:false,method:"Contrôle temporel indépendant indisponible pour ce type de bien ou sans base PostgreSQL."};
+  }
+  try{
+    const minSurface=surface!==null?surface*0.70:null;
+    const maxSurface=surface!==null?surface*1.30:null;
+    const result=await db(`SELECT EXTRACT(YEAR FROM sale_date)::int AS year,
+      COUNT(*)::int AS transactions,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY price_per_m2) AS median
+      FROM jml_dvf_sales
+      WHERE commune_code=$1
+        AND property_type=$2
+        AND sale_date>=CURRENT_DATE-INTERVAL '72 months'
+        AND price_per_m2>0
+        AND ($3::float8 IS NULL OR surface BETWEEN $3 AND $4)
+      GROUP BY EXTRACT(YEAR FROM sale_date)
+      ORDER BY year`,[String(communeCode),type,minSurface,maxSurface]);
+    const years=(result.rows||[]).map(x=>({
+      year:Number(x.year),count:Number(x.transactions||0),median:Number(x.median)
+    })).filter(x=>Number.isFinite(x.year)&&x.count>0&&Number.isFinite(x.median)&&x.median>0);
+    const reference=years.slice().reverse().find(x=>x.count>=10)
+      ||years.slice().reverse().find(x=>x.count>=5)
+      ||null;
+    if(!reference){
+      return {
+        available:false,type,
+        surfaceBand:surface!==null?{min:Number(minSurface.toFixed(1)),max:Number(maxSurface.toFixed(1))}:null,
+        years,
+        method:"Contrôle temporel indépendant : pas assez de ventes annuelles dans la bande de surface."
+      };
+    }
+    const capPct=15;
+    const enriched=years.map(x=>{
+      const rawFactor=reference.median/x.median;
+      const factor=Math.max(1-capPct/100,Math.min(1+capPct/100,rawFactor));
+      return {
+        year:x.year,count:x.count,median:Math.round(x.median),
+        rawFactor:Number(rawFactor.toFixed(4)),
+        factor:Number(factor.toFixed(4)),
+        adjustmentPct:Number(((factor-1)*100).toFixed(1))
+      };
+    });
+    return {
+      available:true,type,
+      surfaceBand:surface!==null?{min:Number(minSurface.toFixed(1)),max:Number(maxSurface.toFixed(1))}:null,
+      referenceYear:reference.year,referenceMedian:Math.round(reference.median),
+      years:enriched,capPct,
+      source:"DVF local JML / PostgreSQL — série indépendante",
+      method:"Médiane annuelle des ventes DVF de la commune, même type et bande de surface ±30 %, indépendante des comparables retenus."
+    };
+  }catch(error){
+    console.warn("JML contrôle temporel indépendant:",error.message);
+    return {available:false,method:"Contrôle temporel indépendant indisponible temporairement.",error:String(error?.message||error).slice(0,240)};
+  }
+}
+
 function parsePositiveNumber(value){
   if(value===null||value===undefined||value==="") return null;
   const n=Number(String(value).replace(/[^0-9,.-]/g,"").replace(/\s/g,"").replace(",","."));
@@ -1711,6 +1770,10 @@ async function buildComparableSales(market,property){
   // +/-15 % pour éviter qu'une petite série locale déforme brutalement la valeur.
   const temporal=applyTemporalRevaluation(candidates);
   const temporalIndex=temporal.index;
+  const temporalControl=await buildIndependentTemporalControl(
+    {propertyType:property?.propertyType,surface:surface,rooms:rooms},
+    commune?.code||""
+  );
   const rawValues=candidates.map(x=>x.pricePerM2).filter(Number.isFinite).sort((a,b)=>a-b);
   const medianRaw=rawValues.length%2?rawValues[(rawValues.length-1)/2]:(rawValues[rawValues.length/2-1]+rawValues[rawValues.length/2])/2;
   const q1Raw=rawValues[Math.floor((rawValues.length-1)*0.25)]??medianRaw;
@@ -1803,6 +1866,7 @@ async function buildComparableSales(market,property){
       method:temporalIndex?.method||"Pas assez de ventes pour calculer une revalorisation temporelle locale.",
       capPct:15
     },
+    temporalControl,
     matchCount:top40.length,totalCandidates:candidates.length,radiusKm,closeCount,minPriceM2,maxPriceM2,
     q1:q1!=null?Math.round(q1):null,q3:q3!=null?Math.round(q3):null,spreadPct,strictCount,
     confidence,rangeLow:rangeLow!=null?Math.round(rangeLow):null,rangeHigh:rangeHigh!=null?Math.round(rangeHigh):null,
