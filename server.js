@@ -2889,7 +2889,7 @@ app.post("/api/public-appointment", async (req,res) => {
 
 function newSellerSpaceToken(){ return crypto.randomBytes(32).toString("hex"); }
 
-async function createSellerSpace(data, prospectId){
+async function createSellerSpace(data, prospectId, transactionClient = null){
   const space={
     id:newId(), accessToken:newSellerSpaceToken(), prospectId:prospectId||null,
     city:clean(data.city,100), address:clean(data.address,180), propertyType:clean(data.propertyType,60),
@@ -2897,7 +2897,8 @@ async function createSellerSpace(data, prospectId){
     dpe:clean(data.dpe,10), terrain:clean(data.terrain,40), ownerData:Array.isArray(data.ownerData)?data.ownerData.slice(0,10):[], expectedPrice:clean(data.expectedPrice,30), saleReason:clean(data.saleReason,1000), alreadyEstimated:typeof data.alreadyEstimated==="boolean"?data.alreadyEstimated:null, alreadyProfessional:typeof data.alreadyProfessional==="boolean"?data.alreadyProfessional:null, checklist:[], createdAt:now(), updatedAt:now()
   };
   if(pool){
-    await db(
+    const runQuery = transactionClient ? transactionClient.query.bind(transactionClient) : db;
+    await runQuery(
       `INSERT INTO jml_seller_spaces
        (id,access_token,prospect_id,city,address,property_type,horizon,surface,rooms,dpe,terrain,owner_data,expected_price,sale_reason,already_estimated,already_professional,checklist,created_at,updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
@@ -3010,9 +3011,16 @@ app.post("/api/leads", async (req,res) => {
             [p.id,p.name,p.city||null,p.phone||null,p.email||null,p.property_type,p.horizon,p.source,p.status,p.contact_basis,true,lead.createdAt,p.notes||null,q.score,q.priority,JSON.stringify(q.reasons),q.nextAction,nextAt,lead.createdAt,lead.createdAt]
           );
         }
+
+        // Le prospect et son espace vendeur doivent être créés dans la même
+        // transaction : si l'un échoue, rien n'est validé partiellement.
+        const sellerSpace=await createSellerSpace(
+          {city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},
+          prospectId,
+          client
+        );
         await client.query("COMMIT");
 
-        const sellerSpace=await createSellerSpace({city:lead.city,address:b.address,propertyType:lead.propertyType,horizon:lead.horizon,surface:b.surface,rooms:b.rooms,dpe:b.dpe,terrain:b.terrain},prospectId);
         const sellerSpaceUrl=req.protocol+"://"+req.get("host")+"/espace-vendeur/"+sellerSpace.accessToken;
         let emailConfirmation = { sent: false, reason: "no-email" };
         try {
@@ -3061,7 +3069,16 @@ app.post("/api/leads", async (req,res) => {
       emailConfirmation = { sent: false, reason: "send-failed" };
     }
     return res.status(201).json({ok:true,persisted:false,id:lead.id,prospectId,alreadyInCrm:!!existing,emailConfirmation,spaceToken:sellerSpace.accessToken,spaceUrl:sellerSpaceUrl});
-  }catch(e){unexpected(res,"JML-L001","Enregistrement du lead indisponible.",e);}
+  }catch(e){
+    console.error("JML-L001 lead POST failed:",{
+      message:String(e?.message||e),
+      code:e?.code||null,
+      constraint:e?.constraint||null,
+      table:e?.table||null,
+      column:e?.column||null
+    });
+    unexpected(res,"JML-L001","Enregistrement du lead indisponible.",e);
+  }
 });
 
 app.get("/api/leads", async (_req,res) => {
