@@ -3054,8 +3054,8 @@ function availableSlotList(booked=[],busy=[]){
   const out=[], set=new Set(booked);
   for(let d=1;d<=21;d++){
     const day=parisDateAt(d,9);
-    const parisDayNumber=new Date(day.toLocaleString("en-US",{timeZone:"Europe/Paris"})).getDay();
-    const dow=parisDayNumber;
+    const weekday=new Intl.DateTimeFormat("en-US",{timeZone:"Europe/Paris",weekday:"short"}).format(day);
+    const dow=({Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6})[weekday];
     if(dow===0) continue;
     const endHour=dow===6?13:18;
     for(let h=9;h<endHour;h++){
