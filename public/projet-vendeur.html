@@ -946,5 +946,20 @@ document.getElementById('form').onsubmit=async function(ev){
   <a href="https://fr.linkedin.com/in/abderrahim-boujnikh-7a401b104" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Abderrahim Boujnikh">in&nbsp; LinkedIn</a>
   <div class="jml-agency-link"><span>Site de l'agence</span><a href="https://www.jml-immobilier.fr/" target="_blank" rel="noopener noreferrer">JML Immobilier</a></div>
 </div>
+<style id="jml-autofill-final">
+/* Empêche Chrome/Android de teinter les champs remplis automatiquement en bleu. */
+#fbLeadForm input:-webkit-autofill,
+#fbLeadForm input:-webkit-autofill:hover,
+#fbLeadForm input:-webkit-autofill:focus,
+#fbLeadForm select:-webkit-autofill,
+#fbLeadForm select:-webkit-autofill:hover,
+#fbLeadForm select:-webkit-autofill:focus{
+  -webkit-text-fill-color:#303632!important;
+  caret-color:#303632!important;
+  -webkit-box-shadow:0 0 0 1000px #fff inset!important;
+  box-shadow:0 0 0 1000px #fff inset!important;
+  transition:background-color 9999s ease-out 0s!important;
+}
+</style>
 </body>
 </html>
