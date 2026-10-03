@@ -2692,7 +2692,7 @@ app.get("/api/health", async (_req,res) => {
   res.json({ok:true,app:"JML Projet Vendeur",version:VERSION,database,databaseReady:dbReady,databaseError,adminConfigured:!!ADMIN_PASSWORD,region:"Ardennes",sector:"Charleville-Mézières"});
 });
 
-app.get("/api/diagnostic", async (_req,res) => {
+app.get("/api/diagnostic", async (req,res) => {
   if(!requireAdminOr401(req,res)) return;
 
   if(!pool) return res.json({ok:true,version:VERSION,database:"memory",prospects:memory.prospects.size,leads:memory.leads.size});
@@ -2717,7 +2717,7 @@ app.get("/api/diagnostic", async (_req,res) => {
   }
 });
 
-app.get("/api/pipeline", async (_req,res) => {
+app.get("/api/pipeline", async (req,res) => {
   if(!requireAdminOr401(req,res)) return;
 
   try{
@@ -2762,7 +2762,7 @@ app.post("/api/admin/logout", async (req,res)=>{
   res.json({ok:true});
 });
 
-app.get("/api/prospects", async (_req,res) => {
+app.get("/api/prospects", async (req,res) => {
   if(!requireAdminOr401(req,res)) return;
 
   try{
@@ -2978,7 +2978,7 @@ app.delete("/api/prospects/:id", async (req,res) => {
 });
 
 
-app.get("/api/appointment-requests", async (_req,res) => {
+app.get("/api/appointment-requests", async (req,res) => {
   if(!requireAdminOr401(req,res)) return;
 
   try{
@@ -3333,7 +3333,7 @@ app.post("/api/leads", async (req,res) => {
   }
 });
 
-app.get("/api/leads", async (_req,res) => {
+app.get("/api/leads", async (req,res) => {
   if(!requireAdminOr401(req,res)) return;
 
   try{
@@ -3378,7 +3378,7 @@ function buildMandatIntelligence(prospects, activitiesByProspect = new Map()){
     .sort((a,b)=>((b.score||0)+(b.priorityBoost||0))-((a.score||0)+(a.priorityBoost||0))).slice(0,5);
 }
 
-app.get("/api/mandat-intelligence", async (_req,res)=>{
+app.get("/api/mandat-intelligence", async (req,res)=>{
   if(!requireAdminOr401(req,res)) return;
 
   try{
