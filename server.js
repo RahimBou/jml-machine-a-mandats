@@ -2103,39 +2103,59 @@ out center tags;`;
 }
 
 app.get("/api/territory-assets", async (req,res) => {
+  const traceId="ASSET-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);
+  const startedAt=Date.now();
   let lat=Number(req.query.lat), lon=Number(req.query.lon);
   const address=clean(req.query.address,180);
   const city=clean(req.query.city,100);
+  console.log("[JML ASSETS]",traceId,"START",{city,address,hasCoords:Number.isFinite(lat)&&Number.isFinite(lon),code:req.query.code||null});
   try{
     if(!Number.isFinite(lat)||!Number.isFinite(lon)){
+      console.log("[JML ASSETS]",traceId,"STEP geocode:start");
       const geo=await geocodeAddress(address,city);
+      console.log("[JML ASSETS]",traceId,"STEP geocode:end",geo?{lat:geo.lat,lon:geo.lon}:null,"ms",Date.now()-startedAt);
       if(geo){lat=Number(geo.lat);lon=Number(geo.lon);}
       else{
+        console.log("[JML ASSETS]",traceId,"STEP commune-fallback:start");
         const commune=await resolveTerritoryCommune(city,address);
+        console.log("[JML ASSETS]",traceId,"STEP commune-fallback:end",commune?{code:commune.code,nom:commune.nom}:null,"ms",Date.now()-startedAt);
         const coords=commune?.centre?.coordinates;
-        if(!Array.isArray(coords)||coords.length<2) return res.status(404).json({ok:false,available:false,error:"Localisation indisponible.",message:"La localisation du bien n'a pas pu être déterminée."});
+        if(!Array.isArray(coords)||coords.length<2){
+          console.warn("[JML ASSETS]",traceId,"STOP localisation indisponible","ms",Date.now()-startedAt);
+          return res.status(404).json({ok:false,available:false,error:"Localisation indisponible.",message:"La localisation du bien n'a pas pu être déterminée.",traceId});
+        }
         lon=Number(coords[0]);lat=Number(coords[1]);
       }
     }
     let communeCode=clean(req.query.code,10);
     if(!/^\d{5}$/.test(communeCode)){
+      console.log("[JML ASSETS]",traceId,"STEP commune-code:start");
       const commune=await resolveTerritoryCommune(city,address);
       communeCode=String(commune?.code||"");
+      console.log("[JML ASSETS]",traceId,"STEP commune-code:end",communeCode||null,"ms",Date.now()-startedAt);
+    }else{
+      console.log("[JML ASSETS]",traceId,"STEP commune-code:provided",communeCode);
     }
+    console.log("[JML ASSETS]",traceId,"STEP sources:start",{lat,lon,communeCode});
+    const sourceStarted=Date.now();
     const [data,osm]=await Promise.all([
-      getOfficialTerritoryAssets(lat,lon,communeCode),
-      getNearbyAssets(lat,lon)
+      getOfficialTerritoryAssets(lat,lon,communeCode).then(v=>{console.log("[JML ASSETS]",traceId,"SOURCE official:end",Date.now()-sourceStarted,"ms",v?.available,v?.code||"");return v;}),
+      getNearbyAssets(lat,lon).then(v=>{console.log("[JML ASSETS]",traceId,"SOURCE osm/end",Date.now()-sourceStarted,"ms",v?.available,v?.code||"");return v;})
     ]);
+    console.log("[JML ASSETS]",traceId,"STEP sources:end","ms",Date.now()-startedAt);
     const roads=osm?.available?osm.categories?.roads:null;
-    return res.json({
+    const payload={
       ok:true,lat,lon,communeCode,...data,
       categories:{...(data.categories||{}),roads:roads||{label:"Grands axes routiers",count:0,items:[],available:false,source:"OpenStreetMap / Overpass"}},
       roadRadiusKm:5,
-      roadSource:"OpenStreetMap / Overpass"
-    });
+      roadSource:"OpenStreetMap / Overpass",
+      traceId
+    };
+    console.log("[JML ASSETS]",traceId,"RESPONSE 200","ms",Date.now()-startedAt);
+    return res.json(payload);
   }catch(error){
-    console.warn("JML territory-assets officielles:",error.message);
-    return res.status(200).json({ok:false,available:false,code:"JML-ASSET-OFFICIAL",message:"Les sources officielles d'équipements sont temporairement indisponibles.",source:"Éducation nationale + INSEE BPE 2025"});
+    console.warn("[JML ASSETS]",traceId,"ERROR",error?.message||error,"ms",Date.now()-startedAt);
+    return res.status(200).json({ok:false,available:false,code:"JML-ASSET-OFFICIAL",message:"Les sources officielles d'équipements sont temporairement indisponibles.",source:"Éducation nationale + INSEE BPE 2025",traceId});
   }
 });
 
