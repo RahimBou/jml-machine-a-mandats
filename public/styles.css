@@ -144,11 +144,15 @@
 }
 
 
-/* Identité Abderrahim Boujnikh — bloc réseaux commun à toutes les pages */
-.jml-follow-block{flex-wrap:wrap!important;align-items:center!important;justify-content:center!important;row-gap:8px!important}
-.jml-follow-name{line-height:1.25!important;text-align:center}
-.jml-follow-name small{display:inline-block;margin-top:3px;font-size:8px;letter-spacing:.08em;color:#68746f}
-.jml-agency-link{flex-basis:100%;display:flex;justify-content:center;align-items:center;gap:8px;margin-top:3px;padding-top:9px;border-top:1px solid rgba(184,148,78,.35)}
-.jml-agency-link span{font-size:9px;color:#68746f}
-.jml-agency-link a{font-weight:900!important;color:#173b32!important;text-decoration:none!important}
-@media(max-width:520px){.jml-follow-name{flex-basis:100%}.jml-agency-link{margin-top:4px}}
+/* Identité Abderrahim Boujnikh — bloc réseaux premium commun */
+.jml-follow-block{position:relative!important;width:min(920px,calc(100% - 28px))!important;margin:24px auto 12px!important;padding:18px 20px 14px!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:center!important;column-gap:8px!important;row-gap:10px!important;box-sizing:border-box!important;border:1px solid rgba(184,148,78,.28)!important;border-radius:18px!important;background:linear-gradient(135deg,#173b32 0%,#214e42 62%,#173b32 100%)!important;box-shadow:0 10px 26px rgba(23,59,50,.12)!important;overflow:hidden!important}
+.jml-follow-block:before{content:""!important;position:absolute!important;left:0!important;right:0!important;top:0!important;height:3px!important;background:linear-gradient(90deg,transparent,#d7b45b 20%,#f0d68e 50%,#d7b45b 80%,transparent)!important}
+.jml-follow-block:after{content:""!important;position:absolute!important;inset:0!important;pointer-events:none!important;background:radial-gradient(circle at 50% -30%,rgba(255,255,255,.10),transparent 48%)!important}
+.jml-follow-name{position:relative!important;z-index:1!important;flex-basis:100%!important;line-height:1.2!important;text-align:center!important;font-size:12px!important;letter-spacing:.02em!important;color:#fff!important;font-weight:900!important}
+.jml-follow-name small{display:inline-block!important;margin-top:5px!important;font-size:7.5px!important;letter-spacing:.14em!important;color:#e7cf91!important;font-weight:800!important}
+.jml-follow-block>a{position:relative!important;z-index:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:88px!important;padding:8px 11px!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:999px!important;background:rgba(255,255,255,.09)!important;color:#fff!important;text-decoration:none!important;font-size:8px!important;font-weight:900!important;letter-spacing:.02em!important;transition:transform .18s ease,background .18s ease,border-color .18s ease!important}
+.jml-follow-block>a:hover{transform:translateY(-1px)!important;background:rgba(255,255,255,.17)!important;border-color:rgba(240,214,142,.65)!important}
+.jml-agency-link{position:relative!important;z-index:1!important;flex-basis:100%!important;display:flex!important;justify-content:center!important;align-items:center!important;gap:8px!important;margin:2px 0 0!important;padding-top:10px!important;border-top:1px solid rgba(255,255,255,.14)!important}
+.jml-agency-link span{font-size:8px!important;color:#cbd8d2!important}
+.jml-agency-link a{font-weight:900!important;color:#f0d68e!important;text-decoration:none!important;font-size:9px!important}
+@media(max-width:520px){.jml-follow-block{width:calc(100% - 20px)!important;margin-top:18px!important;padding:16px 12px 13px!important;column-gap:6px!important}.jml-follow-name{font-size:11px!important}.jml-follow-block>a{min-width:82px!important;padding:8px 8px!important;font-size:7.5px!important}.jml-agency-link{padding-top:9px!important}}
