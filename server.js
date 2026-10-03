@@ -1415,7 +1415,7 @@ function normalizeDvfPlusRow(row, fallbackCity=""){
     x.nom_commune??fallbackCity
   ].filter(v=>v!=null&&String(v).trim()!=="").join(" ").trim();
   return {
-    id:String(x.idmutation??x.id_mutation??x.id||[date,address,price,surface,lat,lon].join("|")),
+    id:String((x.idmutation??x.id_mutation??x.id) || [date,address,price,surface,lat,lon].join("|")),
     date,type,price,surface,rooms:rooms??null,land:land??null,lat,lon,address,
     street:String(x.adresse_nom_voie??x.nom_voie??x.street??"").trim(),
     postal:String(x.code_postal??"").trim(),
